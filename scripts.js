@@ -82,8 +82,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Note content for hashtag detection
         noteContent.addEventListener('input', detectHashtags);
 
-        // Search input
-        searchInput.addEventListener('input', handleSearch);
+        // Search button
+        const searchBtn = document.getElementById('search-btn');
+        searchBtn.addEventListener('click', handleSearch);
+        
+        // Search input - submit on Enter
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSearch();
+            }
+        });
         
         // Close modals when clicking on close button or outside
         modalCloseButtons.forEach(button => {
@@ -159,6 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function createNoteElement(note) {
         const noteDiv = document.createElement('div');
         noteDiv.className = 'note-card';
+        
+        // Ajouter une classe spéciale pour les résultats de recherche
+        if (note.isSearchResult) {
+            noteDiv.className += ' is-search-result';
+        }
+        
         noteDiv.dataset.id = note.id;
 
         // Format date from ISO string to a more readable format
@@ -607,6 +622,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     searchResults.classList.remove('active');
                 });
                 searchResults.appendChild(resultItem);
+                
+                // Mark note as search result
+                result.note.isSearchResult = true;
             });
             
             searchResults.classList.add('active');

@@ -48,16 +48,37 @@ header {
     flex: 1;
     position: relative;
     max-width: 600px;
+    display: flex;
+    align-items: center;
 }
 
 #search-input {
-    width: 100%;
+    flex: 1;
     padding: 12px 20px;
     border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
     font-size: 16px;
     transition: var(--transition);
     box-shadow: var(--shadow);
+}
+
+.search-button {
+    width: 45px;
+    height: 46px; /* Ajuster pour correspondre à la hauteur de l'input */
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.search-button:hover {
+    background-color: #3a51d1;
 }
 
 #search-input:focus {
@@ -131,12 +152,14 @@ header {
 .note-card {
     background: white;
     border-radius: var(--border-radius);
-    padding: 20px;
+    padding: 15px;
     box-shadow: var(--shadow);
     transition: var(--transition);
     cursor: pointer;
     position: relative;
     overflow: hidden;
+    min-height: 120px;
+    max-height: 180px;
 }
 
 .note-card:hover {
@@ -146,17 +169,17 @@ header {
 
 .delete-note {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     background-color: #ff4d4d;
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14px;
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.2s ease;
@@ -172,30 +195,35 @@ header {
 }
 
 .note-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     word-break: break-word;
+    padding-right: 20px; /* Espace pour le bouton de suppression */
 }
 
 .note-content {
     font-size: 14px;
     color: var(--light-text);
-    margin-bottom: 15px;
     word-break: break-word;
-    max-height: 100px;
+    max-height: 120px;
     overflow: hidden;
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 6;
     -webkit-box-orient: vertical;
 }
 
 .note-meta {
-    display: flex;
+    display: none; /* Caché par défaut */
     flex-wrap: wrap;
     gap: 5px;
     font-size: 12px;
     color: var(--light-text);
+    margin-top: 8px;
+}
+
+.is-search-result .note-meta {
+    display: flex; /* Affiché seulement pour les résultats de recherche */
 }
 
 .note-category, .note-hashtag {
@@ -218,11 +246,7 @@ header {
 }
 
 .note-date {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    font-size: 11px;
-    color: var(--light-text);
+    display: none; /* Masqué pour gain de place */
 }
 
 /* Floating action button */
