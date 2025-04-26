@@ -1,0 +1,66 @@
+
+import { createNoteElement } from './notes.js';
+
+export function renderRevisitSections(notes, containers, settings, showMoreBtns) {
+    const { revisitNotesToday, revisitNotes1, revisitNotes2 } = containers;
+    const { showMoreBtnToday, showMoreBtn1, showMoreBtn2 } = showMoreBtns;
+
+    const now = new Date();
+    const today = new Date(now);
+    
+    const date1 = new Date(now);
+    date1.setDate(date1.getDate() - settings.section1);
+    
+    const date2 = new Date(now);
+    date2.setDate(date2.getDate() - settings.section2);
+    
+    const notesForToday = getNotesForDate(notes, today);
+    const notesForSection1 = getNotesForDate(notes, date1);
+    const notesForSection2 = getNotesForDate(notes, date2);
+    
+    renderRevisitNotesForSection(notesForToday, revisitNotesToday, showMoreBtnToday, 'today');
+    renderRevisitNotesForSection(notesForSection1, revisitNotes1, showMoreBtn1, 'section1');
+    renderRevisitNotesForSection(notesForSection2, revisitNotes2, showMoreBtn2, 'section2');
+}
+
+function getNotesForDate(notes, targetDate) {
+    const targetYear = targetDate.getFullYear();
+    const targetMonth = targetDate.getMonth();
+    const targetDay = targetDate.getDate();
+    
+    return notes.filter(note => {
+        const noteDate = new Date(note.createdAt);
+        return noteDate.getFullYear() === targetYear && 
+               noteDate.getMonth() === targetMonth && 
+               noteDate.getDate() === targetDay;
+    });
+}
+
+function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sectionId) {
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (notesToRender.length === 0) {
+        container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
+        if (showMoreBtn) {
+            showMoreBtn.style.display = 'none';
+        }
+        return;
+    }
+
+    const initialCount = Math.min(3, notesToRender.length);
+    const hasMore = notesToRender.length > initialCount;
+    
+    notesToRender.slice(0, initialCount).forEach(note => {
+        const noteElement = createRevisitNoteElement(note);
+        container.appendChild(noteElement);
+    });
+    
+    if (showMoreBtn) {
+        showMoreBtn.style.display = hasMore ? 'block' : 'none';
+    }
+    
+    container.dataset.allNotes = JSON.stringify(notesToRender.map(note => note.id));
+    container.dataset.expandedView = 'false';
+}
