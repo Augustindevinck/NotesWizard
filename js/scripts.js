@@ -71,7 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderEmptyState() {
-        notesContainer.innerHTML = '';
+        // S'assurer que le conteneur est vide et que le message de bienvenue ne s'affiche pas
+        notesContainer.style.display = 'none';
     }
 
     function loadNotes() {
