@@ -326,7 +326,9 @@ document.addEventListener('DOMContentLoaded', () => {
             viewMode.classList.remove('hidden');
             editMode.classList.add('hidden');
             viewTitle.textContent = note.title || 'Sans titre';
-            viewContent.textContent = note.content || '';
+            // Masquer les URLs YouTube dans le contenu affiché
+            const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
+            viewContent.textContent = displayContent;
             
             // Préparer le mode édition
             noteTitle.value = note.title || '';
