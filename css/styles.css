@@ -27,8 +27,10 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    min-height: 100vh;
+    min-height: 100%;
     position: relative;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Header styles */
@@ -294,9 +296,8 @@ header {
 /* Floating action button */
 .fab {
     position: fixed;
-    bottom: 50%;
-    left: 50%;
-    transform: translate(-50%, 50%);
+    bottom: 30px;
+    right: 30px;
     width: 60px;
     height: 60px;
     background-color: var(--primary-color);
@@ -591,9 +592,11 @@ header {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    min-height: 200px;
     max-height: 40vh;
-    overflow: hidden;
+    overflow-y: auto;
     margin-bottom: 20px;
+    padding-right: 5px;
 }
 
 .revisit-section {
@@ -729,32 +732,118 @@ header {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .app-container {
+        padding: 10px;
+    }
+
+    header {
+        flex-direction: column;
+        gap: 10px;
+        position: relative;
+        padding: 10px 0;
+    }
+
+    .search-container {
+        width: 100%;
+    }
+
     .modal-content {
-        margin: 5% auto;
-        width: 95%;
-        padding: 20px;
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+        padding: 15px;
     }
 
     .notes-container {
         grid-template-columns: 1fr;
+        gap: 10px;
+        margin-bottom: 60px;
+    }
+
+    .note-card {
+        min-height: 100px;
+    }
+
+    .revisit-sections {
+        max-height: none;
+        overflow: visible;
     }
 
     .fab {
         bottom: 20px;
-        /* Centré horizontalement */
-        left: 50%;
-        transform: translateX(-50%);
+        right: 20px;
+        left: auto;
+        transform: none;
         width: 50px;
         height: 50px;
+        z-index: 2;
     }
 
     .fab:hover {
-        transform: translateX(-50%) scale(1.1);
+        transform: scale(1.1);
     }
 
     .modal-buttons {
         flex-direction: column;
+        gap: 10px;
     }
+
+    #note-title, #note-content {
+        font-size: 16px;
+        padding: 10px;
+    }
+
+    .categories-container, .hashtags-container {
+        margin-bottom: 15px;
+    }
+
+    .category-tag, .hashtag-tag {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    .close {
+        top: 10px;
+        right: 10px;
+    }
+}
+
+/* Fix any potential overflow issues */
+* {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+/* Ensure modals are always on top */
+.modal {
+    z-index: 1000;
+}
+
+/* Remove any negative margins */
+* {
+    margin: 0;
+}
+
+/* Fix potential z-index stacking issues */
+header {
+    z-index: 50;
+}
+
+.search-results {
+    z-index: 51;
+}
+
+/* Prevent text selection on buttons */
+button {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Smooth scrolling for better UX */
+html {
+    scroll-behavior: smooth;
 }
 
 .note-video {
