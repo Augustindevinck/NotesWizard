@@ -72,8 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderEmptyState() {
         notesContainer.innerHTML = '';
-        notesContainer.style.display = 'none';
-        notesContainer.className = 'notes-container';
+        notesContainer.style.display = 'block';
+        notesContainer.className = 'notes-container empty';
     }
 
     function loadNotes() {
