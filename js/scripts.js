@@ -307,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedCategories.innerHTML = '';
         detectedHashtags.innerHTML = '';
         currentNoteId = null;
-        document.getElementById('note-video-url').value = ''; // Clear video URL field
 
         // Configure edit button
         editButton.onclick = () => {
