@@ -71,12 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderEmptyState() {
-        notesContainer.innerHTML = `
-            <div class="empty-state">
-                <h2>Bienvenue dans votre application de notes</h2>
-                <p>Utilisez la barre de recherche pour trouver des notes ou cliquez sur le bouton + pour en créer une nouvelle</p>
-            </div>
-        `;
+        notesContainer.innerHTML = '';
     }
 
     function loadNotes() {
