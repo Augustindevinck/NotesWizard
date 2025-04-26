@@ -211,6 +211,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const noteDiv = document.createElement('div');
         noteDiv.className = 'note-card';
 
+        // Masquer les liens [[...]] pour l'affichage
+        const displayContent = note.content.replace(/\[\[.*?\]\]/g, '');
+
         // Ajouter une classe spéciale pour les résultats de recherche
         if (note.isSearchResult) {
             noteDiv.className += ' is-search-result';
@@ -240,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         noteDiv.innerHTML = `
             <div class="delete-note" title="Supprimer cette note">&times;</div>
             <h3 class="note-title">${note.title || 'Sans titre'}</h3>
-            <p class="note-content">${note.content}</p>
+            <p class="note-content">${displayContent}</p>
             <div class="note-meta">
                 ${categoriesHTML}
                 ${hashtagsHTML}
