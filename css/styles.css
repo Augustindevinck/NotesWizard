@@ -737,14 +737,15 @@ header {
     }
 
     header {
-        flex-direction: column;
+        flex-direction: row;
         gap: 10px;
         position: relative;
         padding: 10px 0;
     }
 
     .search-container {
-        width: 100%;
+        flex: 1;
+        max-width: calc(100% - 50px);
     }
 
     .modal-content {
