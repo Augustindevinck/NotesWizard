@@ -591,9 +591,11 @@ header {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    min-height: 200px;
     max-height: 40vh;
-    overflow: hidden;
+    overflow-y: auto;
     margin-bottom: 20px;
+    padding-right: 5px;
 }
 
 .revisit-section {
