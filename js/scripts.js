@@ -702,14 +702,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleSearch() {
         const query = searchInput.value.trim();
+        const revisitSections = document.querySelector('.revisit-sections');
         
         if (query === '') {
             searchResults.innerHTML = '';
             searchResults.classList.remove('active');
             currentSearchTerms = []; // Réinitialiser les termes de recherche
             renderEmptyState(); // Afficher l'état vide au lieu de toutes les notes
+            revisitSections.style.display = 'flex'; // Réafficher les sections de révision
             return;
         }
+        
+        // Masquer les sections de révision pendant la recherche
+        revisitSections.style.display = 'none';
         
         // Enregistrer les termes de recherche (mots individuels)
         currentSearchTerms = query.split(/\s+/).filter(term => term.length > 1);
