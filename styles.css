@@ -144,6 +144,33 @@ header {
     transform: translateY(-2px);
 }
 
+.delete-note {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #ff4d4d;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    z-index: 5;
+}
+
+.note-card:hover .delete-note {
+    opacity: 1;
+}
+
+.delete-note:hover {
+    background-color: #ff3333;
+}
+
 .note-title {
     font-size: 18px;
     font-weight: 600;
@@ -202,7 +229,8 @@ header {
 .fab {
     position: fixed;
     bottom: 30px;
-    right: 30px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 60px;
     height: 60px;
     background-color: var(--primary-color);
@@ -217,10 +245,11 @@ header {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     transition: var(--transition);
     z-index: 20;
+    line-height: 0; /* Pour assurer un meilleur centrage du + */
 }
 
 .fab:hover {
-    transform: scale(1.1);
+    transform: translateX(-50%) scale(1.1);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
 }
 
@@ -479,9 +508,15 @@ header {
     
     .fab {
         bottom: 20px;
-        right: 20px;
+        /* Centré horizontalement */
+        left: 50%;
+        transform: translateX(-50%);
         width: 50px;
         height: 50px;
+    }
+    
+    .fab:hover {
+        transform: translateX(-50%) scale(1.1);
     }
     
     .modal-buttons {

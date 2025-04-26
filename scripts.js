@@ -142,7 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ? note.hashtags.map(tag => `<span class="note-hashtag">#${tag}</span>`).join('')
             : '';
 
+        // Add delete button and note content
         noteDiv.innerHTML = `
+            <div class="delete-note" title="Supprimer cette note">&times;</div>
             <h3 class="note-title">${note.title || 'Sans titre'}</h3>
             <p class="note-content">${note.content}</p>
             <div class="note-meta">
@@ -153,9 +155,43 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         // Add click event to open the note for editing
-        noteDiv.addEventListener('click', () => openNoteModal(note));
+        noteDiv.addEventListener('click', (event) => {
+            // If clicking on the delete button, don't open the modal
+            if (event.target.classList.contains('delete-note')) {
+                event.stopPropagation();
+                deleteNote(note.id);
+                return;
+            }
+            openNoteModal(note);
+        });
+
+        // Add specific click handler for delete button
+        const deleteBtn = noteDiv.querySelector('.delete-note');
+        deleteBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            deleteNote(note.id);
+        });
 
         return noteDiv;
+    }
+    
+    function deleteNote(noteId) {
+        // Ask for confirmation before deleting
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
+            // Find the note index by id
+            const noteIndex = notes.findIndex(note => note.id === noteId);
+            
+            if (noteIndex !== -1) {
+                // Remove the note from the array
+                notes.splice(noteIndex, 1);
+                
+                // Save to localStorage
+                saveNotes();
+                
+                // Re-render notes
+                renderNotes();
+            }
+        }
     }
 
     function openNoteModal(note = null) {
