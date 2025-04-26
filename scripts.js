@@ -23,10 +23,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalCloseButtons = document.querySelectorAll('.close');
     
     // Éléments pour les sections de révision
+    const revisitSectionToday = document.getElementById('revisit-section-today');
     const revisitSection1 = document.getElementById('revisit-section-1');
     const revisitSection2 = document.getElementById('revisit-section-2');
+    const revisitNotesToday = document.getElementById('revisit-notes-today');
     const revisitNotes1 = document.getElementById('revisit-notes-1');
     const revisitNotes2 = document.getElementById('revisit-notes-2');
+    const showMoreBtnToday = document.getElementById('show-more-today');
     const showMoreBtn1 = document.getElementById('show-more-1');
     const showMoreBtn2 = document.getElementById('show-more-2');
     const editDaysBtns = document.querySelectorAll('.edit-days-btn');
@@ -1052,6 +1055,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Ajouter les écouteurs pour les boutons "Voir plus"
+        if (showMoreBtnToday) {
+            showMoreBtnToday.addEventListener('click', () => showMoreNotes('today'));
+        }
         if (showMoreBtn1) {
             showMoreBtn1.addEventListener('click', () => showMoreNotes('section1'));
         }
@@ -1117,14 +1123,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function renderRevisitSections() {
-        if (!revisitNotes1 || !revisitNotes2) return;
+        if (!revisitNotesToday || !revisitNotes1 || !revisitNotes2) return;
         
         // Vider les conteneurs de notes
+        revisitNotesToday.innerHTML = '';
         revisitNotes1.innerHTML = '';
         revisitNotes2.innerHTML = '';
         
         // Calculer les dates de référence pour chaque section
         const now = new Date();
+        
+        // Date du jour (aujourd'hui)
+        const today = new Date(now);
+        
+        // Dates pour les sections configurables
         const date1 = new Date(now);
         date1.setDate(date1.getDate() - revisitDays.section1);
         
@@ -1132,10 +1144,12 @@ document.addEventListener('DOMContentLoaded', () => {
         date2.setDate(date2.getDate() - revisitDays.section2);
         
         // Filtrer les notes pour chaque section
+        const notesForToday = getNotesForDate(today);
         const notesForSection1 = getNotesForDate(date1);
         const notesForSection2 = getNotesForDate(date2);
         
         // Afficher les notes (max 3 visibles par défaut)
+        renderRevisitNotesForSection(notesForToday, revisitNotesToday, showMoreBtnToday, 'today');
         renderRevisitNotesForSection(notesForSection1, revisitNotes1, showMoreBtn1, 'section1');
         renderRevisitNotesForSection(notesForSection2, revisitNotes2, showMoreBtn2, 'section2');
     }
@@ -1199,8 +1213,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function showMoreNotes(sectionId) {
-        const container = sectionId === 'section1' ? revisitNotes1 : revisitNotes2;
-        const showMoreBtn = sectionId === 'section1' ? showMoreBtn1 : showMoreBtn2;
+        let container, showMoreBtn;
+        
+        if (sectionId === 'today') {
+            container = revisitNotesToday;
+            showMoreBtn = showMoreBtnToday;
+        } else if (sectionId === 'section1') {
+            container = revisitNotes1;
+            showMoreBtn = showMoreBtn1;
+        } else if (sectionId === 'section2') {
+            container = revisitNotes2;
+            showMoreBtn = showMoreBtn2;
+        }
         
         if (!container || !showMoreBtn) return;
         
