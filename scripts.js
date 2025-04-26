@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const noteTitle = document.getElementById('note-title');
     const noteContent = document.getElementById('note-content');
     const saveNoteBtn = document.getElementById('save-note-btn');
+    const deleteNoteBtn = document.getElementById('delete-note-btn');
     const categoryInput = document.getElementById('category-input');
     const categorySuggestions = document.getElementById('category-suggestions');
     const selectedCategories = document.getElementById('selected-categories');
@@ -61,6 +62,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save note button
         saveNoteBtn.addEventListener('click', saveNote);
+        
+        // Delete note button in modal
+        deleteNoteBtn.addEventListener('click', () => {
+            if (currentNoteId) {
+                if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
+                    deleteNote(currentNoteId);
+                    noteModal.style.display = 'none';
+                }
+            }
+        });
 
         // Category input for autocomplete
         categoryInput.addEventListener('input', handleCategoryInput);
@@ -201,12 +212,18 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedCategories.innerHTML = '';
         detectedHashtags.innerHTML = '';
         currentNoteId = null;
-
+        
+        // Par défaut, masquer le bouton de suppression (pour nouvelle note)
+        deleteNoteBtn.classList.add('hidden');
+        
         if (note) {
             // Edit existing note
             noteTitle.value = note.title || '';
             noteContent.value = note.content || '';
             currentNoteId = note.id;
+            
+            // Afficher le bouton de suppression pour les notes existantes
+            deleteNoteBtn.classList.remove('hidden');
 
             // Add categories
             if (note.categories && note.categories.length > 0) {

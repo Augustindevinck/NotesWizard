@@ -437,6 +437,27 @@ header {
     background-color: #3a59e0;
 }
 
+#delete-note-btn {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 12px 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 10px;
+    width: 100%;
+}
+
+#delete-note-btn:hover {
+    background-color: #ff3333;
+}
+
+.hidden {
+    display: none;
+}
+
 /* Import/Export modal */
 .modal-buttons {
     display: flex;
