@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const importFile = document.getElementById('import-file');
     const importStatus = document.getElementById('import-status');
     const modalCloseButtons = document.querySelectorAll('.close');
-    
+
     // Éléments pour les sections de révision
     const revisitSectionToday = document.getElementById('revisit-section-today');
     const revisitSection1 = document.getElementById('revisit-section-1');
@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let allCategories = new Set();
     let currentSearchTerms = []; // Pour stocker les mots de la recherche actuelle
     let editingDaysForSection = null; // Pour savoir quelle section est en cours d'édition
-    
+
     // Valeurs par défaut pour le nombre de jours à revisiter
     let revisitDays = {
         section1: 7,
@@ -56,20 +56,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         // Load notes from localStorage
         loadNotes();
-        
+
         // Charger les paramètres de révision depuis localStorage
         loadRevisitSettings();
-        
+
         // Affiche un état vide au démarrage (pas de notes) dans la section principale
         renderEmptyState();
-        
+
         // Afficher les notes à revisiter
         renderRevisitSections();
-        
+
         // Set up event listeners
         setupEventListeners();
     }
-    
+
     function renderEmptyState() {
         notesContainer.innerHTML = `
             <div class="empty-state">
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save note button
         saveNoteBtn.addEventListener('click', saveNote);
-        
+
         // Delete note button in modal
         deleteNoteBtn.addEventListener('click', () => {
             if (currentNoteId) {
@@ -123,11 +123,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Search suggestions en temps réel lorsqu'on tape
         searchInput.addEventListener('input', showSearchSuggestions);
-        
+
         // Search button - pour la recherche complète
         const searchBtn = document.getElementById('search-btn');
         searchBtn.addEventListener('click', handleSearch);
-        
+
         // Search input - submit on Enter
         searchInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 handleSearch();
             }
         });
-        
+
         // Close modals when clicking on close button or outside
         modalCloseButtons.forEach(button => {
             button.addEventListener('click', () => {
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
         importBtn.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', importNotes);
     }
-    
+
     // Fonction pour nettoyer tous les éléments surlignés
     function cleanupHighlightedElements() {
         // Restaurer les inputs originaux
@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             el.parentNode.removeChild(el);
         });
-        
+
         // Restaurer les tags originaux (catégories et hashtags)
         const highlightedTags = document.querySelectorAll('.category-tag, .hashtag-tag');
         highlightedTags.forEach(tag => {
@@ -210,12 +210,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function createNoteElement(note) {
         const noteDiv = document.createElement('div');
         noteDiv.className = 'note-card';
-        
+
         // Ajouter une classe spéciale pour les résultats de recherche
         if (note.isSearchResult) {
             noteDiv.className += ' is-search-result';
         }
-        
+
         noteDiv.dataset.id = note.id;
 
         // Format date from ISO string to a more readable format
@@ -256,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteNote(note.id);
                 return;
             }
-            
+
             // Vérifier si on vient d'une recherche (si des termes de recherche sont actifs)
             const fromSearch = currentSearchTerms.length > 0;
             openNoteModal(note, fromSearch);
@@ -271,23 +271,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return noteDiv;
     }
-    
+
     function deleteNote(noteId) {
         // Ask for confirmation before deleting
         if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
             // Find the note index by id
             const noteIndex = notes.findIndex(note => note.id === noteId);
-            
+
             if (noteIndex !== -1) {
                 // Remove the note from the array
                 notes.splice(noteIndex, 1);
-                
+
                 // Save to localStorage
                 saveNotes();
-                
+
                 // Revenir à l'état vide
                 renderEmptyState();
-                
+
                 // Mettre à jour les sections de révision
                 renderRevisitSections();
             }
@@ -301,16 +301,17 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedCategories.innerHTML = '';
         detectedHashtags.innerHTML = '';
         currentNoteId = null;
-        
+        document.getElementById('note-video-url').value = ''; // Clear video URL field
+
         // Par défaut, masquer le bouton de suppression (pour nouvelle note)
         deleteNoteBtn.classList.add('hidden');
-        
+
         if (note) {
             // Edit existing note
             noteTitle.value = note.title || '';
             noteContent.value = note.content || '';
             currentNoteId = note.id;
-            
+
             // Afficher le bouton de suppression pour les notes existantes
             deleteNoteBtn.classList.remove('hidden');
 
@@ -327,13 +328,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     addHashtagTag(tag);
                 });
             }
-            
+
+            // Show video URL if present
+            if (note.videoUrl) {
+                document.getElementById('note-video-url').value = note.videoUrl;
+            }
+
             // Si on vient d'une recherche et qu'il y a des termes à surligner
             if (fromSearch && currentSearchTerms.length > 0) {
                 // Surligner les termes dans le titre et le contenu
                 highlightSearchTerms(noteTitle);
                 highlightSearchTerms(noteContent);
-                
+
                 // Surligner dans les catégories et hashtags
                 highlightSearchTermsInTags(selectedCategories, '.category-tag');
                 highlightSearchTermsInTags(detectedHashtags, '.hashtag-tag');
@@ -342,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Display the modal
         noteModal.style.display = 'block';
-        
+
         // Focus on title if empty, otherwise focus on content
         if (!noteTitle.value) {
             noteTitle.focus();
@@ -350,29 +356,29 @@ document.addEventListener('DOMContentLoaded', () => {
             noteContent.focus();
         }
     }
-    
+
     // Fonction pour surligner les termes de recherche dans un élément input/textarea
     function highlightSearchTerms(inputElement) {
         // Sauvegarder la position du curseur
         const startPos = inputElement.selectionStart;
         const endPos = inputElement.selectionEnd;
-        
+
         // Récupérer la valeur de l'élément
         let content = inputElement.value;
-        
+
         // Surligner chaque terme de recherche
         currentSearchTerms.forEach(term => {
             if (term.length > 1) {
                 // Créer une expression régulière pour trouver le terme (insensible à la casse)
                 const regex = new RegExp(term, 'gi');
-                
+
                 // Construire un wrapper temporaire autour du terme trouvé
                 content = content.replace(regex, match => {
                     return `§§HIGHLIGHT_START§§${match}§§HIGHLIGHT_END§§`;
                 });
             }
         });
-        
+
         // Si des surlignages ont été ajoutés
         if (content.includes('§§HIGHLIGHT_START§§')) {
             // Créer un div pour afficher le contenu surligné
@@ -388,27 +394,27 @@ document.addEventListener('DOMContentLoaded', () => {
             highlightedDiv.style.fontSize = window.getComputedStyle(inputElement).fontSize;
             highlightedDiv.style.lineHeight = window.getComputedStyle(inputElement).lineHeight;
             highlightedDiv.style.overflowY = 'auto';
-            
+
             // Remplacer les marqueurs par des spans avec la classe CSS pour le surlignage
             content = content.replace(/§§HIGHLIGHT_START§§(.*?)§§HIGHLIGHT_END§§/g, '<span class="highlighted-term">$1</span>');
-            
+
             // Définir le contenu surligné
             highlightedDiv.innerHTML = content;
-            
+
             // Cacher l'élément original et ajouter le div surligné
             inputElement.style.display = 'none';
             inputElement.parentNode.insertBefore(highlightedDiv, inputElement.nextSibling);
-            
+
             // Synchroniser le contenu lors de l'édition
             highlightedDiv.addEventListener('input', () => {
                 // Mettre à jour la valeur de l'input original
                 inputElement.value = highlightedDiv.innerText;
-                
+
                 // Déclencher l'événement input pour les fonctions comme detectHashtags
                 const event = new Event('input', { bubbles: true });
                 inputElement.dispatchEvent(event);
             });
-            
+
             // Restaurer l'input original lorsque le modal est fermé
             const restoreInput = () => {
                 if (highlightedDiv.parentNode) {
@@ -416,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     highlightedDiv.parentNode.removeChild(highlightedDiv);
                 }
             };
-            
+
             // Ajouter un gestionnaire pour restaurer l'input lors de la fermeture du modal
             modalCloseButtons.forEach(btn => {
                 const originalHandler = btn.onclick;
@@ -425,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (originalHandler) originalHandler();
                 };
             });
-            
+
             // Également restaurer lors du clic sur le bouton Enregistrer
             const originalSaveHandler = saveNoteBtn.onclick;
             saveNoteBtn.onclick = () => {
@@ -434,29 +440,29 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
     }
-    
+
     // Fonction pour surligner les termes de recherche dans les tags (catégories et hashtags)
     function highlightSearchTermsInTags(container, selector) {
         if (!container) return;
-        
+
         const tags = container.querySelectorAll(selector);
-        
+
         tags.forEach(tag => {
             const originalText = tag.textContent;
             let newText = originalText;
-            
+
             currentSearchTerms.forEach(term => {
                 if (term.length > 1) {
                     // Créer une expression régulière pour trouver le terme (insensible à la casse)
                     const regex = new RegExp(term, 'gi');
-                    
+
                     // Remplacer par le terme surligné
                     newText = newText.replace(regex, match => {
                         return `<span class="highlighted-term">${match}</span>`;
                     });
                 }
             });
-            
+
             // Si des modifications ont été apportées
             if (newText !== originalText) {
                 // Sauvegarder le contenu original pour restauration ultérieure
@@ -470,10 +476,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function saveNote() {
         // Nettoyer les éléments surlignés en premier pour s'assurer d'avoir les données originales
         cleanupHighlightedElements();
-        
+
         const title = noteTitle.value.trim();
         const content = noteContent.value.trim();
-        
+        const videoUrl = document.getElementById('note-video-url').value.trim();
+
         if (!content) {
             alert('Le contenu de la note ne peut pas être vide.');
             return;
@@ -501,6 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     content,
                     categories,
                     hashtags,
+                    videoUrl, // Add videoUrl to the updated note
                     updatedAt: now
                 };
             }
@@ -512,6 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 content,
                 categories,
                 hashtags,
+                videoUrl, // Add videoUrl to the new note
                 createdAt: now,
                 updatedAt: now
             };
@@ -520,11 +529,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save to localStorage
         saveNotes();
-        
+
         // Close modal and revenir à l'état vide
         noteModal.style.display = 'none';
         renderEmptyState();
-        
+
         // Mettre à jour les sections de révision
         renderRevisitSections();
     }
@@ -535,7 +544,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleCategoryInput(event) {
         const input = event.target.value.trim();
-        
+
         if (input === '') {
             categorySuggestions.innerHTML = '';
             categorySuggestions.classList.remove('active');
@@ -574,18 +583,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add category on semicolon or enter
         if ((event.key === ';' || event.key === 'Enter') && input !== '') {
             event.preventDefault();
-            
+
             // Remove semicolon if present
             const category = input.replace(/;$/, '');
-            
+
             // Check if already added
             const existingTags = Array.from(selectedCategories.querySelectorAll('.category-tag'))
                 .map(tag => tag.dataset.value);
-            
+
             if (!existingTags.includes(category)) {
                 addCategoryTag(category);
             }
-            
+
             // Clear input and suggestions
             categoryInput.value = '';
             categorySuggestions.innerHTML = '';
@@ -601,20 +610,20 @@ document.addEventListener('DOMContentLoaded', () => {
             ${category}
             <span class="remove-tag">&times;</span>
         `;
-        
+
         // Add event listener to remove tag
         tag.querySelector('.remove-tag').addEventListener('click', (e) => {
             e.stopPropagation();
             tag.remove();
         });
-        
+
         selectedCategories.appendChild(tag);
     }
 
     function detectHashtags() {
         const content = noteContent.value;
         const hashtags = extractHashtags(content);
-        
+
         // Update hashtags display
         detectedHashtags.innerHTML = '';
         hashtags.forEach(tag => {
@@ -625,9 +634,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function extractHashtags(content) {
         const hashtagRegex = /#(\w+)/g;
         const matches = content.match(hashtagRegex);
-        
+
         if (!matches) return [];
-        
+
         // Extract just the tag text (without the # symbol) and remove duplicates
         return [...new Set(matches.map(match => match.substring(1)))];
     }
@@ -642,27 +651,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fonction pour afficher les suggestions de recherche en temps réel
     function showSearchSuggestions() {
         const query = searchInput.value.trim();
-        
+
         if (query === '') {
             searchResults.innerHTML = '';
             searchResults.classList.remove('active');
             return;
         }
-        
+
         // Effectuer la recherche avec le texte actuel
         const searchResultItems = performSearch(query);
-        
+
         // Afficher les suggestions de recherche
         if (searchResultItems.length > 0) {
             searchResults.innerHTML = '';
-            
+
             searchResultItems.slice(0, 5).forEach(result => {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'search-result-item';
-                
+
                 // Préparer le texte à afficher (titre ou début du contenu)
                 let displayText = result.note.title || result.note.content.substring(0, 30) + '...';
-                
+
                 // Mettre en surbrillance le terme recherché dans le texte de suggestion
                 const queryTerms = query.split(/\s+/).filter(term => term.length > 1);
                 queryTerms.forEach(term => {
@@ -671,28 +680,28 @@ document.addEventListener('DOMContentLoaded', () => {
                         displayText = displayText.replace(regex, '<span class="highlighted-term">$1</span>');
                     }
                 });
-                
+
                 resultItem.innerHTML = displayText;
-                
+
                 // Ajouter l'événement click pour ouvrir la note
                 resultItem.addEventListener('click', () => {
                     // Mettre à jour les termes de recherche actuels
                     currentSearchTerms = queryTerms;
-                    
+
                     // Marquer la note comme résultat de recherche
                     result.note.isSearchResult = true;
-                    
+
                     // Ouvrir la note avec surlignage des termes
                     openNoteModal(result.note, true);
-                    
+
                     // Nettoyer les suggestions
                     searchResults.innerHTML = '';
                     searchResults.classList.remove('active');
                 });
-                
+
                 searchResults.appendChild(resultItem);
             });
-            
+
             searchResults.classList.add('active');
         } else {
             searchResults.innerHTML = '<div class="search-result-item">Aucun résultat trouvé</div>';
@@ -703,7 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSearch() {
         const query = searchInput.value.trim();
         const revisitSections = document.querySelector('.revisit-sections');
-        
+
         if (query === '') {
             searchResults.innerHTML = '';
             searchResults.classList.remove('active');
@@ -712,27 +721,27 @@ document.addEventListener('DOMContentLoaded', () => {
             revisitSections.style.display = 'flex'; // Réafficher les sections de révision
             return;
         }
-        
+
         // Masquer les sections de révision pendant la recherche
         revisitSections.style.display = 'none';
-        
+
         // Enregistrer les termes de recherche (mots individuels)
         currentSearchTerms = query.split(/\s+/).filter(term => term.length > 1);
-        
+
         // Perform search
         const searchResultItems = performSearch(query);
-        
+
         // Display search results
         if (searchResultItems.length > 0) {
             // Masquer les suggestions après la recherche
             searchResults.innerHTML = '';
             searchResults.classList.remove('active');
-            
+
             // Marquer chaque note comme résultat de recherche
             searchResultItems.forEach(result => {
                 result.note.isSearchResult = true;
             });
-            
+
             // Afficher les résultats dans la vue principale
             renderNotes(searchResultItems.map(result => result.note));
         } else {
@@ -740,7 +749,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchResults.innerHTML = '';
             searchResults.classList.remove('active');
             renderNotes([]);
-            
+
             // Afficher un message d'information
             notesContainer.innerHTML = `
                 <div class="empty-state">
@@ -754,15 +763,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function performSearch(query) {
         // Clean the query: lowercase, remove accents, remove extra spaces
         const cleanedQuery = cleanText(query);
-        
+
         // First try strict search
         let results = strictSearch(cleanedQuery);
-        
+
         // If no results, try fuzzy search with Levenshtein distance
         if (results.length === 0) {
             results = fuzzySearch(cleanedQuery);
         }
-        
+
         // Sort results by score (higher score = better match)
         return results.sort((a, b) => b.score - a.score);
     }
@@ -777,22 +786,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function strictSearch(cleanedQuery) {
         const results = [];
-        
+
         notes.forEach(note => {
             let score = 0;
             const cleanTitle = cleanText(note.title || '');
             const cleanContent = cleanText(note.content || '');
-            
+
             // Check for matches in title
             if (cleanTitle.includes(cleanedQuery)) {
                 score += 3;
             }
-            
+
             // Check for matches in content
             if (cleanContent.includes(cleanedQuery)) {
                 score += 2;
             }
-            
+
             // Check for matches in hashtags
             if (note.hashtags) {
                 note.hashtags.forEach(tag => {
@@ -802,7 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
-            
+
             // Check for matches in categories
             if (note.categories) {
                 note.categories.forEach(category => {
@@ -812,30 +821,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             }
-            
+
             if (score > 0) {
                 results.push({ note, score });
             }
         });
-        
+
         return results;
     }
 
     function fuzzySearch(cleanedQuery) {
         const results = [];
         const queryWords = cleanedQuery.split(' ');
-        
+
         notes.forEach(note => {
             let score = 0;
             const cleanTitle = cleanText(note.title || '');
             const cleanContent = cleanText(note.content || '');
             const titleWords = cleanTitle.split(' ');
             const contentWords = cleanContent.split(' ');
-            
+
             // Check each word in the query against title words
             queryWords.forEach(queryWord => {
                 if (queryWord.length <= 1) return; // Skip very short words
-                
+
                 titleWords.forEach(titleWord => {
                     const distance = levenshteinDistance(queryWord, titleWord);
                     if (distance <= 2) {
@@ -843,7 +852,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         score += 3 - distance * 0.5;
                     }
                 });
-                
+
                 // Check against content words
                 contentWords.forEach(contentWord => {
                     const distance = levenshteinDistance(queryWord, contentWord);
@@ -851,7 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         score += 2 - distance * 0.5;
                     }
                 });
-                
+
                 // Check against hashtags
                 if (note.hashtags) {
                     note.hashtags.forEach(tag => {
@@ -862,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 }
-                
+
                 // Check against categories
                 if (note.categories) {
                     note.categories.forEach(category => {
@@ -874,12 +883,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             });
-            
+
             if (score > 0) {
                 results.push({ note, score });
             }
         });
-        
+
         return results;
     }
 
@@ -887,18 +896,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function levenshteinDistance(a, b) {
         if (a.length === 0) return b.length;
         if (b.length === 0) return a.length;
-        
+
         const matrix = [];
-        
+
         // Initialize matrix
         for (let i = 0; i <= b.length; i++) {
             matrix[i] = [i];
         }
-        
+
         for (let i = 0; i <= a.length; i++) {
             matrix[0][i] = i;
         }
-        
+
         // Fill matrix
         for (let i = 1; i <= b.length; i++) {
             for (let j = 1; j <= a.length; j++) {
@@ -910,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 );
             }
         }
-        
+
         return matrix[b.length][a.length];
     }
 
@@ -919,22 +928,22 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Aucune note à exporter');
             return;
         }
-        
+
         const dataStr = JSON.stringify(notes, null, 2);
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-        
+
         const exportFileDefaultName = 'notes-' + new Date().toISOString().slice(0, 10) + '.json';
-        
+
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri);
         linkElement.setAttribute('download', exportFileDefaultName);
         linkElement.click();
-        
+
         // Show success message
         importStatus.textContent = 'Export réussi !';
         importStatus.className = 'success';
         importStatus.style.display = 'block';
-        
+
         setTimeout(() => {
             importStatus.style.display = 'none';
         }, 3000);
@@ -942,37 +951,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function importNotes(event) {
         const file = event.target.files[0];
-        
+
         if (!file) {
             return;
         }
-        
+
         const reader = new FileReader();
-        
+
         reader.onload = function(e) {
             try {
                 const importedNotes = JSON.parse(e.target.result);
-                
+
                 // Validate the imported data
                 if (!Array.isArray(importedNotes)) {
                     throw new Error('Format invalide : les données importées ne sont pas un tableau');
                 }
-                
+
                 // Basic validation of each note
                 importedNotes.forEach(note => {
                     if (!note.id || !note.content) {
                         throw new Error('Format invalide : certaines notes n\'ont pas d\'ID ou de contenu');
                     }
                 });
-                
+
                 // Identifier les notes en double
                 const existingNoteIds = new Map();
                 notes.forEach(note => existingNoteIds.set(note.id, note));
-                
+
                 // Séparer les notes nouvelles et existantes
                 const newNotes = [];
                 const overlappingNotes = [];
-                
+
+
+
                 importedNotes.forEach(importedNote => {
                     if (existingNoteIds.has(importedNote.id)) {
                         overlappingNotes.push({
@@ -983,10 +994,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         newNotes.push(importedNote);
                     }
                 });
-                
+
                 // Ajouter les nouvelles notes
                 notes.push(...newNotes);
-                
+
                 // Demander quoi faire pour les notes existantes avec le même ID
                 let notesUpdated = 0;
                 if (overlappingNotes.length > 0) {
@@ -994,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `${overlappingNotes.length} note(s) avec des identifiants existants ont été trouvées. ` +
                         `Cliquez sur OK pour conserver les notes existantes, ou sur Annuler pour les remplacer par les versions importées.`
                     );
-                    
+
                     overlappingNotes.forEach(pair => {
                         const noteIndex = notes.findIndex(note => note.id === pair.existing.id);
                         if (noteIndex !== -1) {
@@ -1007,7 +1018,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 }
-                
+
                 // Update categories set
                 allCategories = new Set();
                 notes.forEach(note => {
@@ -1015,21 +1026,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         note.categories.forEach(category => allCategories.add(category));
                     }
                 });
-                
+
                 // Save to localStorage and refresh display
                 saveNotes();
                 renderEmptyState();
                 renderRevisitSections();
-                
+
                 // Show success message
                 importStatus.textContent = `Import réussi ! ${newNotes.length} nouvelle(s) note(s) ajoutée(s)` + 
                     (overlappingNotes.length > 0 ? ` et ${notesUpdated} note(s) existante(s) mise(s) à jour.` : '.');
                 importStatus.className = 'success';
                 importStatus.style.display = 'block';
-                
+
                 // Reset file input
                 importFile.value = '';
-                
+
             } catch (error) {
                 console.error('Import error:', error);
                 importStatus.textContent = `Erreur d'import : ${error.message}`;
@@ -1037,12 +1048,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 importStatus.style.display = 'block';
             }
         };
-        
+
         reader.readAsText(file);
     }
-    
+
     // Fonctions pour les sections de révision
-    
+
     function loadRevisitSettings() {
         // Charger les paramètres de révision depuis localStorage
         const storedSettings = localStorage.getItem('revisitDays');
@@ -1050,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', () => {
             revisitDays = JSON.parse(storedSettings);
         }
         updateRevisitTitles();
-        
+
         // Ajouter les écouteurs d'événements pour les boutons d'édition
         editDaysBtns.forEach((btn, index) => {
             btn.addEventListener('click', () => {
@@ -1058,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 openDaysEditModal(section);
             });
         });
-        
+
         // Ajouter les écouteurs pour les boutons "Voir plus"
         if (showMoreBtnToday) {
             showMoreBtnToday.addEventListener('click', () => showMoreNotes('today'));
@@ -1069,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (showMoreBtn2) {
             showMoreBtn2.addEventListener('click', () => showMoreNotes('section2'));
         }
-        
+
         // Écouteur pour fermer le modal d'édition de jours
         const daysModalCloseBtn = document.querySelector('#days-edit-modal .close');
         if (daysModalCloseBtn) {
@@ -1077,12 +1088,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 daysEditModal.style.display = 'none';
             });
         }
-        
+
         // Écouteur pour enregistrer les modifications
         if (saveDaysBtn) {
             saveDaysBtn.addEventListener('click', saveDaysSettings);
         }
-        
+
         // Fermer le modal si clic à l'extérieur
         window.addEventListener('click', (event) => {
             if (event.target === daysEditModal) {
@@ -1090,16 +1101,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-    
+
     function saveRevisitSettings() {
         localStorage.setItem('revisitDays', JSON.stringify(revisitDays));
     }
-    
+
     function updateRevisitTitles() {
         // Mettre à jour les titres des sections avec le nombre de jours configuré
         const title1 = revisitSection1?.querySelector('.revisit-title');
         const title2 = revisitSection2?.querySelector('.revisit-title');
-        
+
         // Mettre à jour les titres avec le nombre de jours
         if (title1) {
             title1.textContent = `Notes d'il y a ${revisitDays.section1} jours`;
@@ -1108,46 +1119,46 @@ document.addEventListener('DOMContentLoaded', () => {
             title2.textContent = `Notes d'il y a ${revisitDays.section2} jours`;
         }
     }
-    
+
     function renderRevisitSections() {
         if (!revisitNotesToday || !revisitNotes1 || !revisitNotes2) return;
-        
+
         // Vider les conteneurs de notes
         revisitNotesToday.innerHTML = '';
         revisitNotes1.innerHTML = '';
         revisitNotes2.innerHTML = '';
-        
+
         // Calculer les dates de référence pour chaque section
         const now = new Date();
-        
+
         // Date du jour (aujourd'hui)
         const today = new Date(now);
-        
+
         // Dates pour les sections configurables
         const date1 = new Date(now);
         date1.setDate(date1.getDate() - revisitDays.section1);
-        
+
         const date2 = new Date(now);
         date2.setDate(date2.getDate() - revisitDays.section2);
-        
+
         // Filtrer les notes pour chaque section
         const notesForToday = getNotesForDate(today);
         const notesForSection1 = getNotesForDate(date1);
         const notesForSection2 = getNotesForDate(date2);
-        
+
         // Afficher les notes (max 3 visibles par défaut)
         renderRevisitNotesForSection(notesForToday, revisitNotesToday, showMoreBtnToday, 'today');
         renderRevisitNotesForSection(notesForSection1, revisitNotes1, showMoreBtn1, 'section1');
         renderRevisitNotesForSection(notesForSection2, revisitNotes2, showMoreBtn2, 'section2');
     }
-    
+
     function getNotesForDate(targetDate) {
         // Obtenir les notes créées exactement à la date cible
         // Format de date pour comparaison (YYYY-MM-DD)
         const targetYear = targetDate.getFullYear();
         const targetMonth = targetDate.getMonth();
         const targetDay = targetDate.getDate();
-        
+
         return notes.filter(note => {
             const noteDate = new Date(note.createdAt);
             return noteDate.getFullYear() === targetYear && 
@@ -1155,7 +1166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                    noteDate.getDate() === targetDay;
         });
     }
-    
+
     function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sectionId) {
         if (notesToRender.length === 0) {
             container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
@@ -1164,44 +1175,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return;
         }
-        
+
         // Pour l'affichage compact, montrer max 3 notes par défaut
         const initialCount = Math.min(3, notesToRender.length);
         const hasMore = notesToRender.length > initialCount;
-        
+
         // Créer les éléments pour les 3 premières notes
         notesToRender.slice(0, initialCount).forEach(note => {
             const noteElement = createRevisitNoteElement(note);
             container.appendChild(noteElement);
         });
-        
+
         // Afficher ou masquer le bouton "Voir plus"
         if (showMoreBtn) {
             showMoreBtn.style.display = hasMore ? 'block' : 'none';
         }
-        
+
         // Stocker toutes les notes pour ce jour dans un attribut data pour "Voir plus"
         container.dataset.allNotes = JSON.stringify(notesToRender.map(note => note.id));
         container.dataset.expandedView = 'false';
     }
-    
+
     function createRevisitNoteElement(note) {
         const noteDiv = document.createElement('div');
         noteDiv.className = 'revisit-note';
         noteDiv.dataset.id = note.id;
         noteDiv.textContent = note.title || note.content.substring(0, 40) + '...';
-        
+
         // Ajouter un écouteur d'événements pour ouvrir la note
         noteDiv.addEventListener('click', () => {
             openNoteModal(note, false);
         });
-        
+
         return noteDiv;
     }
-    
+
     function showMoreNotes(sectionId) {
         let container, showMoreBtn;
-        
+
         if (sectionId === 'today') {
             container = revisitNotesToday;
             showMoreBtn = showMoreBtnToday;
@@ -1212,93 +1223,93 @@ document.addEventListener('DOMContentLoaded', () => {
             container = revisitNotes2;
             showMoreBtn = showMoreBtn2;
         }
-        
+
         if (!container || !showMoreBtn) return;
-        
+
         // Vérifier si on est déjà en vue étendue
         if (container.dataset.expandedView === 'true') {
             // Réduire la vue
             container.dataset.expandedView = 'false';
-            
+
             // Supprimer toutes les notes actuelles
             container.innerHTML = '';
-            
+
             // Récupérer les IDs de toutes les notes et les objets correspondants
             const noteIds = JSON.parse(container.dataset.allNotes);
             const notesToRender = noteIds.map(id => notes.find(note => note.id === id)).filter(Boolean);
-            
+
             // Afficher seulement les 3 premières
             const initialCount = Math.min(3, notesToRender.length);
             notesToRender.slice(0, initialCount).forEach(note => {
                 const noteElement = createRevisitNoteElement(note);
                 container.appendChild(noteElement);
             });
-            
+
             // Changer le texte du bouton
             showMoreBtn.textContent = 'Voir plus';
         } else {
             // Étendre la vue
             container.dataset.expandedView = 'true';
-            
+
             // Récupérer toutes les notes et les afficher
             const noteIds = JSON.parse(container.dataset.allNotes);
             const notesToRender = noteIds.map(id => notes.find(note => note.id === id)).filter(Boolean);
-            
+
             // Supprimer les notes actuelles
             container.innerHTML = '';
-            
+
             // Ajouter toutes les notes
             notesToRender.forEach(note => {
                 const noteElement = createRevisitNoteElement(note);
                 container.appendChild(noteElement);
             });
-            
+
             // Changer le texte du bouton
             showMoreBtn.textContent = 'Voir moins';
         }
     }
-    
+
     function openDaysEditModal(sectionId) {
         // Stocker la section en cours d'édition
         editingDaysForSection = sectionId;
-        
+
         // Préremplir avec la valeur actuelle
         daysInput.value = revisitDays[sectionId];
-        
+
         // Afficher le modal
         daysEditModal.style.display = 'block';
-        
+
         // Focus sur l'input
         daysInput.focus();
     }
-    
+
     function saveDaysSettings() {
         if (!editingDaysForSection) return;
-        
+
         // Récupérer la nouvelle valeur
         const newDays = parseInt(daysInput.value, 10);
-        
+
         // Vérifier que c'est un nombre valide
         if (isNaN(newDays) || newDays < 1 || newDays > 365) {
             alert('Veuillez entrer un nombre de jours valide (entre 1 et 365).');
             return;
         }
-        
+
         // Enregistrer la nouvelle valeur
         revisitDays[editingDaysForSection] = newDays;
-        
+
         // Sauvegarder dans localStorage
         saveRevisitSettings();
-        
+
         // Mettre à jour les titres
         updateRevisitTitles();
-        
+
         // Mettre à jour l'affichage des notes
         renderRevisitSections();
-        
+
         // Fermer le modal
         daysEditModal.style.display = 'none';
-        
+
         // Réinitialiser la section en cours d'édition
         editingDaysForSection = null;
     }
