@@ -1089,11 +1089,30 @@ document.addEventListener('DOMContentLoaded', () => {
         const title1 = revisitSection1?.querySelector('.revisit-title');
         const title2 = revisitSection2?.querySelector('.revisit-title');
         
+        // Calculer les dates de référence
+        const now = new Date();
+        
+        const date1 = new Date(now);
+        date1.setDate(date1.getDate() - revisitDays.section1);
+        const formattedDate1 = date1.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+        
+        const date2 = new Date(now);
+        date2.setDate(date2.getDate() - revisitDays.section2);
+        const formattedDate2 = date2.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+        
         if (title1) {
-            title1.textContent = `Il y a ${revisitDays.section1} jours`;
+            title1.textContent = `Notes du ${formattedDate1}`;
         }
         if (title2) {
-            title2.textContent = `Il y a ${revisitDays.section2} jours`;
+            title2.textContent = `Notes du ${formattedDate2}`;
         }
     }
     
@@ -1122,21 +1141,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function getNotesForDate(targetDate) {
-        // Obtenir les notes créées à la date cible, avec une marge de +/- 1 jour
-        const targetDateStr = targetDate.toDateString();
-        const dayBefore = new Date(targetDate);
-        dayBefore.setDate(dayBefore.getDate() - 1);
-        const dayBeforeStr = dayBefore.toDateString();
-        const dayAfter = new Date(targetDate);
-        dayAfter.setDate(dayAfter.getDate() + 1);
-        const dayAfterStr = dayAfter.toDateString();
+        // Obtenir les notes créées exactement à la date cible
+        // Format de date pour comparaison (YYYY-MM-DD)
+        const targetYear = targetDate.getFullYear();
+        const targetMonth = targetDate.getMonth();
+        const targetDay = targetDate.getDate();
         
         return notes.filter(note => {
             const noteDate = new Date(note.createdAt);
-            const noteDateStr = noteDate.toDateString();
-            return noteDateStr === targetDateStr || 
-                   noteDateStr === dayBeforeStr || 
-                   noteDateStr === dayAfterStr;
+            return noteDate.getFullYear() === targetYear && 
+                   noteDate.getMonth() === targetMonth && 
+                   noteDate.getDate() === targetDay;
         });
     }
     
