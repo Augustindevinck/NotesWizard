@@ -21,12 +21,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const importFile = document.getElementById('import-file');
     const importStatus = document.getElementById('import-status');
     const modalCloseButtons = document.querySelectorAll('.close');
+    
+    // Éléments pour les sections de révision
+    const revisitSection1 = document.getElementById('revisit-section-1');
+    const revisitSection2 = document.getElementById('revisit-section-2');
+    const revisitNotes1 = document.getElementById('revisit-notes-1');
+    const revisitNotes2 = document.getElementById('revisit-notes-2');
+    const showMoreBtn1 = document.getElementById('show-more-1');
+    const showMoreBtn2 = document.getElementById('show-more-2');
+    const editDaysBtns = document.querySelectorAll('.edit-days-btn');
+    const daysEditModal = document.getElementById('days-edit-modal');
+    const daysInput = document.getElementById('days-input');
+    const saveDaysBtn = document.getElementById('save-days-btn');
 
     // Application state
     let notes = [];
     let currentNoteId = null;
     let allCategories = new Set();
     let currentSearchTerms = []; // Pour stocker les mots de la recherche actuelle
+    let editingDaysForSection = null; // Pour savoir quelle section est en cours d'édition
+    
+    // Valeurs par défaut pour le nombre de jours à revisiter
+    let revisitDays = {
+        section1: 7,
+        section2: 14
+    };
 
     // Initialize the application
     init();
@@ -34,8 +53,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         // Load notes from localStorage
         loadNotes();
-        // Affiche un état vide au démarrage (pas de notes)
+        
+        // Charger les paramètres de révision depuis localStorage
+        loadRevisitSettings();
+        
+        // Affiche un état vide au démarrage (pas de notes) dans la section principale
         renderEmptyState();
+        
+        // Afficher les notes à revisiter
+        renderRevisitSections();
+        
         // Set up event listeners
         setupEventListeners();
     }

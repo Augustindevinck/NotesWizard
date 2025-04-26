@@ -554,6 +554,135 @@ header {
     display: block;
 }
 
+/* Sections de révision */
+.revisit-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 40vh;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.revisit-section {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    padding: 15px;
+    flex: 1;
+}
+
+.revisit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.revisit-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.edit-days-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    margin: 0;
+    color: var(--light-text);
+}
+
+.edit-days-btn:hover {
+    color: var(--primary-color);
+}
+
+.revisit-notes {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.revisit-note {
+    padding: 8px 10px;
+    border-radius: var(--border-radius);
+    background-color: var(--secondary-color);
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+}
+
+.revisit-note:hover {
+    background-color: rgba(74, 107, 250, 0.1);
+}
+
+.show-more-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.show-more-btn {
+    border: none;
+    background-color: transparent;
+    color: var(--primary-color);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 20px;
+    transition: var(--transition);
+}
+
+.show-more-btn:hover {
+    background-color: rgba(74, 107, 250, 0.1);
+}
+
+.days-edit-content {
+    max-width: 400px;
+}
+
+.days-input-container {
+    margin: 20px 0;
+}
+
+.days-input-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+#days-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 16px;
+}
+
+#save-days-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 16px;
+    transition: var(--transition);
+}
+
+#save-days-btn:hover {
+    background-color: #3a59e0;
+}
+
 /* Empty state */
 .empty-state {
     text-align: center;

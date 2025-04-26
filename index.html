@@ -30,9 +30,49 @@
             </div>
         </header>
 
+        <div class="revisit-sections">
+            <div class="revisit-section" id="revisit-section-1">
+                <div class="revisit-header">
+                    <h3 class="revisit-title">Il y a 7 jours</h3>
+                    <button class="edit-days-btn" title="Modifier le nombre de jours">⚙️</button>
+                </div>
+                <div class="revisit-notes" id="revisit-notes-1">
+                    <!-- Notes from X days ago will be added here -->
+                </div>
+                <div class="show-more-container">
+                    <button class="show-more-btn" id="show-more-1" style="display: none;">Voir plus</button>
+                </div>
+            </div>
+
+            <div class="revisit-section" id="revisit-section-2">
+                <div class="revisit-header">
+                    <h3 class="revisit-title">Il y a 14 jours</h3>
+                    <button class="edit-days-btn" title="Modifier le nombre de jours">⚙️</button>
+                </div>
+                <div class="revisit-notes" id="revisit-notes-2">
+                    <!-- Notes from X days ago will be added here -->
+                </div>
+                <div class="show-more-container">
+                    <button class="show-more-btn" id="show-more-2" style="display: none;">Voir plus</button>
+                </div>
+            </div>
+        </div>
+        
         <main id="notes-container" class="notes-container">
-            <!-- Notes will be dynamically added here -->
+            <!-- Search results will be dynamically added here -->
         </main>
+        
+        <div id="days-edit-modal" class="modal">
+            <div class="modal-content days-edit-content">
+                <span class="close">&times;</span>
+                <h2>Modifier le nombre de jours</h2>
+                <div class="days-input-container">
+                    <label for="days-input">Nombre de jours :</label>
+                    <input type="number" id="days-input" min="1" max="365" step="1">
+                </div>
+                <button id="save-days-btn">Enregistrer</button>
+            </div>
+        </div>
 
         <div id="import-export-modal" class="modal">
             <div class="modal-content">
