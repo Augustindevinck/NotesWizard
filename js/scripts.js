@@ -295,6 +295,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openNoteModal(note = null, fromSearch = false) {
+        const viewMode = document.getElementById('note-view-mode');
+        const editMode = document.getElementById('note-edit-mode');
+        const viewTitle = document.getElementById('note-view-title');
+        const viewContent = document.getElementById('note-view-content');
+        const editButton = document.getElementById('edit-note-btn');
+
         // Clear previous note data
         noteTitle.value = '';
         noteContent.value = '';
@@ -303,11 +309,24 @@ document.addEventListener('DOMContentLoaded', () => {
         currentNoteId = null;
         document.getElementById('note-video-url').value = ''; // Clear video URL field
 
+        // Configure edit button
+        editButton.onclick = () => {
+            viewMode.classList.add('hidden');
+            editMode.classList.remove('hidden');
+            noteTitle.focus();
+        };
+
         // Par défaut, masquer le bouton de suppression (pour nouvelle note)
         deleteNoteBtn.classList.add('hidden');
 
         if (note) {
-            // Edit existing note
+            // Afficher en mode consultation
+            viewMode.classList.remove('hidden');
+            editMode.classList.add('hidden');
+            viewTitle.textContent = note.title || 'Sans titre';
+            viewContent.textContent = note.content || '';
+            
+            // Préparer le mode édition
             noteTitle.value = note.title || '';
             noteContent.value = note.content || '';
             currentNoteId = note.id;
@@ -346,11 +365,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Pour une nouvelle note, afficher directement en mode édition
+        if (!note) {
+            viewMode.classList.add('hidden');
+            editMode.classList.remove('hidden');
+        }
+
         // Display the modal
         noteModal.style.display = 'block';
 
-        // Focus on title if empty, otherwise focus on content
-        if (!noteTitle.value) {
+        // Focus on title if in edit mode and empty
+        if (!viewMode.classList.contains('hidden')) {
+            viewContent.focus();
+        } else if (!noteTitle.value) {
             noteTitle.focus();
         } else {
             noteContent.focus();

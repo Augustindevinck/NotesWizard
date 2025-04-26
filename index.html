@@ -99,8 +99,14 @@
         <div id="note-modal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
-                <input type="text" id="note-title" placeholder="Titre" aria-label="Titre de la note">
-                <textarea id="note-content" placeholder="Contenu (utilisez #hashtag pour ajouter des tags)" aria-label="Contenu de la note"></textarea>
+                <div id="note-view-mode">
+                    <h2 id="note-view-title"></h2>
+                    <div id="note-view-content"></div>
+                    <button id="edit-note-btn" class="edit-button">Éditer</button>
+                </div>
+                <div id="note-edit-mode" class="hidden">
+                    <input type="text" id="note-title" placeholder="Titre" aria-label="Titre de la note">
+                    <textarea id="note-content" placeholder="Contenu (utilisez #hashtag pour ajouter des tags)" aria-label="Contenu de la note"></textarea>
                 
                 <div class="categories-container">
                     <div class="categories-label">Catégories:</div>
@@ -121,7 +127,8 @@
                 </div>
                 
                 <button id="save-note-btn">Enregistrer</button>
-                <button id="delete-note-btn" class="hidden">Supprimer la note</button>
+                    <button id="delete-note-btn" class="hidden">Supprimer la note</button>
+                </div>
             </div>
         </div>
 

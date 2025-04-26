@@ -122,6 +122,38 @@ header {
     border-bottom: none;
 }
 
+/* Styles pour la vue consultation */
+#note-view-mode {
+    padding: 20px 0;
+}
+
+#note-view-title {
+    font-size: 24px;
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+
+#note-view-content {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    color: var(--text-color);
+}
+
+.edit-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.edit-button:hover {
+    background-color: #3a59e0;
+}
+
 /* Style des termes en surbrillance dans les suggestions */
 .search-result-item .highlighted-term {
     font-weight: bold;
