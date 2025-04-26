@@ -284,6 +284,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Revenir à l'état vide
                 renderEmptyState();
+                
+                // Mettre à jour les sections de révision
+                renderRevisitSections();
             }
         }
     }
@@ -518,6 +521,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close modal and revenir à l'état vide
         noteModal.style.display = 'none';
         renderEmptyState();
+        
+        // Mettre à jour les sections de révision
+        renderRevisitSections();
     }
 
     function generateUniqueId() {
@@ -1004,7 +1010,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Save to localStorage and refresh display
                 saveNotes();
-                renderNotes();
+                renderEmptyState();
+                renderRevisitSections();
                 
                 // Show success message
                 importStatus.textContent = `Import réussi ! ${newNotes.length} nouvelle(s) note(s) ajoutée(s)` + 
@@ -1024,5 +1031,249 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         
         reader.readAsText(file);
+    }
+    
+    // Fonctions pour les sections de révision
+    
+    function loadRevisitSettings() {
+        // Charger les paramètres de révision depuis localStorage
+        const storedSettings = localStorage.getItem('revisitDays');
+        if (storedSettings) {
+            revisitDays = JSON.parse(storedSettings);
+        }
+        updateRevisitTitles();
+        
+        // Ajouter les écouteurs d'événements pour les boutons d'édition
+        editDaysBtns.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                const section = `section${index + 1}`;
+                openDaysEditModal(section);
+            });
+        });
+        
+        // Ajouter les écouteurs pour les boutons "Voir plus"
+        if (showMoreBtn1) {
+            showMoreBtn1.addEventListener('click', () => showMoreNotes('section1'));
+        }
+        if (showMoreBtn2) {
+            showMoreBtn2.addEventListener('click', () => showMoreNotes('section2'));
+        }
+        
+        // Écouteur pour fermer le modal d'édition de jours
+        const daysModalCloseBtn = document.querySelector('#days-edit-modal .close');
+        if (daysModalCloseBtn) {
+            daysModalCloseBtn.addEventListener('click', () => {
+                daysEditModal.style.display = 'none';
+            });
+        }
+        
+        // Écouteur pour enregistrer les modifications
+        if (saveDaysBtn) {
+            saveDaysBtn.addEventListener('click', saveDaysSettings);
+        }
+        
+        // Fermer le modal si clic à l'extérieur
+        window.addEventListener('click', (event) => {
+            if (event.target === daysEditModal) {
+                daysEditModal.style.display = 'none';
+            }
+        });
+    }
+    
+    function saveRevisitSettings() {
+        localStorage.setItem('revisitDays', JSON.stringify(revisitDays));
+    }
+    
+    function updateRevisitTitles() {
+        // Mettre à jour les titres des sections avec le nombre de jours configuré
+        const title1 = revisitSection1?.querySelector('.revisit-title');
+        const title2 = revisitSection2?.querySelector('.revisit-title');
+        
+        if (title1) {
+            title1.textContent = `Il y a ${revisitDays.section1} jours`;
+        }
+        if (title2) {
+            title2.textContent = `Il y a ${revisitDays.section2} jours`;
+        }
+    }
+    
+    function renderRevisitSections() {
+        if (!revisitNotes1 || !revisitNotes2) return;
+        
+        // Vider les conteneurs de notes
+        revisitNotes1.innerHTML = '';
+        revisitNotes2.innerHTML = '';
+        
+        // Calculer les dates de référence pour chaque section
+        const now = new Date();
+        const date1 = new Date(now);
+        date1.setDate(date1.getDate() - revisitDays.section1);
+        
+        const date2 = new Date(now);
+        date2.setDate(date2.getDate() - revisitDays.section2);
+        
+        // Filtrer les notes pour chaque section
+        const notesForSection1 = getNotesForDate(date1);
+        const notesForSection2 = getNotesForDate(date2);
+        
+        // Afficher les notes (max 3 visibles par défaut)
+        renderRevisitNotesForSection(notesForSection1, revisitNotes1, showMoreBtn1, 'section1');
+        renderRevisitNotesForSection(notesForSection2, revisitNotes2, showMoreBtn2, 'section2');
+    }
+    
+    function getNotesForDate(targetDate) {
+        // Obtenir les notes créées à la date cible, avec une marge de +/- 1 jour
+        const targetDateStr = targetDate.toDateString();
+        const dayBefore = new Date(targetDate);
+        dayBefore.setDate(dayBefore.getDate() - 1);
+        const dayBeforeStr = dayBefore.toDateString();
+        const dayAfter = new Date(targetDate);
+        dayAfter.setDate(dayAfter.getDate() + 1);
+        const dayAfterStr = dayAfter.toDateString();
+        
+        return notes.filter(note => {
+            const noteDate = new Date(note.createdAt);
+            const noteDateStr = noteDate.toDateString();
+            return noteDateStr === targetDateStr || 
+                   noteDateStr === dayBeforeStr || 
+                   noteDateStr === dayAfterStr;
+        });
+    }
+    
+    function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sectionId) {
+        if (notesToRender.length === 0) {
+            container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
+            if (showMoreBtn) {
+                showMoreBtn.style.display = 'none';
+            }
+            return;
+        }
+        
+        // Pour l'affichage compact, montrer max 3 notes par défaut
+        const initialCount = Math.min(3, notesToRender.length);
+        const hasMore = notesToRender.length > initialCount;
+        
+        // Créer les éléments pour les 3 premières notes
+        notesToRender.slice(0, initialCount).forEach(note => {
+            const noteElement = createRevisitNoteElement(note);
+            container.appendChild(noteElement);
+        });
+        
+        // Afficher ou masquer le bouton "Voir plus"
+        if (showMoreBtn) {
+            showMoreBtn.style.display = hasMore ? 'block' : 'none';
+        }
+        
+        // Stocker toutes les notes pour ce jour dans un attribut data pour "Voir plus"
+        container.dataset.allNotes = JSON.stringify(notesToRender.map(note => note.id));
+        container.dataset.expandedView = 'false';
+    }
+    
+    function createRevisitNoteElement(note) {
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'revisit-note';
+        noteDiv.dataset.id = note.id;
+        noteDiv.textContent = note.title || note.content.substring(0, 40) + '...';
+        
+        // Ajouter un écouteur d'événements pour ouvrir la note
+        noteDiv.addEventListener('click', () => {
+            openNoteModal(note, false);
+        });
+        
+        return noteDiv;
+    }
+    
+    function showMoreNotes(sectionId) {
+        const container = sectionId === 'section1' ? revisitNotes1 : revisitNotes2;
+        const showMoreBtn = sectionId === 'section1' ? showMoreBtn1 : showMoreBtn2;
+        
+        if (!container || !showMoreBtn) return;
+        
+        // Vérifier si on est déjà en vue étendue
+        if (container.dataset.expandedView === 'true') {
+            // Réduire la vue
+            container.dataset.expandedView = 'false';
+            
+            // Supprimer toutes les notes actuelles
+            container.innerHTML = '';
+            
+            // Récupérer les IDs de toutes les notes et les objets correspondants
+            const noteIds = JSON.parse(container.dataset.allNotes);
+            const notesToRender = noteIds.map(id => notes.find(note => note.id === id)).filter(Boolean);
+            
+            // Afficher seulement les 3 premières
+            const initialCount = Math.min(3, notesToRender.length);
+            notesToRender.slice(0, initialCount).forEach(note => {
+                const noteElement = createRevisitNoteElement(note);
+                container.appendChild(noteElement);
+            });
+            
+            // Changer le texte du bouton
+            showMoreBtn.textContent = 'Voir plus';
+        } else {
+            // Étendre la vue
+            container.dataset.expandedView = 'true';
+            
+            // Récupérer toutes les notes et les afficher
+            const noteIds = JSON.parse(container.dataset.allNotes);
+            const notesToRender = noteIds.map(id => notes.find(note => note.id === id)).filter(Boolean);
+            
+            // Supprimer les notes actuelles
+            container.innerHTML = '';
+            
+            // Ajouter toutes les notes
+            notesToRender.forEach(note => {
+                const noteElement = createRevisitNoteElement(note);
+                container.appendChild(noteElement);
+            });
+            
+            // Changer le texte du bouton
+            showMoreBtn.textContent = 'Voir moins';
+        }
+    }
+    
+    function openDaysEditModal(sectionId) {
+        // Stocker la section en cours d'édition
+        editingDaysForSection = sectionId;
+        
+        // Préremplir avec la valeur actuelle
+        daysInput.value = revisitDays[sectionId];
+        
+        // Afficher le modal
+        daysEditModal.style.display = 'block';
+        
+        // Focus sur l'input
+        daysInput.focus();
+    }
+    
+    function saveDaysSettings() {
+        if (!editingDaysForSection) return;
+        
+        // Récupérer la nouvelle valeur
+        const newDays = parseInt(daysInput.value, 10);
+        
+        // Vérifier que c'est un nombre valide
+        if (isNaN(newDays) || newDays < 1 || newDays > 365) {
+            alert('Veuillez entrer un nombre de jours valide (entre 1 et 365).');
+            return;
+        }
+        
+        // Enregistrer la nouvelle valeur
+        revisitDays[editingDaysForSection] = newDays;
+        
+        // Sauvegarder dans localStorage
+        saveRevisitSettings();
+        
+        // Mettre à jour les titres
+        updateRevisitTitles();
+        
+        // Mettre à jour l'affichage des notes
+        renderRevisitSections();
+        
+        // Fermer le modal
+        daysEditModal.style.display = 'none';
+        
+        // Réinitialiser la section en cours d'édition
+        editingDaysForSection = null;
     }
 });
