@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let notes = [];
     let currentNoteId = null;
     let allCategories = new Set();
+    let currentSearchTerms = []; // Pour stocker les mots de la recherche actuelle
 
     // Initialize the application
     init();
@@ -68,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentNoteId) {
                 if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
                     deleteNote(currentNoteId);
+                    cleanupHighlightedElements();
                     noteModal.style.display = 'none';
                 }
             }
@@ -86,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close modals when clicking on close button or outside
         modalCloseButtons.forEach(button => {
             button.addEventListener('click', () => {
+                cleanupHighlightedElements();
                 noteModal.style.display = 'none';
                 importExportModal.style.display = 'none';
             });
@@ -93,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('click', (event) => {
             if (event.target === noteModal) {
+                cleanupHighlightedElements();
                 noteModal.style.display = 'none';
             }
             if (event.target === importExportModal) {
@@ -108,6 +112,28 @@ document.addEventListener('DOMContentLoaded', () => {
         exportBtn.addEventListener('click', exportNotes);
         importBtn.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', importNotes);
+    }
+    
+    // Fonction pour nettoyer tous les éléments surlignés
+    function cleanupHighlightedElements() {
+        // Restaurer les inputs originaux
+        const highlightedElements = document.querySelectorAll('.highlighted-content');
+        highlightedElements.forEach(el => {
+            const prev = el.previousElementSibling;
+            if (prev && (prev.tagName === 'INPUT' || prev.tagName === 'TEXTAREA')) {
+                prev.style.display = '';
+            }
+            el.parentNode.removeChild(el);
+        });
+        
+        // Restaurer les tags originaux (catégories et hashtags)
+        const highlightedTags = document.querySelectorAll('.category-tag, .hashtag-tag');
+        highlightedTags.forEach(tag => {
+            if (tag.dataset.originalContent) {
+                tag.textContent = tag.dataset.originalContent;
+                delete tag.dataset.originalContent;
+            }
+        });
     }
 
     function renderNotes(filteredNotes = null) {
@@ -173,7 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 deleteNote(note.id);
                 return;
             }
-            openNoteModal(note);
+            
+            // Vérifier si on vient d'une recherche (si des termes de recherche sont actifs)
+            const fromSearch = currentSearchTerms.length > 0;
+            openNoteModal(note, fromSearch);
         });
 
         // Add specific click handler for delete button
@@ -205,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function openNoteModal(note = null) {
+    function openNoteModal(note = null, fromSearch = false) {
         // Clear previous note data
         noteTitle.value = '';
         noteContent.value = '';
@@ -238,6 +267,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     addHashtagTag(tag);
                 });
             }
+            
+            // Si on vient d'une recherche et qu'il y a des termes à surligner
+            if (fromSearch && currentSearchTerms.length > 0) {
+                // Surligner les termes dans le titre et le contenu
+                highlightSearchTerms(noteTitle);
+                highlightSearchTerms(noteContent);
+                
+                // Surligner dans les catégories et hashtags
+                highlightSearchTermsInTags(selectedCategories, '.category-tag');
+                highlightSearchTermsInTags(detectedHashtags, '.hashtag-tag');
+            }
         }
 
         // Display the modal
@@ -250,8 +290,127 @@ document.addEventListener('DOMContentLoaded', () => {
             noteContent.focus();
         }
     }
+    
+    // Fonction pour surligner les termes de recherche dans un élément input/textarea
+    function highlightSearchTerms(inputElement) {
+        // Sauvegarder la position du curseur
+        const startPos = inputElement.selectionStart;
+        const endPos = inputElement.selectionEnd;
+        
+        // Récupérer la valeur de l'élément
+        let content = inputElement.value;
+        
+        // Surligner chaque terme de recherche
+        currentSearchTerms.forEach(term => {
+            if (term.length > 1) {
+                // Créer une expression régulière pour trouver le terme (insensible à la casse)
+                const regex = new RegExp(term, 'gi');
+                
+                // Construire un wrapper temporaire autour du terme trouvé
+                content = content.replace(regex, match => {
+                    return `§§HIGHLIGHT_START§§${match}§§HIGHLIGHT_END§§`;
+                });
+            }
+        });
+        
+        // Si des surlignages ont été ajoutés
+        if (content.includes('§§HIGHLIGHT_START§§')) {
+            // Créer un div pour afficher le contenu surligné
+            const highlightedDiv = document.createElement('div');
+            highlightedDiv.className = 'highlighted-content';
+            highlightedDiv.contentEditable = true;
+            highlightedDiv.style.width = '100%';
+            highlightedDiv.style.minHeight = inputElement.offsetHeight + 'px';
+            highlightedDiv.style.padding = window.getComputedStyle(inputElement).padding;
+            highlightedDiv.style.border = inputElement.style.border;
+            highlightedDiv.style.borderRadius = inputElement.style.borderRadius;
+            highlightedDiv.style.fontFamily = window.getComputedStyle(inputElement).fontFamily;
+            highlightedDiv.style.fontSize = window.getComputedStyle(inputElement).fontSize;
+            highlightedDiv.style.lineHeight = window.getComputedStyle(inputElement).lineHeight;
+            highlightedDiv.style.overflowY = 'auto';
+            
+            // Remplacer les marqueurs par des spans avec la classe CSS pour le surlignage
+            content = content.replace(/§§HIGHLIGHT_START§§(.*?)§§HIGHLIGHT_END§§/g, '<span class="highlighted-term">$1</span>');
+            
+            // Définir le contenu surligné
+            highlightedDiv.innerHTML = content;
+            
+            // Cacher l'élément original et ajouter le div surligné
+            inputElement.style.display = 'none';
+            inputElement.parentNode.insertBefore(highlightedDiv, inputElement.nextSibling);
+            
+            // Synchroniser le contenu lors de l'édition
+            highlightedDiv.addEventListener('input', () => {
+                // Mettre à jour la valeur de l'input original
+                inputElement.value = highlightedDiv.innerText;
+                
+                // Déclencher l'événement input pour les fonctions comme detectHashtags
+                const event = new Event('input', { bubbles: true });
+                inputElement.dispatchEvent(event);
+            });
+            
+            // Restaurer l'input original lorsque le modal est fermé
+            const restoreInput = () => {
+                if (highlightedDiv.parentNode) {
+                    inputElement.style.display = '';
+                    highlightedDiv.parentNode.removeChild(highlightedDiv);
+                }
+            };
+            
+            // Ajouter un gestionnaire pour restaurer l'input lors de la fermeture du modal
+            modalCloseButtons.forEach(btn => {
+                const originalHandler = btn.onclick;
+                btn.onclick = () => {
+                    restoreInput();
+                    if (originalHandler) originalHandler();
+                };
+            });
+            
+            // Également restaurer lors du clic sur le bouton Enregistrer
+            const originalSaveHandler = saveNoteBtn.onclick;
+            saveNoteBtn.onclick = () => {
+                restoreInput();
+                if (originalSaveHandler) originalSaveHandler();
+            };
+        }
+    }
+    
+    // Fonction pour surligner les termes de recherche dans les tags (catégories et hashtags)
+    function highlightSearchTermsInTags(container, selector) {
+        if (!container) return;
+        
+        const tags = container.querySelectorAll(selector);
+        
+        tags.forEach(tag => {
+            const originalText = tag.textContent;
+            let newText = originalText;
+            
+            currentSearchTerms.forEach(term => {
+                if (term.length > 1) {
+                    // Créer une expression régulière pour trouver le terme (insensible à la casse)
+                    const regex = new RegExp(term, 'gi');
+                    
+                    // Remplacer par le terme surligné
+                    newText = newText.replace(regex, match => {
+                        return `<span class="highlighted-term">${match}</span>`;
+                    });
+                }
+            });
+            
+            // Si des modifications ont été apportées
+            if (newText !== originalText) {
+                // Sauvegarder le contenu original pour restauration ultérieure
+                tag.dataset.originalContent = originalText;
+                // Appliquer le nouveau contenu avec surlignage
+                tag.innerHTML = newText;
+            }
+        });
+    }
 
     function saveNote() {
+        // Nettoyer les éléments surlignés en premier pour s'assurer d'avoir les données originales
+        cleanupHighlightedElements();
+        
         const title = noteTitle.value.trim();
         const content = noteContent.value.trim();
         
@@ -265,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Get selected categories
         const categories = Array.from(selectedCategories.querySelectorAll('.category-tag'))
-            .map(tag => tag.dataset.value);
+            .map(tag => tag.dataset.value || tag.textContent.replace(/×$/, '').trim());
 
         // Add categories to the global set
         categories.forEach(category => allCategories.add(category));
@@ -423,9 +582,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (query === '') {
             searchResults.innerHTML = '';
             searchResults.classList.remove('active');
+            currentSearchTerms = []; // Réinitialiser les termes de recherche
             renderNotes();
             return;
         }
+        
+        // Enregistrer les termes de recherche (mots individuels)
+        currentSearchTerms = query.split(/\s+/).filter(term => term.length > 1);
         
         // Perform search
         const searchResultItems = performSearch(query);
@@ -439,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 resultItem.className = 'search-result-item';
                 resultItem.textContent = result.note.title || result.note.content.substring(0, 30) + '...';
                 resultItem.addEventListener('click', () => {
-                    openNoteModal(result.note);
+                    openNoteModal(result.note, true); // Passer true pour indiquer qu'on vient d'une recherche
                     searchResults.innerHTML = '';
                     searchResults.classList.remove('active');
                 });

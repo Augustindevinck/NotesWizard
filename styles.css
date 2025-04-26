@@ -458,6 +458,14 @@ header {
     display: none;
 }
 
+/* Style pour les termes de recherche surlignés */
+.highlighted-term {
+    font-weight: bold;
+    color: var(--primary-color);
+    background-color: rgba(74, 107, 250, 0.1);
+    padding: 0 2px;
+}
+
 /* Import/Export modal */
 .modal-buttons {
     display: flex;
