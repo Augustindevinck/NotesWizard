@@ -41,12 +41,12 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     position: sticky;
     top: 0;
     z-index: 10;
     background-color: #fafafa;
-    padding: 10px 0;
+    padding: 5px 0;
 }
 
 .search-container {
@@ -603,7 +603,7 @@ header {
     background-color: white;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
-    padding: 2vh;
+    padding: 1vh;
     flex: 1;
     min-height: 0;
     max-height: 16vh;
@@ -615,9 +615,9 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5vh;
+    margin-bottom: 0.8vh;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.8vh;
+    padding-bottom: 0.4vh;
 }
 
 .revisit-title {
@@ -649,7 +649,7 @@ header {
 }
 
 .revisit-note {
-    padding: 1.2vh 1.5vh;
+    padding: 0.6vh 1vh;
     border-radius: var(--border-radius);
     background-color: var(--secondary-color);
     cursor: pointer;
@@ -658,7 +658,7 @@ header {
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: clamp(0.85rem, 1.4vw, 1rem);
-    margin-bottom: 0.8vh;
+    margin-bottom: 0.4vh;
     border: 1px solid transparent;
 }
 
