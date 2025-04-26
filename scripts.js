@@ -34,10 +34,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         // Load notes from localStorage
         loadNotes();
-        // Display notes
-        renderNotes();
+        // Affiche un état vide au démarrage (pas de notes)
+        renderEmptyState();
         // Set up event listeners
         setupEventListeners();
+    }
+    
+    function renderEmptyState() {
+        notesContainer.innerHTML = `
+            <div class="empty-state">
+                <h2>Bienvenue dans votre application de notes</h2>
+                <p>Utilisez la barre de recherche pour trouver des notes ou cliquez sur le bouton + pour en créer une nouvelle</p>
+            </div>
+        `;
     }
 
     function loadNotes() {
@@ -243,8 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Save to localStorage
                 saveNotes();
                 
-                // Re-render notes
-                renderNotes();
+                // Revenir à l'état vide
+                renderEmptyState();
             }
         }
     }
@@ -476,9 +485,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Save to localStorage
         saveNotes();
         
-        // Close modal and refresh notes display
+        // Close modal and revenir à l'état vide
         noteModal.style.display = 'none';
-        renderNotes();
+        renderEmptyState();
     }
 
     function generateUniqueId() {
@@ -598,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchResults.innerHTML = '';
             searchResults.classList.remove('active');
             currentSearchTerms = []; // Réinitialiser les termes de recherche
-            renderNotes();
+            renderEmptyState(); // Afficher l'état vide au lieu de toutes les notes
             return;
         }
         
