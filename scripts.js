@@ -654,16 +654,45 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
-                // Replace current notes or merge them
-                if (confirm('Voulez-vous remplacer toutes vos notes actuelles par les notes importées ? Cliquez sur Annuler pour ajouter les notes importées à vos notes existantes.')) {
-                    notes = importedNotes;
-                } else {
-                    // Merge while avoiding duplicates by ID
-                    const existingIds = new Set(notes.map(note => note.id));
-                    importedNotes.forEach(note => {
-                        if (!existingIds.has(note.id)) {
-                            notes.push(note);
-                            existingIds.add(note.id);
+                // Identifier les notes en double
+                const existingNoteIds = new Map();
+                notes.forEach(note => existingNoteIds.set(note.id, note));
+                
+                // Séparer les notes nouvelles et existantes
+                const newNotes = [];
+                const overlappingNotes = [];
+                
+                importedNotes.forEach(importedNote => {
+                    if (existingNoteIds.has(importedNote.id)) {
+                        overlappingNotes.push({
+                            existing: existingNoteIds.get(importedNote.id),
+                            imported: importedNote
+                        });
+                    } else {
+                        newNotes.push(importedNote);
+                    }
+                });
+                
+                // Ajouter les nouvelles notes
+                notes.push(...newNotes);
+                
+                // Demander quoi faire pour les notes existantes avec le même ID
+                let notesUpdated = 0;
+                if (overlappingNotes.length > 0) {
+                    const keepExisting = confirm(
+                        `${overlappingNotes.length} note(s) avec des identifiants existants ont été trouvées. ` +
+                        `Cliquez sur OK pour conserver les notes existantes, ou sur Annuler pour les remplacer par les versions importées.`
+                    );
+                    
+                    overlappingNotes.forEach(pair => {
+                        const noteIndex = notes.findIndex(note => note.id === pair.existing.id);
+                        if (noteIndex !== -1) {
+                            if (!keepExisting) {
+                                // Remplacer par la note importée
+                                notes[noteIndex] = pair.imported;
+                                notesUpdated++;
+                            }
+                            // Si keepExisting est true, on ne fait rien (garde la note existante)
                         }
                     });
                 }
@@ -681,7 +710,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderNotes();
                 
                 // Show success message
-                importStatus.textContent = `Import réussi ! ${importedNotes.length} note(s) importée(s).`;
+                importStatus.textContent = `Import réussi ! ${newNotes.length} nouvelle(s) note(s) ajoutée(s)` + 
+                    (overlappingNotes.length > 0 ? ` et ${notesUpdated} note(s) existante(s) mise(s) à jour.` : '.');
                 importStatus.className = 'success';
                 importStatus.style.display = 'block';
                 
