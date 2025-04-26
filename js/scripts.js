@@ -187,12 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notesContainer.innerHTML = '';
 
         if (notesToRender.length === 0) {
-            notesContainer.innerHTML = `
-                <div class="empty-state">
-                    <h2>Pas de notes pour le moment</h2>
-                    <p>Cliquez sur le bouton + pour créer votre première note</p>
-                </div>
-            `;
+            notesContainer.innerHTML = '';
             return;
         }
 
@@ -324,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Masquer les URLs YouTube dans le contenu affiché
             const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
             viewContent.textContent = displayContent;
-            
+
             // Préparer le mode édition
             noteTitle.value = note.title || '';
             noteContent.value = note.content || '';
@@ -516,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const title = noteTitle.value.trim();
         const content = noteContent.value.trim();
-        
+
         if (!content) {
             alert('Le contenu de la note ne peut pas être vide.');
             return;
@@ -683,9 +678,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function extractYoutubeUrls(content) {
         const youtubeRegex = /\[\[(.*?)\]\]/g;
         const matches = content.match(youtubeRegex);
-        
+
         if (!matches) return [];
-        
+
         return matches.map(match => {
             const url = match.slice(2, -2);
             // Extraire l'ID de la vidéo YouTube
