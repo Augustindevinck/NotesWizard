@@ -1,0 +1,36 @@
+Je veux faire une web app en utilisant uniquement du javascript simple, html et CSS. Je ne veux pas de librairies ou de framework (même pas de node js). 
+
+Cette webapp me permet de prendre des notes rapidement, et de les trier
+
+Sur la page d'accueil une barre de recherche vers la partie haute de la l’écran 
+
+Vers le bas de l’écran au centre, un bouton principal rond avec un +, qui permet d’écrire et ajouter rapidement une nouvelle note.
+
+Tout en bas je peux choisir les catégories (si catégorie n’existe pas ça la crée, en écrivant il y a des suggestions d’autocompletion). Lors de l’écriture d’une catégorie, en mettant un semicolon (“;”) alors ça ferme la catégorie (et n’affiche pas le semicolon).
+
+J’aimerais que les notes soient stockées en JSON (ID unique, date de création, date de modification, title, content, categories, et hashtags)
+
+Une note peut être dans plusieurs catégories à la fois. Comme expliqué les catégories sont sélectionnées en dessous de la zone de note.
+
+Dans la zone de note, lorsque j’écris en mettant un # hashtag, alors cela enregistre le mot qui est associé à ce hashtag dans le json de la note. 
+
+La barre de recherche doit permettre de retrouver les notes en écrivant des termes de recherche. Elle utilise à la fois les éléments du title, le hashtag et les catégories, pour trouver les notes les plus appropriées. 
+
+Informations concernant le système de recherche : La recherche doit s'effectuer sur les champs title, content, hashtags, et categories de chaque note.
+Lors de la saisie dans la barre de recherche :
+Nettoyer la requête : transformer en minuscules (toLowerCase()), supprimer les accents (normalize('NFD').replace(/\p{Diacritic}/gu, '')), retirer les espaces inutiles.
+Nettoyer également les données des notes de la même manière avant comparaison.
+Deux étapes de recherche :
+Recherche stricte : vérifier si la requête est incluse (includes()) dans le texte ou dans un élément (hashtag, catégorie).
+Recherche tolérante aux erreurs si aucune correspondance stricte trouvée :
+Utiliser l'algorithme de distance de Levenshtein.
+Comparer la requête à chaque mot des champs cibles (title, content, hashtags, categories).
+
+Considérer un match si la distance de Levenshtein est ≤ 2 caractères.
+L'algorithme de Levenshtein doit être codé manuellement en JavaScript natif (pas de librairie).
+Retourner et afficher les notes ayant au moins un champ correspondant à ces critères.
+Plus la note se rapproche du search term, plus elle est affichée en haut grace à son score
+
+Une note doit pouvoir être consultée et modifiée
+
+Enfin, l’ensemble des notes doit pouvoir être exportée en json, mais également importée, de façon fluide et rapide, grâce à un bouton d’export/import disponible sur la page d’accueil
