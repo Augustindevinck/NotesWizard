@@ -594,36 +594,38 @@ header {
 .revisit-sections {
     display: flex;
     flex-direction: column;
-    gap: 1vh;
-    margin-bottom: 2vh;
-    height: 35vh;
+    gap: 1.5vh;
+    margin-bottom: 3vh;
+    height: 50vh;
 }
 
 .revisit-section {
     background-color: white;
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
-    padding: 1.5vh;
+    padding: 2vh;
     flex: 1;
     min-height: 0;
-    max-height: 12vh;
+    max-height: 16vh;
     overflow: auto;
+    transition: max-height 0.3s ease;
 }
 
 .revisit-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1vh;
+    margin-bottom: 1.5vh;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5vh;
+    padding-bottom: 0.8vh;
 }
 
 .revisit-title {
-    font-size: clamp(0.8rem, 1.5vw, 1rem);
+    font-size: clamp(1rem, 1.8vw, 1.2rem);
     font-weight: 600;
     color: var(--text-color);
     margin: 0;
+    letter-spacing: 0.02em;
 }
 
 .edit-days-btn {
@@ -647,20 +649,23 @@ header {
 }
 
 .revisit-note {
-    padding: 0.8vh 1vh;
+    padding: 1.2vh 1.5vh;
     border-radius: var(--border-radius);
     background-color: var(--secondary-color);
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.2s ease;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: clamp(0.75rem, 1.3vw, 0.9rem);
-    margin-bottom: 0.5vh;
+    font-size: clamp(0.85rem, 1.4vw, 1rem);
+    margin-bottom: 0.8vh;
+    border: 1px solid transparent;
 }
 
 .revisit-note:hover {
     background-color: rgba(74, 107, 250, 0.1);
+    border-color: var(--primary-color);
+    transform: translateX(4px);
 }
 
 .show-more-container {
