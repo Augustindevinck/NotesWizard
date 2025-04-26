@@ -776,7 +776,7 @@ header {
         transform: none;
         width: 50px;
         height: 50px;
-        z-index: 100;
+        z-index: 2;
     }
 
     .fab:hover {
@@ -861,5 +861,4 @@ html {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 14px;
-}: 14px;
 }
