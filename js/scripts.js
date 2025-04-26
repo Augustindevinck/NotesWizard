@@ -1100,30 +1100,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const title1 = revisitSection1?.querySelector('.revisit-title');
         const title2 = revisitSection2?.querySelector('.revisit-title');
         
-        // Calculer les dates de référence
-        const now = new Date();
-        
-        const date1 = new Date(now);
-        date1.setDate(date1.getDate() - revisitDays.section1);
-        const formattedDate1 = date1.toLocaleDateString('fr-FR', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
-        
-        const date2 = new Date(now);
-        date2.setDate(date2.getDate() - revisitDays.section2);
-        const formattedDate2 = date2.toLocaleDateString('fr-FR', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
-        
+        // Mettre à jour les titres avec le nombre de jours
         if (title1) {
-            title1.textContent = `Notes du ${formattedDate1}`;
+            title1.textContent = `Notes d'il y a ${revisitDays.section1} jours`;
         }
         if (title2) {
-            title2.textContent = `Notes du ${formattedDate2}`;
+            title2.textContent = `Notes d'il y a ${revisitDays.section2} jours`;
         }
     }
     
