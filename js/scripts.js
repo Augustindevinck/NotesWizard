@@ -686,7 +686,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!matches) return [];
         
-        return matches.map(match => match.slice(2, -2));
+        return matches.map(match => {
+            const url = match.slice(2, -2);
+            // Extraire l'ID de la vidéo YouTube
+            const videoId = url.match(/(?:v=|\/)([\w-]{11})(?:\?|&|$)/);
+            if (videoId) {
+                return `https://www.youtube.com/embed/${videoId[1]}`;
+            }
+            return url;
+        });
     }
 
     function addHashtagTag(tag) {
