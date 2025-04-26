@@ -91,7 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Note content for hashtag detection
         noteContent.addEventListener('input', detectHashtags);
 
-        // Search button
+        // Search suggestions en temps réel lorsqu'on tape
+        searchInput.addEventListener('input', showSearchSuggestions);
+        
+        // Search button - pour la recherche complète
         const searchBtn = document.getElementById('search-btn');
         searchBtn.addEventListener('click', handleSearch);
         
@@ -600,6 +603,67 @@ document.addEventListener('DOMContentLoaded', () => {
         detectedHashtags.appendChild(tagElement);
     }
 
+    // Fonction pour afficher les suggestions de recherche en temps réel
+    function showSearchSuggestions() {
+        const query = searchInput.value.trim();
+        
+        if (query === '') {
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
+            return;
+        }
+        
+        // Effectuer la recherche avec le texte actuel
+        const searchResultItems = performSearch(query);
+        
+        // Afficher les suggestions de recherche
+        if (searchResultItems.length > 0) {
+            searchResults.innerHTML = '';
+            
+            searchResultItems.slice(0, 5).forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'search-result-item';
+                
+                // Préparer le texte à afficher (titre ou début du contenu)
+                let displayText = result.note.title || result.note.content.substring(0, 30) + '...';
+                
+                // Mettre en surbrillance le terme recherché dans le texte de suggestion
+                const queryTerms = query.split(/\s+/).filter(term => term.length > 1);
+                queryTerms.forEach(term => {
+                    if (term.length > 1) {
+                        const regex = new RegExp(`(${term})`, 'gi');
+                        displayText = displayText.replace(regex, '<span class="highlighted-term">$1</span>');
+                    }
+                });
+                
+                resultItem.innerHTML = displayText;
+                
+                // Ajouter l'événement click pour ouvrir la note
+                resultItem.addEventListener('click', () => {
+                    // Mettre à jour les termes de recherche actuels
+                    currentSearchTerms = queryTerms;
+                    
+                    // Marquer la note comme résultat de recherche
+                    result.note.isSearchResult = true;
+                    
+                    // Ouvrir la note avec surlignage des termes
+                    openNoteModal(result.note, true);
+                    
+                    // Nettoyer les suggestions
+                    searchResults.innerHTML = '';
+                    searchResults.classList.remove('active');
+                });
+                
+                searchResults.appendChild(resultItem);
+            });
+            
+            searchResults.classList.add('active');
+        } else {
+            searchResults.innerHTML = '<div class="search-result-item">Aucun résultat trouvé</div>';
+            searchResults.classList.add('active');
+        }
+    }
+
     function handleSearch() {
         const query = searchInput.value.trim();
         
@@ -619,31 +683,30 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Display search results
         if (searchResultItems.length > 0) {
+            // Masquer les suggestions après la recherche
             searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
             
-            searchResultItems.slice(0, 5).forEach(result => {
-                const resultItem = document.createElement('div');
-                resultItem.className = 'search-result-item';
-                resultItem.textContent = result.note.title || result.note.content.substring(0, 30) + '...';
-                resultItem.addEventListener('click', () => {
-                    openNoteModal(result.note, true); // Passer true pour indiquer qu'on vient d'une recherche
-                    searchResults.innerHTML = '';
-                    searchResults.classList.remove('active');
-                });
-                searchResults.appendChild(resultItem);
-                
-                // Mark note as search result
+            // Marquer chaque note comme résultat de recherche
+            searchResultItems.forEach(result => {
                 result.note.isSearchResult = true;
             });
             
-            searchResults.classList.add('active');
-            
-            // Also filter the main notes view
+            // Afficher les résultats dans la vue principale
             renderNotes(searchResultItems.map(result => result.note));
         } else {
-            searchResults.innerHTML = '<div class="search-result-item">Aucun résultat trouvé</div>';
-            searchResults.classList.add('active');
+            // Aucun résultat trouvé
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
             renderNotes([]);
+            
+            // Afficher un message d'information
+            notesContainer.innerHTML = `
+                <div class="empty-state">
+                    <h2>Aucune note trouvée</h2>
+                    <p>Aucune note ne correspond à votre recherche.</p>
+                </div>
+            `;
         }
     }
 
