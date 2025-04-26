@@ -349,8 +349,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Show video URL if present
-            if (note.videoUrl) {
-                document.getElementById('note-video-url').value = note.videoUrl;
+            if (note.videoUrls && note.videoUrls.length > 0) {
+                const videoContainer = document.createElement('div');
+                videoContainer.className = 'note-videos';
+                note.videoUrls.forEach(url => {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = url;
+                    iframe.width = '100%';
+                    iframe.height = '315';
+                    iframe.frameBorder = '0';
+                    iframe.allowFullscreen = true;
+                    videoContainer.appendChild(iframe);
+                });
+                viewContent.appendChild(videoContainer);
             }
 
             // Si on vient d'une recherche et qu'il y a des termes à surligner
@@ -506,12 +517,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const title = noteTitle.value.trim();
         const content = noteContent.value.trim();
-        const videoUrl = document.getElementById('note-video-url').value.trim();
-
+        
         if (!content) {
             alert('Le contenu de la note ne peut pas être vide.');
             return;
         }
+
+        // Extraire les URLs YouTube du contenu
+        const videoUrls = extractYoutubeUrls(content);
 
         // Extract hashtags from content
         const hashtags = extractHashtags(content);
@@ -535,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     content,
                     categories,
                     hashtags,
-                    videoUrl, // Add videoUrl to the updated note
+                    videoUrls, // Add videoUrls array to the updated note
                     updatedAt: now
                 };
             }
@@ -547,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 content,
                 categories,
                 hashtags,
-                videoUrl, // Add videoUrl to the new note
+                videoUrls, // Add videoUrls array to the new note
                 createdAt: now,
                 updatedAt: now
             };
@@ -666,6 +679,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Extract just the tag text (without the # symbol) and remove duplicates
         return [...new Set(matches.map(match => match.substring(1)))];
+    }
+
+    function extractYoutubeUrls(content) {
+        const youtubeRegex = /\[\[(.*?)\]\]/g;
+        const matches = content.match(youtubeRegex);
+        
+        if (!matches) return [];
+        
+        return matches.map(match => match.slice(2, -2));
     }
 
     function addHashtagTag(tag) {
