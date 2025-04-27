@@ -128,10 +128,11 @@ export function importNotes(event, notes, callback, statusElement) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const importedNotes = JSON.parse(e.target.result);
+            let importedNotes = JSON.parse(e.target.result);
             
+            // Convertir en tableau si ce n'est pas déjà un tableau
             if (!Array.isArray(importedNotes)) {
-                throw new Error('Format invalide: les notes doivent être un tableau');
+                importedNotes = [importedNotes];
             }
             
             // Vérifier la structure minimale des notes importées
