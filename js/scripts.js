@@ -220,20 +220,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (showMoreBtnToday) {
             showMoreBtnToday.addEventListener('click', () => {
-                console.log('Clic sur Voir plus (today)');
-                showMoreNotes('today');
+                const notesContainer = document.getElementById('notes-container');
+                notesContainer.style.display = 'grid';
+                const noteIds = JSON.parse(revisitNotesToday.dataset.allNotes || '[]');
+                const notesToShow = notes.filter(note => noteIds.includes(note.id));
+                renderNotes(notesToShow);
             });
         }
         if (showMoreBtn1) {
             showMoreBtn1.addEventListener('click', () => {
-                console.log('Clic sur Voir plus (section1)');
-                showMoreNotes('section1');
+                const notesContainer = document.getElementById('notes-container');
+                notesContainer.style.display = 'grid';
+                const noteIds = JSON.parse(revisitNotes1.dataset.allNotes || '[]');
+                const notesToShow = notes.filter(note => noteIds.includes(note.id));
+                renderNotes(notesToShow);
             });
         }
         if (showMoreBtn2) {
             showMoreBtn2.addEventListener('click', () => {
-                console.log('Clic sur Voir plus (section2)');
-                showMoreNotes('section2');
+                const notesContainer = document.getElementById('notes-container');
+                notesContainer.style.display = 'grid';
+                const noteIds = JSON.parse(revisitNotes2.dataset.allNotes || '[]');
+                const notesToShow = notes.filter(note => noteIds.includes(note.id));
+                renderNotes(notesToShow);
             });
         }
 
