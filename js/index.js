@@ -16,6 +16,13 @@ import { navigateToPage } from './scripts/utils/navigation.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', () => {
+    // Gestionnaire pour le bouton Vue générale
+    const generalViewBtn = document.getElementById('general-view-btn');
+    if (generalViewBtn) {
+        generalViewBtn.addEventListener('click', () => {
+            window.location.href = 'categories.html';
+        });
+    }
     // Récupération des éléments du DOM
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');

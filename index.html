@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -38,34 +37,25 @@
             </div>
         </header>
 
-        <div class="page-header">
-            <h1>Notes Rapides</h1>
-            <div class="nav-buttons">
-                <a href="index.html" class="nav-button active">Vue principale</a>
-                <a href="categories.html" class="nav-button">Catégories</a>
-                <a href="search.html" class="nav-button">Recherche</a>
-            </div>
-        </div>
+        <button id="general-view-btn" class="general-view-button">Vue générale des notes</button>
 
         <div class="revisit-sections">
             <div class="revisit-section" id="revisit-section-today">
                 <div class="revisit-header">
                     <h3 class="revisit-title">Notes du jour</h3>
                 </div>
-                <div class="revisit-notes" id="revisit-notes-today">
-                </div>
+                <div class="revisit-notes" id="revisit-notes-today"></div>
                 <div class="show-more-container">
                     <button class="show-more-btn" id="show-more-today" style="display: none;">Voir plus</button>
                 </div>
             </div>
-            
+
             <div class="revisit-section" id="revisit-section-1">
                 <div class="revisit-header">
                     <h3 class="revisit-title">Il y a 7 jours</h3>
                     <button class="edit-days-btn" title="Modifier le nombre de jours">⚙️</button>
                 </div>
-                <div class="revisit-notes" id="revisit-notes-1">
-                </div>
+                <div class="revisit-notes" id="revisit-notes-1"></div>
                 <div class="show-more-container">
                     <button class="show-more-btn" id="show-more-1" style="display: none;">Voir plus</button>
                 </div>
@@ -76,17 +66,16 @@
                     <h3 class="revisit-title">Il y a 14 jours</h3>
                     <button class="edit-days-btn" title="Modifier le nombre de jours">⚙️</button>
                 </div>
-                <div class="revisit-notes" id="revisit-notes-2">
-                </div>
+                <div class="revisit-notes" id="revisit-notes-2"></div>
                 <div class="show-more-container">
                     <button class="show-more-btn" id="show-more-2" style="display: none;">Voir plus</button>
                 </div>
             </div>
         </div>
-        
+
         <main id="notes-container" class="notes-container">
         </main>
-        
+
         <div id="days-edit-modal" class="modal">
             <div class="modal-content days-edit-content">
                 <span class="close">&times;</span>
@@ -123,24 +112,23 @@
                 <div id="note-edit-mode" class="hidden">
                     <input type="text" id="note-title" placeholder="Titre" aria-label="Titre de la note">
                     <textarea id="note-content" placeholder="Contenu (utilisez #hashtag pour ajouter des tags)" aria-label="Contenu de la note"></textarea>
-                
-                <div class="categories-container">
-                    <div class="categories-label">Catégories:</div>
-                    <div id="selected-categories" class="selected-categories"></div>
-                    <div class="category-input-container">
-                        <input type="text" id="category-input" placeholder="Ajouter une catégorie..." aria-label="Ajouter une catégorie">
-                        <div id="category-suggestions" class="category-suggestions"></div>
-                    </div>
-                </div>
-                
-                <div class="hashtags-container">
-                    <div class="hashtags-label">Hashtags détectés:</div>
-                    <div id="detected-hashtags" class="detected-hashtags"></div>
-                </div>
 
-                
-                
-                <button id="save-note-btn">Enregistrer</button>
+                    <div class="categories-container">
+                        <div class="categories-label">Catégories:</div>
+                        <div id="selected-categories" class="selected-categories"></div>
+                        <div class="category-input-container">
+                            <input type="text" id="category-input" placeholder="Ajouter une catégorie..." aria-label="Ajouter une catégorie">
+                            <div id="category-suggestions" class="category-suggestions"></div>
+                        </div>
+                    </div>
+
+                    <div class="hashtags-container">
+                        <div class="hashtags-label">Hashtags détectés:</div>
+                        <div id="detected-hashtags" class="detected-hashtags"></div>
+                    </div>
+
+
+                    <button id="save-note-btn">Enregistrer</button>
                     <button id="delete-note-btn" class="hidden">Supprimer la note</button>
                 </div>
             </div>

@@ -1054,3 +1054,19 @@ html {
     background-color: var(--primary-color);
     color: white;
 }
+.general-view-button {
+    width: 100%;
+    padding: 15px;
+    margin: 20px 0;
+    background-color: #4c7dff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.general-view-button:hover {
+    background-color: #3d63cc;
+}
