@@ -67,28 +67,31 @@ export function extractYoutubeUrls(content) {
 }
 
 /**
- * Ajoute un tag de hashtag - version améliorée
+ * Ajoute un tag de hashtag
  * @param {string} tag - Le hashtag à ajouter (sans le #)
  * @param {HTMLElement} container - Le conteneur où ajouter le tag
  */
 export function addHashtagTag(tag, container) {
     // Vérifier si le hashtag existe déjà
-    const existingTagNames = Array.from(container.querySelectorAll('.hashtag-tag')).map(tag => {
-        return tag.getAttribute('data-hashtag-value');
-    });
-    
-    if (existingTagNames.includes(tag)) {
-        return; // Éviter les doublons
+    const existingTags = container.querySelectorAll('.hashtag-tag');
+    for (let existingTag of existingTags) {
+        const tagName = existingTag.querySelector('.tag-name');
+        if (tagName && tagName.textContent === `#${tag}` || existingTag.textContent === `#${tag}`) {
+            return; // Éviter les doublons
+        }
     }
     
-    // Créer un div pour le tag avec sa valeur stockée dans un attribut data-
-    const hashtagTag = document.createElement('div');
+    // Créer un span pour le tag avec une structure interne
+    const hashtagTag = document.createElement('span');
     hashtagTag.className = 'hashtag-tag';
-    hashtagTag.setAttribute('data-hashtag-value', tag);
     
-    // Ajouter le nom du hashtag dans le tag
-    hashtagTag.innerHTML = `<span class="tag-name">#${tag}</span>`;
+    // Créer un span pour le nom du hashtag
+    const tagName = document.createElement('span');
+    tagName.className = 'tag-name';
+    tagName.textContent = `#${tag}`;
     
-    // Ajouter le tag au conteneur
+    // Ajouter le nom au tag
+    hashtagTag.appendChild(tagName);
+    
     container.appendChild(hashtagTag);
 }
