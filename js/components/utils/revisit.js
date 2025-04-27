@@ -9,39 +9,12 @@ function getRevisitConfirmations() {
 
 function confirmRevisitNote(noteId, date) {
     const confirmations = getRevisitConfirmations();
-    if (!confirmations[date]) {
-        confirmations[date] = [];
-    }
-    confirmations[date].push(noteId);
-    localStorage.setItem(REVISIT_CONFIRMATIONS_KEY, JSON.stringify(confirmations));
-}
-
-function isNoteConfirmedForDate(noteId, date) {
-    const confirmations = getRevisitConfirmations();
     const dateKey = new Date(date).toDateString();
-    return confirmations[dateKey]?.includes(noteId) || false;
-}
-
-function createRevisitNoteElement(note, date) {
-    const noteDiv = document.createElement('div');
-    noteDiv.className = 'revisit-note';
-    noteDiv.dataset.id = note.id;
-    noteDiv.textContent = note.title || note.content.substring(0, 40) + '...';
-
-    const confirmButton = document.createElement('button');
-    confirmButton.textContent = 'Confirmé';
-    confirmButton.addEventListener('click', () => {
-        confirmRevisitNote(note.id, date);
-        //Potentially update UI to reflect confirmation
-    });
-
-    noteDiv.appendChild(confirmButton);
-
-    noteDiv.addEventListener('click', () => {
-        openNoteModal(note, date);
-    });
-
-    return noteDiv;
+    if (!confirmations[dateKey]) {
+        confirmations[dateKey] = [];
+    }
+    confirmations[dateKey].push(noteId);
+    localStorage.setItem(REVISIT_CONFIRMATIONS_KEY, JSON.stringify(confirmations));
 }
 
 export function renderRevisitSections(notes, containers, settings, showMoreBtns) {
@@ -96,7 +69,7 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
     const hasMore = notesToRender.length > initialCount;
 
     notesToRender.slice(0, initialCount).forEach(note => {
-        const noteElement = createRevisitNoteElement(note, sectionId);
+        const noteElement = createNoteElement(note, false, true, sectionId);
         container.appendChild(noteElement);
     });
 
@@ -106,10 +79,4 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
 
     container.dataset.allNotes = JSON.stringify(notesToRender.map(note => note.id));
     container.dataset.expandedView = 'false';
-}
-
-// Placeholder for openNoteModal function - needs to be implemented elsewhere
-function openNoteModal(note, date) {
-    console.log("Note opened:", note, "Date:", date);
-    // Add your modal opening logic here.
 }
