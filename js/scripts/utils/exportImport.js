@@ -116,16 +116,14 @@ export function importNotes(file, statusElement) {
                 let importedNotes;
 
                 // Vérifier le format
-                if (importedData && typeof importedData === 'object') {
-                    if (importedData.version && Array.isArray(importedData.notes)) {
-                        importedNotes = importedData.notes;
-                    } else if (Array.isArray(importedData)) {
-                        importedNotes = importedData;
-                    } else {
-                        throw new Error('Format invalide - Le fichier doit contenir un tableau de notes');
-                    }
+                if (Array.isArray(importedData)) {
+                    // Format simple tableau
+                    importedNotes = importedData;
+                } else if (importedData && typeof importedData === 'object' && importedData.notes) {
+                    // Format avec métadonnées
+                    importedNotes = importedData.notes;
                 } else {
-                    throw new Error('Format invalide - Le contenu n\'est pas un objet JSON valide');
+                    throw new Error('Format invalide - Le fichier doit contenir un tableau de notes ou un objet avec une propriété "notes"');
                 }
 
                 // Vérifier la structure des notes
