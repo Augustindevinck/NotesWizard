@@ -147,6 +147,24 @@ header {
     overflow-y: auto;
     display: none;
     margin-top: 2px;
+
+.confirm-revisit-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.confirm-revisit-btn:hover {
+    background-color: var(--primary-color-dark);
+}
+
 }
 
 .search-results.active {

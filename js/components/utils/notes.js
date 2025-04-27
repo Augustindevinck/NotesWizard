@@ -1,6 +1,6 @@
 
 // Gestion des notes
-export function createNoteElement(note, openNoteModal, deleteNote) {
+export function createNoteElement(note, openNoteModal, deleteNote, isRevisit = false, revisitDate = null) {
     const noteDiv = document.createElement('div');
     noteDiv.className = 'note-card';
     
@@ -39,6 +39,23 @@ export function createNoteElement(note, openNoteModal, deleteNote) {
     noteDiv.addEventListener('click', (event) => {
         if (event.target.classList.contains('delete-note')) {
             event.stopPropagation();
+
+    if (isRevisit) {
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'confirm-revisit-btn';
+        confirmBtn.textContent = 'Confirmer la lecture';
+        confirmBtn.onclick = (e) => {
+            e.stopPropagation();
+            confirmRevisitNote(note.id, revisitDate);
+            const container = document.querySelector(`[data-id="${note.id}"]`).parentElement;
+            container.removeChild(document.querySelector(`[data-id="${note.id}"]`));
+            if (container.children.length === 0) {
+                container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
+            }
+        };
+        noteDiv.appendChild(confirmBtn);
+    }
+
             deleteNote(note.id);
             return;
         }

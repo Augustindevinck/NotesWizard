@@ -1,5 +1,48 @@
-
 import { createNoteElement } from './notes.js';
+
+const REVISIT_CONFIRMATIONS_KEY = 'revisitConfirmations';
+
+function getRevisitConfirmations() {
+    const stored = localStorage.getItem(REVISIT_CONFIRMATIONS_KEY);
+    return stored ? JSON.parse(stored) : {};
+}
+
+function confirmRevisitNote(noteId, date) {
+    const confirmations = getRevisitConfirmations();
+    if (!confirmations[date]) {
+        confirmations[date] = [];
+    }
+    confirmations[date].push(noteId);
+    localStorage.setItem(REVISIT_CONFIRMATIONS_KEY, JSON.stringify(confirmations));
+}
+
+function isNoteConfirmedForDate(noteId, date) {
+    const confirmations = getRevisitConfirmations();
+    const dateKey = new Date(date).toDateString();
+    return confirmations[dateKey]?.includes(noteId) || false;
+}
+
+function createRevisitNoteElement(note, date) {
+    const noteDiv = document.createElement('div');
+    noteDiv.className = 'revisit-note';
+    noteDiv.dataset.id = note.id;
+    noteDiv.textContent = note.title || note.content.substring(0, 40) + '...';
+
+    const confirmButton = document.createElement('button');
+    confirmButton.textContent = 'Confirmé';
+    confirmButton.addEventListener('click', () => {
+        confirmRevisitNote(note.id, date);
+        //Potentially update UI to reflect confirmation
+    });
+
+    noteDiv.appendChild(confirmButton);
+
+    noteDiv.addEventListener('click', () => {
+        openNoteModal(note, date);
+    });
+
+    return noteDiv;
+}
 
 export function renderRevisitSections(notes, containers, settings, showMoreBtns) {
     const { revisitNotesToday, revisitNotes1, revisitNotes2 } = containers;
@@ -7,17 +50,17 @@ export function renderRevisitSections(notes, containers, settings, showMoreBtns)
 
     const now = new Date();
     const today = new Date(now);
-    
+
     const date1 = new Date(now);
     date1.setDate(date1.getDate() - settings.section1);
-    
+
     const date2 = new Date(now);
     date2.setDate(date2.getDate() - settings.section2);
-    
+
     const notesForToday = getNotesForDate(notes, today);
     const notesForSection1 = getNotesForDate(notes, date1);
     const notesForSection2 = getNotesForDate(notes, date2);
-    
+
     renderRevisitNotesForSection(notesForToday, revisitNotesToday, showMoreBtnToday, 'today');
     renderRevisitNotesForSection(notesForSection1, revisitNotes1, showMoreBtn1, 'section1');
     renderRevisitNotesForSection(notesForSection2, revisitNotes2, showMoreBtn2, 'section2');
@@ -27,7 +70,7 @@ function getNotesForDate(notes, targetDate) {
     const targetYear = targetDate.getFullYear();
     const targetMonth = targetDate.getMonth();
     const targetDay = targetDate.getDate();
-    
+
     return notes.filter(note => {
         const noteDate = new Date(note.createdAt);
         return noteDate.getFullYear() === targetYear && 
@@ -38,9 +81,9 @@ function getNotesForDate(notes, targetDate) {
 
 function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sectionId) {
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     if (notesToRender.length === 0) {
         container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
         if (showMoreBtn) {
@@ -51,16 +94,22 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
 
     const initialCount = Math.min(3, notesToRender.length);
     const hasMore = notesToRender.length > initialCount;
-    
+
     notesToRender.slice(0, initialCount).forEach(note => {
-        const noteElement = createRevisitNoteElement(note);
+        const noteElement = createRevisitNoteElement(note, sectionId);
         container.appendChild(noteElement);
     });
-    
+
     if (showMoreBtn) {
         showMoreBtn.style.display = hasMore ? 'block' : 'none';
     }
-    
+
     container.dataset.allNotes = JSON.stringify(notesToRender.map(note => note.id));
     container.dataset.expandedView = 'false';
+}
+
+// Placeholder for openNoteModal function - needs to be implemented elsewhere
+function openNoteModal(note, date) {
+    console.log("Note opened:", note, "Date:", date);
+    // Add your modal opening logic here.
 }
