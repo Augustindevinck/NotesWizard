@@ -98,6 +98,31 @@ header {
     border: none;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
 
+.note-modal .modal-content {
+    max-width: 600px;
+    padding: 20px;
+}
+
+.note-modal .note-content {
+    margin: 20px 0;
+    white-space: pre-wrap;
+}
+
+.note-modal .confirm-revisit-btn {
+    background: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.note-modal .confirm-revisit-btn:hover {
+    opacity: 0.9;
+}
+
 .confirm-revisit-btn {
     background: var(--primary-color);
     color: white;

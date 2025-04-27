@@ -117,6 +117,33 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
 }
 
 function openNoteModal(note, date) {
-    console.log("Note opened:", note, "Date:", date);
-    // Add your modal opening logic here.
+    const modal = document.createElement('div');
+    modal.className = 'modal note-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>${note.title || 'Sans titre'}</h2>
+            <div class="note-content">${note.content}</div>
+            <button class="confirm-revisit-btn">Confirmer la lecture</button>
+        </div>
+    `;
+
+    const confirmBtn = modal.querySelector('.confirm-revisit-btn');
+    confirmBtn.addEventListener('click', () => {
+        confirmRevisitNote(note.id, date);
+        const noteElement = document.querySelector(`[data-id="${note.id}"]`);
+        if (noteElement) {
+            noteElement.remove();
+            const container = noteElement.parentElement;
+            if (container && container.children.length === 0) {
+                container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
+            }
+        }
+        modal.remove();
+    });
+
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.addEventListener('click', () => modal.remove());
+
+    document.body.appendChild(modal);
 }
