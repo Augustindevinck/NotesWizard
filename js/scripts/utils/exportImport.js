@@ -1,3 +1,4 @@
+
 /**
  * Fonctions pour l'exportation et l'importation des notes
  */
@@ -10,43 +11,37 @@ import { saveNotes } from './localStorage.js';
  * @param {HTMLElement} statusElement - Élément pour afficher le statut de l'opération
  */
 export function exportNotes(notes, statusElement) {
-    if (!notes || notes.length === 0) {
-        if (statusElement) {
-            statusElement.textContent = 'Aucune note à exporter';
-            statusElement.className = 'status-error';
-        }
-        return;
-    }
-    
     try {
+        if (!notes || notes.length === 0) {
+            if (statusElement) {
+                statusElement.textContent = 'Aucune note à exporter';
+                statusElement.className = 'status-error';
+            }
+            return;
+        }
+
         // Créer un objet Blob avec les notes
         const notesJSON = JSON.stringify(notes, null, 2);
         const blob = new Blob([notesJSON], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
         
         // Créer un lien de téléchargement
-        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `notes_export_${date}.json`;
         
-        // Générer un nom de fichier avec la date
-        const date = new Date();
-        const dateStr = date.toISOString().split('T')[0];
-        a.download = `notes_export_${dateStr}.json`;
-        
-        // Déclencher le téléchargement
         document.body.appendChild(a);
         a.click();
-        
-        // Nettoyer
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         if (statusElement) {
             statusElement.textContent = `${notes.length} notes exportées avec succès`;
             statusElement.className = 'status-success';
         }
     } catch (error) {
-        console.error('Erreur lors de l\'exportation des notes:', error);
+        console.error('Erreur lors de l\'exportation:', error);
         if (statusElement) {
             statusElement.textContent = 'Erreur lors de l\'exportation';
             statusElement.className = 'status-error';
@@ -56,80 +51,86 @@ export function exportNotes(notes, statusElement) {
 
 /**
  * Importe des notes depuis un fichier JSON
- * @param {Event} event - Événement de sélection de fichier
- * @param {Array} notes - Tableau des notes actuel
- * @param {Function} callback - Fonction à appeler après l'importation
- * @param {HTMLElement} statusElement - Élément pour afficher le statut de l'opération
+ * @param {File} file - Fichier à importer
+ * @param {HTMLElement} statusElement - Élément pour afficher le statut
+ * @returns {Promise} - Promise résolvant les notes importées
  */
-export function importNotes(event, notes, callback, statusElement) {
-    const file = event.target.files[0];
-    if (!file) {
-        return;
-    }
-    
-    // Vérifier le type de fichier
-    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
-        if (statusElement) {
-            statusElement.textContent = 'Format de fichier invalide. Veuillez sélectionner un fichier JSON.';
-            statusElement.className = 'status-error';
-        }
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importedNotes = JSON.parse(e.target.result);
-            
-            if (!Array.isArray(importedNotes)) {
-                throw new Error('Format invalide: les notes doivent être un tableau');
-            }
-            
-            // Vérifier la structure des notes importées
-            importedNotes.forEach(note => {
-                if (!note.id || !note.createdAt) {
-                    throw new Error('Format invalide: certaines notes sont mal structurées');
-                }
-            });
-            
-            // Fusionner avec les notes existantes (en évitant les doublons)
-            const existingIds = new Set(notes.map(note => note.id));
-            let importCount = 0;
-            
-            importedNotes.forEach(importedNote => {
-                if (!existingIds.has(importedNote.id)) {
-                    notes.push(importedNote);
-                    importCount++;
-                }
-            });
-            
-            // Sauvegarder dans localStorage
-            saveNotes(notes);
-            
+export function importNotes(file, statusElement) {
+    return new Promise((resolve, reject) => {
+        if (!file || !file.type.includes('json')) {
             if (statusElement) {
-                statusElement.textContent = `${importCount} notes importées avec succès`;
-                statusElement.className = 'status-success';
-            }
-            
-            // Exécuter le callback si fourni
-            if (callback) {
-                callback();
-            }
-        } catch (error) {
-            console.error('Erreur lors de l\'importation des notes:', error);
-            if (statusElement) {
-                statusElement.textContent = `Erreur: ${error.message}`;
+                statusElement.textContent = 'Format de fichier invalide. Veuillez sélectionner un fichier JSON.';
                 statusElement.className = 'status-error';
             }
+            reject(new Error('Format de fichier invalide'));
+            return;
         }
-    };
-    
-    reader.onerror = function() {
-        if (statusElement) {
-            statusElement.textContent = 'Erreur lors de la lecture du fichier';
-            statusElement.className = 'status-error';
-        }
-    };
-    
-    reader.readAsText(file);
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const importedNotes = JSON.parse(e.target.result);
+                
+                if (!Array.isArray(importedNotes)) {
+                    throw new Error('Format invalide: les notes doivent être un tableau');
+                }
+
+                // Vérifier la structure des notes
+                importedNotes.forEach(note => {
+                    if (!note.id || !note.content) {
+                        throw new Error('Format invalide: certaines notes sont mal structurées');
+                    }
+                });
+
+                // Récupérer les notes existantes
+                const existingNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+                const existingIds = new Set(existingNotes.map(note => note.id));
+                
+                // Fusionner les notes
+                const mergedNotes = [...existingNotes];
+                let newCount = 0;
+                let updatedCount = 0;
+
+                importedNotes.forEach(importedNote => {
+                    if (existingIds.has(importedNote.id)) {
+                        // Mettre à jour la note existante
+                        const index = mergedNotes.findIndex(n => n.id === importedNote.id);
+                        mergedNotes[index] = importedNote;
+                        updatedCount++;
+                    } else {
+                        // Ajouter la nouvelle note
+                        mergedNotes.push(importedNote);
+                        newCount++;
+                    }
+                });
+
+                // Sauvegarder les notes fusionnées
+                saveNotes(mergedNotes);
+
+                if (statusElement) {
+                    statusElement.textContent = `Import réussi ! ${newCount} nouvelle(s) note(s), ${updatedCount} note(s) mise(s) à jour`;
+                    statusElement.className = 'status-success';
+                }
+
+                resolve(mergedNotes);
+            } catch (error) {
+                console.error('Erreur lors de l\'importation:', error);
+                if (statusElement) {
+                    statusElement.textContent = `Erreur: ${error.message}`;
+                    statusElement.className = 'status-error';
+                }
+                reject(error);
+            }
+        };
+
+        reader.onerror = () => {
+            if (statusElement) {
+                statusElement.textContent = 'Erreur lors de la lecture du fichier';
+                statusElement.className = 'status-error';
+            }
+            reject(new Error('Erreur de lecture du fichier'));
+        };
+
+        reader.readAsText(file);
+    });
 }
