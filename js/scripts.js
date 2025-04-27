@@ -381,7 +381,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 viewTitle.textContent = note.title || 'Sans titre';
                 // Convertir les hashtags en liens cliquables
-                const contentWithClickableHashtags = displayContent.replace(/#(\w+)/g, '<a href="#" class="hashtag-link" data-tag="$1">#$1</a>');
+                const contentWithClickableHashtags = displayContent.split(' ').map(word => {
+                    if (word.startsWith('#')) {
+                        const tag = word.substring(1);
+                        return `<a href="#" class="hashtag-link" data-tag="${tag}">#${tag}</a>`;
+                    }
+                    return word;
+                }).join(' ');
+                
                 viewContent.innerHTML = contentWithClickableHashtags;
 
                 // Ajouter les gestionnaires d'événements pour les hashtags cliquables
