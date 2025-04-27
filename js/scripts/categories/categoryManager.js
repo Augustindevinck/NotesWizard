@@ -119,7 +119,7 @@ export function addCategoryTag(category, container) {
     // Ajouter un bouton de suppression
     const removeBtn = document.createElement('span');
     removeBtn.className = 'remove-tag';
-    removeBtn.innerHTML = '&times;';
+    removeBtn.innerHTML = '🗑️';
     removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         container.removeChild(categoryTag);
