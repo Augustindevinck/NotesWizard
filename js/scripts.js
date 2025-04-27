@@ -200,9 +200,45 @@ document.addEventListener('DOMContentLoaded', () => {
             importExportModal.style.display = 'block';
         });
 
-        exportBtn.addEventListener('click', exportNotes);
+        // Charger dynamiquement le module d'export/import
+        exportBtn.addEventListener('click', () => {
+            import('./scripts/utils/exportImport.js')
+                .then(module => {
+                    module.exportNotes(notes, importStatus);
+                })
+                .catch(err => {
+                    console.error('Erreur lors du chargement du module d\'export:', err);
+                    importStatus.textContent = 'Erreur lors de l\'exportation';
+                    importStatus.className = 'error';
+                    importStatus.style.display = 'block';
+                });
+        });
+        
         importBtn.addEventListener('click', () => importFile.click());
-        importFile.addEventListener('change', importNotes);
+        importFile.addEventListener('change', (event) => {
+            import('./scripts/utils/exportImport.js')
+                .then(module => {
+                    module.importNotes(event, notes, () => {
+                        // Callback après import réussi
+                        renderEmptyState();
+                        renderRevisitSections();
+                        
+                        // Réinitialiser l'ensemble des catégories
+                        allCategories = new Set();
+                        notes.forEach(note => {
+                            if (note.categories) {
+                                note.categories.forEach(category => allCategories.add(category));
+                            }
+                        });
+                    }, importStatus);
+                })
+                .catch(err => {
+                    console.error('Erreur lors du chargement du module d\'import:', err);
+                    importStatus.textContent = 'Erreur lors de l\'importation';
+                    importStatus.className = 'error';
+                    importStatus.style.display = 'block';
+                });
+        });
 
 
         // Fonctions pour les sections de révision

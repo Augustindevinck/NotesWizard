@@ -55,7 +55,46 @@ export function exportNotes(notes, statusElement) {
 }
 
 /**
- * Importe des notes depuis un fichier JSON
+ * Vérifie si deux notes ont un contenu identique
+ * @param {Object} note1 - Première note à comparer
+ * @param {Object} note2 - Deuxième note à comparer
+ * @returns {boolean} - True si le contenu est identique, false sinon
+ */
+function areNotesContentIdentical(note1, note2) {
+    // Comparaison des champs essentiels
+    if (note1.title !== note2.title || note1.content !== note2.content) {
+        return false;
+    }
+    
+    // Comparaison des catégories (indépendamment de l'ordre)
+    const categories1 = new Set(note1.categories || []);
+    const categories2 = new Set(note2.categories || []);
+    if (categories1.size !== categories2.size) {
+        return false;
+    }
+    for (const category of categories1) {
+        if (!categories2.has(category)) {
+            return false;
+        }
+    }
+    
+    // Comparaison des hashtags (indépendamment de l'ordre)
+    const hashtags1 = new Set(note1.hashtags || []);
+    const hashtags2 = new Set(note2.hashtags || []);
+    if (hashtags1.size !== hashtags2.size) {
+        return false;
+    }
+    for (const hashtag of hashtags1) {
+        if (!hashtags2.has(hashtag)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Importe des notes depuis un fichier JSON avec gestion améliorée des doublons
  * @param {Event} event - Événement de sélection de fichier
  * @param {Array} notes - Tableau des notes actuel
  * @param {Function} callback - Fonction à appeler après l'importation
@@ -92,22 +131,73 @@ export function importNotes(event, notes, callback, statusElement) {
                 }
             });
             
-            // Fusionner avec les notes existantes (en évitant les doublons)
-            const existingIds = new Set(notes.map(note => note.id));
-            let importCount = 0;
+            // Créer un Map des notes existantes pour comparaison rapide
+            const existingNotesMap = new Map();
+            notes.forEach(note => existingNotesMap.set(note.id, note));
+            
+            // Catégoriser les notes importées
+            const newNotes = [];                   // Notes avec de nouveaux IDs
+            const identicalNotes = [];             // Notes avec même ID et contenu identique
+            const differentContentNotes = [];      // Notes avec même ID mais contenu différent
             
             importedNotes.forEach(importedNote => {
-                if (!existingIds.has(importedNote.id)) {
-                    notes.push(importedNote);
-                    importCount++;
+                if (existingNotesMap.has(importedNote.id)) {
+                    const existingNote = existingNotesMap.get(importedNote.id);
+                    if (areNotesContentIdentical(existingNote, importedNote)) {
+                        identicalNotes.push(importedNote);
+                    } else {
+                        differentContentNotes.push({
+                            existing: existingNote,
+                            imported: importedNote
+                        });
+                    }
+                } else {
+                    newNotes.push(importedNote);
                 }
             });
+            
+            // Ajouter immédiatement les nouvelles notes
+            notes.push(...newNotes);
+            let updatedNotes = 0;
+            
+            // Gérer les notes avec contenu différent
+            if (differentContentNotes.length > 0) {
+                // Demander à l'utilisateur quoi faire avec les notes existantes
+                const message = `${differentContentNotes.length} note(s) avec des identifiants existants ont un contenu différent.\n` +
+                                `Cliquez sur OK pour remplacer les versions existantes par les nouvelles.\n` +
+                                `Cliquez sur Annuler pour conserver les versions existantes.`;
+                
+                const replaceExisting = confirm(message);
+                
+                if (replaceExisting) {
+                    // Remplacer les notes existantes par les versions importées
+                    differentContentNotes.forEach(pair => {
+                        const noteIndex = notes.findIndex(note => note.id === pair.existing.id);
+                        if (noteIndex !== -1) {
+                            notes[noteIndex] = pair.imported;
+                            updatedNotes++;
+                        }
+                    });
+                }
+            }
             
             // Sauvegarder dans localStorage
             saveNotes(notes);
             
+            // Générer le message de statut
+            let statusMessage = `Import réussi:\n`;
+            if (newNotes.length > 0) {
+                statusMessage += `- ${newNotes.length} nouvelle(s) note(s) ajoutée(s)\n`;
+            }
+            if (identicalNotes.length > 0) {
+                statusMessage += `- ${identicalNotes.length} note(s) déjà existante(s) (contenu identique)\n`;
+            }
+            if (differentContentNotes.length > 0) {
+                statusMessage += `- ${updatedNotes} note(s) existante(s) mise(s) à jour\n`;
+            }
+            
             if (statusElement) {
-                statusElement.textContent = `${importCount} notes importées avec succès`;
+                statusElement.textContent = statusMessage.trim();
                 statusElement.className = 'status-success';
             }
             
