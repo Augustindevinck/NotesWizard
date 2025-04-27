@@ -10,7 +10,8 @@ import { createNoteElement, deleteNote, saveNote, initNotesManager } from './scr
 import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { initSearchManager, performSearch, getCurrentSearchTerms, levenshteinDistance } from './scripts/search/searchManager.js';
+import { initSearchManager, performSearch, getCurrentSearchTerms } from './scripts/search/searchManager.js';
+import { levenshteinDistance } from './scripts/search/searchUtils.js';
 import { navigateToPage, getUrlParams } from './scripts/utils/navigation.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
