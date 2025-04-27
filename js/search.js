@@ -53,14 +53,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchResultsList = document.getElementById('search-results-list');
     const searchResultsTitle = document.getElementById('search-results-title');
 
-    // Vérification que tous les éléments requis sont présents
-    if (!searchInput || !searchResults || !addNoteBtn || !noteModal ||
-        !noteTitle || !noteContent || !saveNoteBtn || !deleteNoteBtn || !categoryInput ||
-        !categorySuggestions || !selectedCategories || !detectedHashtags ||
-        !advancedSearchInput || !advancedSearchBtn || !searchResultsList) {
-        console.error('Éléments DOM manquants - Initialisation impossible');
+    // Vérification des éléments essentiels uniquement
+    if (!searchResultsList || !advancedSearchInput || !advancedSearchBtn) {
+        console.error('Éléments essentiels à la recherche manquants - Initialisation impossible');
         return;
     }
+    
+    // Vérification des autres éléments et utilisation conditionnelle
+    const hasSearchElements = searchInput && searchResults;
+    const hasNoteModal = noteModal && noteTitle && noteContent && saveNoteBtn && deleteNoteBtn && 
+                         categoryInput && categorySuggestions && selectedCategories && detectedHashtags;
 
     // État de l'application
     const appState = {
@@ -91,43 +93,47 @@ document.addEventListener('DOMContentLoaded', () => {
         initCategoryManager(appState.allCategories);
         initSearchManager();
         
-        // Initialiser les éléments du modal
-        initNoteModal({
-            noteModal,
-            noteTitle,
-            noteContent,
-            selectedCategories,
-            detectedHashtags,
-            deleteNoteBtn,
-            viewMode,
-            editMode,
-            viewTitle,
-            viewContent,
-            editButton,
-            saveNoteBtn
-        });
+        // Initialiser les éléments du modal seulement s'ils existent
+        if (hasNoteModal) {
+            initNoteModal({
+                noteModal,
+                noteTitle,
+                noteContent,
+                selectedCategories,
+                detectedHashtags,
+                deleteNoteBtn,
+                viewMode,
+                editMode,
+                viewTitle,
+                viewContent,
+                editButton,
+                saveNoteBtn
+            });
+            
+            // Injecter les fonctions nécessaires au noteModal
+            initModalFunctions({
+                extractHashtags: extractHashtags,
+                extractYoutubeUrls: extractYoutubeUrls,
+                addCategoryTag: addCategoryTag,
+                addHashtagTag: addHashtagTag,
+                saveNote: (noteData) => saveNote(noteData, appState.notes, () => {
+                    // Rafraîchir les résultats de recherche si nécessaire
+                    if (appState.lastQuery) {
+                        executeSearch(appState.lastQuery);
+                    }
+                })
+            });
+        }
         
-        // Injecter les fonctions nécessaires au noteModal
-        initModalFunctions({
-            extractHashtags: extractHashtags,
-            extractYoutubeUrls: extractYoutubeUrls,
-            addCategoryTag: addCategoryTag,
-            addHashtagTag: addHashtagTag,
-            saveNote: (noteData) => saveNote(noteData, appState.notes, () => {
+        // Initialiser les fonctions notesManager seulement si les éléments nécessaires existent
+        if (hasNoteModal) {
+            initNotesManager(openNoteModal, () => {
                 // Rafraîchir les résultats de recherche si nécessaire
                 if (appState.lastQuery) {
                     executeSearch(appState.lastQuery);
                 }
-            })
-        });
-        
-        // Initialiser les fonctions notesManager
-        initNotesManager(openNoteModal, () => {
-            // Rafraîchir les résultats de recherche si nécessaire
-            if (appState.lastQuery) {
-                executeSearch(appState.lastQuery);
-            }
-        });
+            });
+        }
 
         // Remplir le filtre de catégories
         populateCategoryFilter();
@@ -308,77 +314,86 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Recherche depuis la barre principale
-        searchInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                const query = searchInput.value.trim();
-                if (query) {
-                    // Remplir l'entrée de recherche avancée avec la requête
-                    advancedSearchInput.value = query;
-                    // Exécuter la recherche
-                    executeSearch(query);
-                }
-            }
-        });
-        
-        // Bouton de recherche principal
-        const searchBtn = document.getElementById('search-btn');
-        if (searchBtn) {
-            searchBtn.addEventListener('click', () => {
-                const query = searchInput.value.trim();
-                if (query) {
-                    // Remplir l'entrée de recherche avancée avec la requête
-                    advancedSearchInput.value = query;
-                    // Exécuter la recherche
-                    executeSearch(query);
+        // Recherche depuis la barre principale (si elle existe)
+        if (hasSearchElements) {
+            searchInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        // Remplir l'entrée de recherche avancée avec la requête
+                        advancedSearchInput.value = query;
+                        // Exécuter la recherche
+                        executeSearch(query);
+                    }
                 }
             });
         }
+        
+        // Bouton de recherche principal (si les éléments existent)
+        if (hasSearchElements) {
+            const searchBtn = document.getElementById('search-btn');
+            if (searchBtn) {
+                searchBtn.addEventListener('click', () => {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        // Remplir l'entrée de recherche avancée avec la requête
+                        advancedSearchInput.value = query;
+                        // Exécuter la recherche
+                        executeSearch(query);
+                    }
+                });
+            }
+        }
 
-        // Bouton d'ajout de note
-        addNoteBtn.addEventListener('click', () => openNoteModal());
-
-        // Bouton de sauvegarde de note
-        saveNoteBtn.addEventListener('click', () => {
-            saveCurrentNote(appState.notes, () => {
-                // Rafraîchir les résultats de recherche si nécessaire
-                if (appState.lastQuery) {
-                    executeSearch(appState.lastQuery);
-                }
-            });
-        });
-
-        // Bouton de suppression de note dans le modal
-        deleteNoteBtn.addEventListener('click', () => {
-            if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
-                const currentNoteId = deleteNoteBtn.dataset.currentNoteId;
-                if (currentNoteId) {
-                    deleteNote(currentNoteId, appState.notes, () => {});
-                    cleanupHighlightedElements();
-                    noteModal.style.display = 'none';
-                    
-                    // Rafraîchir les résultats de recherche
+        // Écouteurs d'événements pour les éléments de notes (seulement s'ils existent)
+        if (hasNoteModal) {
+            // Bouton d'ajout de note
+            if (addNoteBtn) {
+                addNoteBtn.addEventListener('click', () => openNoteModal());
+            }
+            
+            // Bouton de sauvegarde de note
+            saveNoteBtn.addEventListener('click', () => {
+                saveCurrentNote(appState.notes, () => {
+                    // Rafraîchir les résultats de recherche si nécessaire
                     if (appState.lastQuery) {
                         executeSearch(appState.lastQuery);
                     }
+                });
+            });
+    
+            // Bouton de suppression de note dans le modal
+            deleteNoteBtn.addEventListener('click', () => {
+                if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
+                    const currentNoteId = deleteNoteBtn.dataset.currentNoteId;
+                    if (currentNoteId) {
+                        deleteNote(currentNoteId, appState.notes, () => {});
+                        cleanupHighlightedElements();
+                        noteModal.style.display = 'none';
+                        
+                        // Rafraîchir les résultats de recherche
+                        if (appState.lastQuery) {
+                            executeSearch(appState.lastQuery);
+                        }
+                    }
                 }
-            }
-        });
-
-        // Saisie de catégorie pour l'autocomplétion
-        categoryInput.addEventListener('input', (event) => {
-            handleCategoryInput(event, categoryInput, categorySuggestions);
-        });
-        
-        categoryInput.addEventListener('keydown', (event) => {
-            handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions);
-        });
-
-        // Détection des hashtags pendant la saisie
-        noteContent.addEventListener('input', () => {
-            detectHashtags(noteContent.value, detectedHashtags);
-        });
+            });
+    
+            // Saisie de catégorie pour l'autocomplétion
+            categoryInput.addEventListener('input', (event) => {
+                handleCategoryInput(event, categoryInput, categorySuggestions);
+            });
+            
+            categoryInput.addEventListener('keydown', (event) => {
+                handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions);
+            });
+    
+            // Détection des hashtags pendant la saisie
+            noteContent.addEventListener('input', () => {
+                detectHashtags(noteContent.value, detectedHashtags);
+            });
+        }
 
         // Bouton de recherche avancée
         advancedSearchBtn.addEventListener('click', () => {
@@ -403,64 +418,72 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Fermeture des modals avec le bouton de fermeture ou en cliquant à l'extérieur
-        modalCloseButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                cleanupHighlightedElements();
-                noteModal.style.display = 'none';
-                importExportModal.style.display = 'none';
+        if (modalCloseButtons && modalCloseButtons.length > 0) {
+            modalCloseButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    cleanupHighlightedElements();
+                    if (noteModal) noteModal.style.display = 'none';
+                    if (importExportModal) importExportModal.style.display = 'none';
+                });
             });
-        });
+        }
 
         window.addEventListener('click', (event) => {
-            if (event.target === noteModal) {
+            if (hasNoteModal && event.target === noteModal) {
                 cleanupHighlightedElements();
                 noteModal.style.display = 'none';
             }
-            if (event.target === importExportModal) {
+            if (importExportModal && event.target === importExportModal) {
                 importExportModal.style.display = 'none';
             }
         });
 
-        // Import/Export
-        importExportBtn.addEventListener('click', () => {
-            importExportModal.style.display = 'flex';
-        });
-
-        exportBtn.addEventListener('click', () => {
-            exportNotes(appState.notes);
-        });
-
-        importBtn.addEventListener('click', () => {
-            importFile.click();
-        });
-
-        importFile.addEventListener('change', (event) => {
-            importNotes(event, (importedNotes) => {
-                // Fusionner les notes importées avec les existantes
-                appState.notes = [...appState.notes, ...importedNotes];
-                saveNotes(appState.notes);
-                
-                // Mettre à jour les catégories
-                appState.allCategories.clear();
-                appState.notes.forEach(note => {
-                    if (note.categories) {
-                        note.categories.forEach(category => appState.allCategories.add(category));
-                    }
-                });
-                
-                // Rafraîchir les résultats de recherche
-                populateCategoryFilter();
-                if (appState.lastQuery) {
-                    executeSearch(appState.lastQuery);
-                }
-                
-                // Fermer le modal après importation réussie
-                setTimeout(() => {
-                    importExportModal.style.display = 'none';
-                    importStatus.textContent = '';
-                    importFile.value = '';
-                }, 3000);
+        // Import/Export seulement si les éléments existent
+        if (importExportBtn && importExportModal) {
+            importExportBtn.addEventListener('click', () => {
+                importExportModal.style.display = 'flex';
             });
-        });
+        }
+
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                exportNotes(appState.notes);
+            });
+        }
+
+        if (importBtn && importFile) {
+            importBtn.addEventListener('click', () => {
+                importFile.click();
+            });
+
+            importFile.addEventListener('change', (event) => {
+                importNotes(event, (importedNotes) => {
+                    // Fusionner les notes importées avec les existantes
+                    appState.notes = [...appState.notes, ...importedNotes];
+                    saveNotes(appState.notes);
+                    
+                    // Mettre à jour les catégories
+                    appState.allCategories.clear();
+                    appState.notes.forEach(note => {
+                        if (note.categories) {
+                            note.categories.forEach(category => appState.allCategories.add(category));
+                        }
+                    });
+                    
+                    // Rafraîchir les résultats de recherche
+                    populateCategoryFilter();
+                    if (appState.lastQuery) {
+                        executeSearch(appState.lastQuery);
+                    }
+                    
+                    // Fermer le modal après importation réussie
+                    setTimeout(() => {
+                        importExportModal.style.display = 'none';
+                        if (importStatus) importStatus.textContent = '';
+                        importFile.value = '';
+                    }, 3000);
+                });
+            });
+        }
     }
 });
