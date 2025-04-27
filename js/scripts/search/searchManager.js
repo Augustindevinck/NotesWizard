@@ -3,7 +3,6 @@
  */
 
 import { levenshteinDistance } from './searchUtils.js';
-import { renderNotes } from '../notes/notesManager.js';
 import { highlightSearchResults } from './highlight.js';
 
 // Termes de recherche actuels
@@ -25,16 +24,12 @@ export function initSearchManager(terms = []) {
 export function cleanText(text) {
     if (!text) return '';
     
-    // Convertir en minuscules
-    let cleaned = text.toLowerCase();
-    
-    // Supprimer les accents
-    cleaned = cleaned.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-    
-    // Supprimer les espaces multiples
-    cleaned = cleaned.replace(/\s+/g, ' ').trim();
-    
-    return cleaned;
+    return text.toString()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Supprime les accents
+        .replace(/\s+/g, ' ')            // Normalise les espaces
+        .trim();
 }
 
 /**
@@ -45,57 +40,69 @@ export function cleanText(text) {
  * @param {Function} onSuggestionClick - Fonction à appeler lors du clic sur une suggestion
  */
 export function showSearchSuggestions(query, notes, searchResults, onSuggestionClick) {
-    if (!query || !searchResults) return;
-
-    query = query.trim();
-
-    if (query === '') {
+    if (!searchResults) return;
+    
+    // Masquer les suggestions si la requête est vide
+    if (!query.trim()) {
         searchResults.innerHTML = '';
-        searchResults.classList.remove('active');
+        searchResults.style.display = 'none';
         return;
     }
-
-    // Effectuer la recherche avec le texte actuel
-    const searchResultItems = performSearch(query, notes);
-
-    // Afficher les suggestions de recherche
-    if (searchResultItems.length > 0) {
+    
+    // Effectuer la recherche
+    const results = performSearch(query, notes);
+    
+    // Limiter à 5 suggestions
+    const topResults = results.slice(0, 5);
+    
+    // Mettre à jour les termes de recherche actuels
+    currentSearchTerms = query.trim().toLowerCase().split(/\s+/);
+    
+    // Afficher les suggestions
+    if (topResults.length > 0) {
         searchResults.innerHTML = '';
-
-        searchResultItems.slice(0, 5).forEach(result => {
-            const resultItem = document.createElement('div');
-            resultItem.className = 'search-result-item';
-
-            // Préparer le texte à afficher (titre ou début du contenu)
-            let displayText = result.note.title || result.note.content.substring(0, 30) + '...';
-
-            // Mettre en surbrillance le terme recherché dans le texte de suggestion
-            const queryTerms = query.split(/\s+/).filter(term => term.length > 1);
-            queryTerms.forEach(term => {
-                if (term.length > 1) {
-                    const regex = new RegExp(`(${term})`, 'gi');
-                    displayText = displayText.replace(regex, '<span class="highlighted-term">$1</span>');
-                }
-            });
-
-            resultItem.innerHTML = displayText;
-
-            // Ajouter un événement de clic pour ouvrir la note
-            resultItem.addEventListener('click', () => {
+        
+        topResults.forEach(result => {
+            const suggestionItem = document.createElement('div');
+            suggestionItem.className = 'search-suggestion';
+            
+            // Mettre en évidence les termes dans le titre
+            const title = result.note.title || 'Sans titre';
+            const highlightedTitle = highlightSearchResults(title, currentSearchTerms);
+            
+            // Extraire un extrait du contenu avec le terme trouvé
+            let content = result.note.content || '';
+            
+            // Limiter la longueur de l'extrait
+            if (content.length > 100) {
+                content = content.substring(0, 100) + '...';
+            }
+            
+            // Mettre en évidence les termes dans le contenu
+            const highlightedContent = highlightSearchResults(content, currentSearchTerms);
+            
+            // Ajouter le contenu HTML
+            suggestionItem.innerHTML = `
+                <div class="suggestion-title">${highlightedTitle}</div>
+                <div class="suggestion-content">${highlightedContent}</div>
+            `;
+            
+            // Ajouter l'écouteur d'événement pour le clic
+            suggestionItem.addEventListener('click', () => {
                 if (onSuggestionClick) {
                     onSuggestionClick(result.note);
                 }
                 searchResults.innerHTML = '';
-                searchResults.classList.remove('active');
+                searchResults.style.display = 'none';
             });
-
-            searchResults.appendChild(resultItem);
+            
+            searchResults.appendChild(suggestionItem);
         });
-
-        searchResults.classList.add('active');
+        
+        searchResults.style.display = 'block';
     } else {
-        searchResults.innerHTML = '';
-        searchResults.classList.remove('active');
+        searchResults.innerHTML = '<div class="no-results">Aucun résultat</div>';
+        searchResults.style.display = 'block';
     }
 }
 
@@ -108,72 +115,57 @@ export function showSearchSuggestions(query, notes, searchResults, onSuggestionC
  * @param {HTMLElement} revisitSections - Le conteneur des sections de révision
  */
 export function handleSearch(query, notes, searchResults, notesContainer, revisitSections) {
-    if (!query || !notesContainer) return;
-
-    query = query.trim();
-
-    if (query === '') {
-        if (searchResults) {
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('active');
-        }
-        currentSearchTerms = []; // Réinitialiser les termes de recherche
-        
-        // Revenir à l'état vide au lieu d'afficher toutes les notes
-        notesContainer.innerHTML = '';
+    // Masquer les suggestions
+    searchResults.innerHTML = '';
+    searchResults.style.display = 'none';
+    
+    if (!query.trim()) {
+        // Si la recherche est vide, afficher l'état par défaut
+        revisitSections.style.display = 'flex';
         notesContainer.style.display = 'none';
-        
-        // Réafficher les sections de révision
-        if (revisitSections) {
-            revisitSections.style.display = 'flex';
-        }
         return;
     }
-
-    // Masquer les sections de révision pendant la recherche
-    if (revisitSections) {
-        revisitSections.style.display = 'none';
-    }
-
-    // Enregistrer les termes de recherche (mots individuels)
-    currentSearchTerms = query.split(/\s+/).filter(term => term.length > 1);
-
-    // Perform search
-    const searchResultItems = performSearch(query, notes);
-
-    // Display search results
-    if (searchResultItems.length > 0) {
-        // Masquer les suggestions après la recherche
-        if (searchResults) {
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('active');
-        }
-
-        // Marquer chaque note comme résultat de recherche
-        searchResultItems.forEach(result => {
-            result.note.isSearchResult = true;
+    
+    // Masquer les sections de révision et afficher le conteneur de notes
+    revisitSections.style.display = 'none';
+    notesContainer.style.display = 'grid';
+    
+    // Mettre à jour les termes de recherche actuels
+    currentSearchTerms = query.trim().toLowerCase().split(/\s+/);
+    
+    // Effectuer la recherche
+    const results = performSearch(query, notes);
+    
+    if (results.length > 0) {
+        // Créer une copie des notes trouvées avec la propriété isSearchResult
+        const markedResults = results.map(result => {
+            return {
+                ...result.note,
+                isSearchResult: true,
+                searchScore: result.score
+            };
         });
-
-        // Afficher les résultats dans la vue principale
-        if (notesContainer) {
-            notesContainer.style.display = 'grid';
-            renderNotes(notesContainer, notes, searchResultItems.map(result => result.note), currentSearchTerms);
-        }
+        
+        // Afficher les résultats
+        markedResults.sort((a, b) => b.searchScore - a.searchScore);
+        notesContainer.innerHTML = '';
+        
+        // Créer un en-tête pour les résultats de recherche
+        const searchHeader = document.createElement('div');
+        searchHeader.className = 'search-results-header';
+        searchHeader.innerHTML = `${results.length} résultat(s) pour "${query}"`;
+        notesContainer.appendChild(searchHeader);
+        
+        // Afficher toutes les notes (le filtrage est géré par renderNotes)
+        return markedResults;
     } else {
-        // Aucun résultat trouvé
-        if (searchResults) {
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('active');
-        }
-        if (notesContainer) {
-            notesContainer.style.display = 'block';
-            notesContainer.innerHTML = `
-                <div class="empty-state">
-                    <h2>Aucune note trouvée</h2>
-                    <p>Aucune note ne correspond à votre recherche.</p>
-                </div>
-            `;
-        }
+        notesContainer.innerHTML = `
+            <div class="empty-search">
+                <p>Aucun résultat trouvé pour "${query}"</p>
+                <p>Essayez d'autres termes de recherche.</p>
+            </div>
+        `;
+        return [];
     }
 }
 
@@ -184,21 +176,21 @@ export function handleSearch(query, notes, searchResults, notesContainer, revisi
  * @returns {Array} - Résultats de recherche avec score
  */
 export function performSearch(query, notes) {
-    // Clean the query: lowercase, remove accents, remove extra spaces
-    const cleanedQuery = cleanText(query);
-
-    // First try strict search
-    let results = strictSearch(cleanedQuery, notes);
-
-    // If no results, try fuzzy search with Levenshtein distance
-    if (results.length === 0) {
-        results = fuzzySearch(cleanedQuery, notes);
+    if (!query || !notes || notes.length === 0) {
+        return [];
     }
-
-    // Sort by score (highest first)
-    results.sort((a, b) => b.score - a.score);
-
-    return results;
+    
+    const cleanedQuery = cleanText(query);
+    
+    // Essayer d'abord une recherche stricte
+    const strictResults = strictSearch(cleanedQuery, notes);
+    
+    // Si aucun résultat strict, essayer une recherche floue
+    if (strictResults.length === 0) {
+        return fuzzySearch(cleanedQuery, notes);
+    }
+    
+    return strictResults;
 }
 
 /**
@@ -208,53 +200,54 @@ export function performSearch(query, notes) {
  * @returns {Array} - Résultats de recherche avec score
  */
 export function strictSearch(cleanedQuery, notes) {
+    const queryTerms = cleanedQuery.split(/\s+/);
     const results = [];
-    const queryTerms = cleanedQuery.split(/\s+/).filter(term => term.length > 0);
-
+    
     notes.forEach(note => {
-        // Prepare note content for search (lowercase, no accents)
-        const cleanedContent = cleanText(note.content);
-        const cleanedTitle = cleanText(note.title || '');
-        
-        // Check for exact matches in content and title
         let score = 0;
+        const cleanTitle = cleanText(note.title || '');
+        const cleanContent = cleanText(note.content || '');
         
+        // Rechercher chaque terme dans le titre et le contenu
         queryTerms.forEach(term => {
-            // Title match (higher weight)
-            if (cleanedTitle.includes(term)) {
-                score += 3;
+            if (term.length < 2) return; // Ignorer les termes trop courts
+            
+            // Points pour le titre (titre a plus de poids)
+            if (cleanTitle.includes(term)) {
+                score += 10;
             }
             
-            // Content match
-            if (cleanedContent.includes(term)) {
-                score += 2;
+            // Points pour le contenu
+            if (cleanContent.includes(term)) {
+                score += 5;
             }
             
-            // Category match
-            if (note.categories) {
+            // Points pour les catégories
+            if (note.categories && note.categories.length > 0) {
                 note.categories.forEach(category => {
                     if (cleanText(category).includes(term)) {
-                        score += 2;
+                        score += 8;
                     }
                 });
             }
             
-            // Hashtag match
-            if (note.hashtags) {
+            // Points pour les hashtags
+            if (note.hashtags && note.hashtags.length > 0) {
                 note.hashtags.forEach(tag => {
                     if (cleanText(tag).includes(term)) {
-                        score += 2;
+                        score += 8;
                     }
                 });
             }
         });
-
+        
         if (score > 0) {
             results.push({ note, score });
         }
     });
-
-    return results;
+    
+    // Trier par score décroissant
+    return results.sort((a, b) => b.score - a.score);
 }
 
 /**
@@ -264,71 +257,76 @@ export function strictSearch(cleanedQuery, notes) {
  * @returns {Array} - Résultats de recherche avec score
  */
 export function fuzzySearch(cleanedQuery, notes) {
+    const queryTerms = cleanedQuery.split(/\s+/);
     const results = [];
-    const queryTerms = cleanedQuery.split(/\s+/).filter(term => term.length > 0);
     
     notes.forEach(note => {
-        // Prepare note content for search
-        const cleanedContent = cleanText(note.content);
-        const cleanedTitle = cleanText(note.title || '');
-        const contentWords = cleanedContent.split(/\s+/);
-        const titleWords = cleanedTitle.split(/\s+/);
-        
         let score = 0;
+        const cleanTitle = cleanText(note.title || '');
+        const cleanContent = cleanText(note.content || '');
         
-        queryTerms.forEach(queryTerm => {
-            // Skip very short terms
-            if (queryTerm.length < 2) return;
+        // Diviser le contenu en mots pour la recherche floue
+        const titleWords = cleanTitle.split(/\s+/);
+        const contentWords = cleanContent.split(/\s+/);
+        
+        // Rechercher chaque terme avec distance de Levenshtein
+        queryTerms.forEach(term => {
+            if (term.length < 3) return; // Ignorer les termes trop courts pour éviter les faux positifs
             
-            // Check content words
-            contentWords.forEach(word => {
-                if (word.length < 3) return; // Skip very short words
-                
-                const distance = levenshteinDistance(queryTerm, word);
-                // Score based on similarity (lower distance = higher score)
-                if (distance <= 2) {
-                    // More exact matches get higher scores
-                    score += (3 - distance);
-                }
-            });
-            
-            // Check title words (higher weight)
+            // Recherche floue dans le titre
             titleWords.forEach(word => {
-                if (word.length < 3) return;
-                
-                const distance = levenshteinDistance(queryTerm, word);
-                if (distance <= 2) {
-                    score += (3 - distance) * 1.5; // Higher weight for title matches
+                if (word.length >= 3) {
+                    const distance = levenshteinDistance(term, word);
+                    // Si la distance est faible par rapport à la longueur du mot
+                    if (distance <= Math.min(2, Math.floor(word.length / 3))) {
+                        // Plus la distance est petite, plus le score est élevé
+                        score += 10 * (1 - distance / Math.max(term.length, word.length));
+                    }
                 }
             });
             
-            // Check categories
-            if (note.categories) {
+            // Recherche floue dans le contenu (limiter aux 200 premiers mots pour l'efficacité)
+            const limitedContentWords = contentWords.slice(0, 200);
+            limitedContentWords.forEach(word => {
+                if (word.length >= 3) {
+                    const distance = levenshteinDistance(term, word);
+                    if (distance <= Math.min(2, Math.floor(word.length / 3))) {
+                        score += 5 * (1 - distance / Math.max(term.length, word.length));
+                    }
+                }
+            });
+            
+            // Recherche floue dans les catégories
+            if (note.categories && note.categories.length > 0) {
                 note.categories.forEach(category => {
-                    const cleanedCategory = cleanText(category);
-                    if (cleanedCategory.includes(queryTerm) || levenshteinDistance(queryTerm, cleanedCategory) <= 2) {
-                        score += 2;
+                    const cleanCategory = cleanText(category);
+                    const distance = levenshteinDistance(term, cleanCategory);
+                    if (distance <= Math.min(2, Math.floor(cleanCategory.length / 3))) {
+                        score += 8 * (1 - distance / Math.max(term.length, cleanCategory.length));
                     }
                 });
             }
             
-            // Check hashtags
-            if (note.hashtags) {
+            // Recherche floue dans les hashtags
+            if (note.hashtags && note.hashtags.length > 0) {
                 note.hashtags.forEach(tag => {
-                    const cleanedTag = cleanText(tag);
-                    if (cleanedTag.includes(queryTerm) || levenshteinDistance(queryTerm, cleanedTag) <= 2) {
-                        score += 2;
+                    const cleanTag = cleanText(tag);
+                    const distance = levenshteinDistance(term, cleanTag);
+                    if (distance <= Math.min(2, Math.floor(cleanTag.length / 3))) {
+                        score += 8 * (1 - distance / Math.max(term.length, cleanTag.length));
                     }
                 });
             }
         });
-
-        if (score > 0) {
+        
+        // N'ajouter que les notes avec un score minimum
+        if (score >= 3) {
             results.push({ note, score });
         }
     });
-
-    return results;
+    
+    // Trier par score décroissant
+    return results.sort((a, b) => b.score - a.score);
 }
 
 /**

@@ -12,18 +12,27 @@ export function highlightSearchResults(content, searchTerms) {
     if (!content || !searchTerms || searchTerms.length === 0) {
         return content;
     }
-
-    let highlightedContent = content;
-
-    // Mettre en évidence chaque terme de recherche
+    
+    // Échapper les caractères spéciaux pour éviter les injections HTML
+    let escapedContent = content.replace(/[&<>"']/g, function(match) {
+        return {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[match];
+    });
+    
+    // Appliquer la mise en évidence pour chaque terme de recherche (insensible à la casse)
     searchTerms.forEach(term => {
-        if (term.length > 1) {
+        if (term.length > 1) { // Ignorer les termes trop courts
             const regex = new RegExp(`(${term})`, 'gi');
-            highlightedContent = highlightedContent.replace(regex, '<span class="highlighted-term">$1</span>');
+            escapedContent = escapedContent.replace(regex, '<span class="highlighted-term">$1</span>');
         }
     });
-
-    return highlightedContent;
+    
+    return escapedContent;
 }
 
 /**
@@ -36,7 +45,7 @@ export function highlightSearchTermsInInput(inputElement, searchTerms) {
         return;
     }
 
-    // Create a container for the highlighted content
+    // Créer un conteneur pour le contenu mis en évidence
     const highlightedContainer = document.createElement('div');
     highlightedContainer.className = 'highlighted-content';
     highlightedContainer.style.width = '100%';
@@ -44,46 +53,27 @@ export function highlightSearchTermsInInput(inputElement, searchTerms) {
     highlightedContainer.style.boxSizing = 'border-box';
     highlightedContainer.style.overflow = 'auto';
     
-    // Copy styling from the original element
+    // Copier le style de l'élément original
     if (inputElement.tagName === 'TEXTAREA') {
         highlightedContainer.style.whiteSpace = 'pre-wrap';
         highlightedContainer.style.padding = window.getComputedStyle(inputElement).padding;
     }
 
-    // Get the content and add highlights
+    // Obtenir le contenu et ajouter les mises en évidence
     let content = inputElement.value || inputElement.textContent || '';
     
-    // Escape HTML special characters to prevent injection
-    content = content.replace(/[&<>"']/g, match => {
-        return {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-        }[match];
-    });
-    
-    // Replace line breaks with <br> for proper display in div
+    // Remplacer les sauts de ligne par <br> pour l'affichage correct dans div
     if (inputElement.tagName === 'TEXTAREA') {
         content = content.replace(/\n/g, '<br>');
     }
     
-    // Apply highlighting for each search term (case-insensitive)
-    searchTerms.forEach(term => {
-        if (term.length > 1) {
-            const regex = new RegExp(`(${term})`, 'gi');
-            content = content.replace(regex, '<span class="highlighted-term">$1</span>');
-        }
-    });
+    // Mettre en évidence les termes
+    highlightedContainer.innerHTML = highlightSearchResults(content, searchTerms);
     
-    // Set the highlighted content
-    highlightedContainer.innerHTML = content;
-    
-    // Add the highlighted container after the input element
+    // Ajouter le conteneur après l'élément d'entrée
     inputElement.parentNode.insertBefore(highlightedContainer, inputElement.nextSibling);
     
-    // Hide the original input element
+    // Masquer l'élément d'entrée original
     inputElement.style.display = 'none';
 }
 
@@ -103,22 +93,10 @@ export function highlightSearchTermsInTags(container, selector, searchTerms) {
     tags.forEach(tag => {
         const originalText = tag.textContent;
         
-        // Store original content for later restoration
+        // Stocker le contenu original pour restauration ultérieure
         tag.dataset.originalContent = originalText;
         
-        let highlightedText = originalText;
-        
-        // Apply highlighting for each search term
-        searchTerms.forEach(term => {
-            if (term.length > 1) {
-                const regex = new RegExp(`(${term})`, 'gi');
-                highlightedText = highlightedText.replace(regex, '<span class="highlighted-term">$1</span>');
-            }
-        });
-        
-        // Set the highlighted content
-        if (highlightedText !== originalText) {
-            tag.innerHTML = highlightedText;
-        }
+        // Mettre en évidence les termes
+        tag.innerHTML = highlightSearchResults(originalText, searchTerms);
     });
 }

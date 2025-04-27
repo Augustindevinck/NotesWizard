@@ -6,23 +6,22 @@
  * Nettoie tous les éléments surlignés dans le DOM
  */
 export function cleanupHighlightedElements() {
-    // Restaurer les inputs originaux
-    const highlightedElements = document.querySelectorAll('.highlighted-content');
-    highlightedElements.forEach(el => {
-        const prev = el.previousElementSibling;
-        if (prev && (prev.tagName === 'INPUT' || prev.tagName === 'TEXTAREA')) {
-            prev.style.display = '';
+    // Supprimer tous les conteneurs de surlignage
+    const highlightedContainers = document.querySelectorAll('.highlighted-content');
+    highlightedContainers.forEach(container => {
+        const parent = container.parentNode;
+        const originalInput = parent.querySelector('input, textarea');
+        if (originalInput) {
+            originalInput.style.display = ''; // Réafficher l'élément original
         }
-        el.parentNode.removeChild(el);
+        parent.removeChild(container);
     });
-
-    // Restaurer les tags originaux (catégories et hashtags)
-    const highlightedTags = document.querySelectorAll('.category-tag, .hashtag-tag');
+    
+    // Restaurer le contenu original des tags
+    const highlightedTags = document.querySelectorAll('[data-original-content]');
     highlightedTags.forEach(tag => {
-        if (tag.dataset.originalContent) {
-            tag.textContent = tag.dataset.originalContent;
-            delete tag.dataset.originalContent;
-        }
+        tag.textContent = tag.dataset.originalContent;
+        delete tag.dataset.originalContent;
     });
 }
 
@@ -31,7 +30,7 @@ export function cleanupHighlightedElements() {
  * @returns {string} - Identifiant unique
  */
 export function generateUniqueId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
 /**
@@ -40,8 +39,13 @@ export function generateUniqueId() {
  */
 export function renderEmptyState(container) {
     if (!container) return;
-    container.innerHTML = '';
-    container.style.display = 'none';
+    
+    container.innerHTML = `
+        <div class="empty-state">
+            <p>Aucune note à afficher.</p>
+            <p>Cliquez sur le bouton + pour ajouter une note.</p>
+        </div>
+    `;
 }
 
 /**
@@ -50,9 +54,26 @@ export function renderEmptyState(container) {
  * @returns {string} - La date formatée
  */
 export function formatDate(date) {
-    return date.toLocaleDateString('fr-FR', {
+    if (!date) return '';
+    
+    // Vérifier si la date est un objet Date valide
+    if (!(date instanceof Date) || isNaN(date)) {
+        try {
+            date = new Date(date);
+            if (isNaN(date)) {
+                return 'Date invalide';
+            }
+        } catch (e) {
+            return 'Date invalide';
+        }
+    }
+    
+    // Formatter la date
+    return date.toLocaleDateString(undefined, {
         year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 }

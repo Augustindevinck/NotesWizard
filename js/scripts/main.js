@@ -7,11 +7,11 @@
 import { loadNotes, saveNotes, loadRevisitSettings, saveRevisitSettings } from './utils/localStorage.js';
 import { exportNotes, importNotes } from './utils/exportImport.js';
 import { renderEmptyState, cleanupHighlightedElements } from './utils/domHelpers.js';
-import { renderNotes, createNoteElement, deleteNote, saveNote } from './notes/notesManager.js';
-import { initNoteModal, openNoteModal, saveCurrentNote } from './notes/noteModal.js';
-import { initRevisit, renderRevisitSections, showMoreNotes, openDaysEditModal, saveDaysSettings } from './notes/revisit.js';
+import { renderNotes, createNoteElement, deleteNote, saveNote, initNotesManager } from './notes/notesManager.js';
+import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './notes/noteModal.js';
+import { initRevisit, renderRevisitSections, showMoreNotes, openDaysEditModal, saveDaysSettings, initCreateNoteElement } from './notes/revisit.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './categories/categoryManager.js';
-import { detectHashtags } from './categories/hashtagManager.js';
+import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './categories/hashtagManager.js';
 import { initSearchManager, handleSearch, showSearchSuggestions, getCurrentSearchTerms } from './search/searchManager.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
@@ -96,6 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialisation des modules
         initCategoryManager(appState.allCategories);
         initSearchManager();
+        
+        // Initialiser les éléments du modal
         initNoteModal({
             noteModal,
             noteTitle,
@@ -110,6 +112,20 @@ document.addEventListener('DOMContentLoaded', () => {
             editButton,
             saveNoteBtn
         });
+        
+        // Injecter les fonctions nécessaires au noteModal
+        initModalFunctions({
+            extractHashtags: extractHashtags,
+            extractYoutubeUrls: extractYoutubeUrls,
+            addCategoryTag: addCategoryTag,
+            addHashtagTag: addHashtagTag,
+            saveNote: saveNote
+        });
+        
+        // Initialiser les fonctions notesManager
+        initNotesManager(openNoteModal, renderRevisitSections);
+        
+        // Initialiser les révisitations
         initRevisit({
             containers: {
                 today: revisitNotesToday,
@@ -122,6 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 section2: showMoreBtn2
             }
         }, revisitSettings);
+        
+        // Injecter la fonction createNoteElement dans le module revisit
+        initCreateNoteElement(createNoteElement);
 
         // Ajouter l'écouteur pour le bouton de vue générale
         const generalViewBtn = document.getElementById('general-view-btn');

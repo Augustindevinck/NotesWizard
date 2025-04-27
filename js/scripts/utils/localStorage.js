@@ -1,47 +1,55 @@
 /**
- * Fonctions pour la gestion du localStorage
+ * Fonctions utilitaires pour l'interaction avec localStorage
  */
 
 /**
- * Charge les notes depuis le localStorage
- * @returns {Array} Le tableau des notes ou un tableau vide si aucune note n'est trouvée
+ * Charge les notes depuis localStorage
+ * @returns {Array} Tableau de notes
  */
 export function loadNotes() {
-    const storedNotes = localStorage.getItem('notes');
-    if (storedNotes) {
-        return JSON.parse(storedNotes);
+    try {
+        const notesJSON = localStorage.getItem('notes');
+        return notesJSON ? JSON.parse(notesJSON) : [];
+    } catch (error) {
+        console.error('Erreur lors du chargement des notes:', error);
+        return [];
     }
-    return [];
 }
 
 /**
- * Sauvegarde les notes dans le localStorage
- * @param {Array} notes - Tableau des notes à sauvegarder
+ * Sauvegarde les notes dans localStorage
+ * @param {Array} notes - Tableau de notes à sauvegarder
  */
 export function saveNotes(notes) {
-    localStorage.setItem('notes', JSON.stringify(notes));
+    try {
+        localStorage.setItem('notes', JSON.stringify(notes));
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des notes:', error);
+    }
 }
 
 /**
- * Charge les paramètres de révision depuis le localStorage
- * @returns {Object} L'objet contenant les paramètres de révision ou les valeurs par défaut
+ * Charge les paramètres de révision depuis localStorage
+ * @returns {Object} Paramètres de révision
  */
 export function loadRevisitSettings() {
-    const storedSettings = localStorage.getItem('revisitSettings');
-    if (storedSettings) {
-        return JSON.parse(storedSettings);
+    try {
+        const settingsJSON = localStorage.getItem('revisitSettings');
+        return settingsJSON ? JSON.parse(settingsJSON) : { section1: 7, section2: 14 };
+    } catch (error) {
+        console.error('Erreur lors du chargement des paramètres de révision:', error);
+        return { section1: 7, section2: 14 };
     }
-    // Valeurs par défaut
-    return {
-        section1: 7,
-        section2: 14
-    };
 }
 
 /**
- * Sauvegarde les paramètres de révision dans le localStorage
- * @param {Object} settings - Objet contenant les paramètres de révision
+ * Sauvegarde les paramètres de révision dans localStorage
+ * @param {Object} settings - Paramètres de révision à sauvegarder
  */
 export function saveRevisitSettings(settings) {
-    localStorage.setItem('revisitSettings', JSON.stringify(settings));
+    try {
+        localStorage.setItem('revisitSettings', JSON.stringify(settings));
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des paramètres de révision:', error);
+    }
 }

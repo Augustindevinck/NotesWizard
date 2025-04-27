@@ -5,126 +5,131 @@
 import { saveNotes } from './localStorage.js';
 
 /**
- * Exporte les notes au format JSON
+ * Exporte les notes au format JSON dans un fichier téléchargeable
  * @param {Array} notes - Tableau des notes à exporter
- * @returns {boolean} - True si l'exportation a réussi, false sinon
+ * @param {HTMLElement} statusElement - Élément pour afficher le statut de l'opération
  */
-export function exportNotes(notes, importStatus) {
-    if (notes.length === 0) {
-        alert('Aucune note à exporter');
-        return false;
+export function exportNotes(notes, statusElement) {
+    if (!notes || notes.length === 0) {
+        if (statusElement) {
+            statusElement.textContent = 'Aucune note à exporter';
+            statusElement.className = 'status-error';
+        }
+        return;
     }
-
-    const dataStr = JSON.stringify(notes, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-
-    const exportFileDefaultName = 'notes-' + new Date().toISOString().slice(0, 10) + '.json';
-
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-
-    // Afficher un message de succès si l'élément importStatus est fourni
-    if (importStatus) {
-        importStatus.textContent = 'Export réussi !';
-        importStatus.className = 'success';
-        importStatus.style.display = 'block';
-
-        setTimeout(() => {
-            importStatus.style.display = 'none';
-        }, 3000);
+    
+    try {
+        // Créer un objet Blob avec les notes
+        const notesJSON = JSON.stringify(notes, null, 2);
+        const blob = new Blob([notesJSON], { type: 'application/json' });
+        
+        // Créer un lien de téléchargement
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Générer un nom de fichier avec la date
+        const date = new Date();
+        const dateStr = date.toISOString().split('T')[0];
+        a.download = `notes_export_${dateStr}.json`;
+        
+        // Déclencher le téléchargement
+        document.body.appendChild(a);
+        a.click();
+        
+        // Nettoyer
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        if (statusElement) {
+            statusElement.textContent = `${notes.length} notes exportées avec succès`;
+            statusElement.className = 'status-success';
+        }
+    } catch (error) {
+        console.error('Erreur lors de l\'exportation des notes:', error);
+        if (statusElement) {
+            statusElement.textContent = 'Erreur lors de l\'exportation';
+            statusElement.className = 'status-error';
+        }
     }
-
-    return true;
 }
 
 /**
  * Importe des notes depuis un fichier JSON
- * @param {Event} event - L'événement de changement du fichier
- * @param {Array} notes - Le tableau de notes actuel
- * @param {Function} callback - Fonction à appeler après l'importation pour mettre à jour l'interface
- * @param {HTMLElement} importStatus - Élément pour afficher le statut de l'importation
+ * @param {Event} event - Événement de sélection de fichier
+ * @param {Array} notes - Tableau des notes actuel
+ * @param {Function} callback - Fonction à appeler après l'importation
+ * @param {HTMLElement} statusElement - Élément pour afficher le statut de l'opération
  */
-export function importNotes(event, notes, callback, importStatus) {
+export function importNotes(event, notes, callback, statusElement) {
     const file = event.target.files[0];
-
     if (!file) {
         return;
     }
-
+    
+    // Vérifier le type de fichier
+    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+        if (statusElement) {
+            statusElement.textContent = 'Format de fichier invalide. Veuillez sélectionner un fichier JSON.';
+            statusElement.className = 'status-error';
+        }
+        return;
+    }
+    
     const reader = new FileReader();
-
     reader.onload = function(e) {
         try {
             const importedNotes = JSON.parse(e.target.result);
-
-            // Valider les données importées
+            
             if (!Array.isArray(importedNotes)) {
-                throw new Error('Format invalide : les données importées ne sont pas un tableau');
+                throw new Error('Format invalide: les notes doivent être un tableau');
             }
-
-            // Validation basique de chaque note
+            
+            // Vérifier la structure des notes importées
             importedNotes.forEach(note => {
-                if (!note.id || !note.content) {
-                    throw new Error('Format invalide : certaines notes n\'ont pas d\'ID ou de contenu');
+                if (!note.id || !note.createdAt) {
+                    throw new Error('Format invalide: certaines notes sont mal structurées');
                 }
             });
-
-            // Identifier les notes en double
-            const existingNoteIds = new Map();
-            notes.forEach(note => existingNoteIds.set(note.id, note));
-
-            // Fusionner les notes importées avec les notes existantes
-            let addedCount = 0;
-            let updatedCount = 0;
-
+            
+            // Fusionner avec les notes existantes (en évitant les doublons)
+            const existingIds = new Set(notes.map(note => note.id));
+            let importCount = 0;
+            
             importedNotes.forEach(importedNote => {
-                if (existingNoteIds.has(importedNote.id)) {
-                    // Mettre à jour la note existante
-                    const existingNote = existingNoteIds.get(importedNote.id);
-                    Object.assign(existingNote, importedNote);
-                    updatedCount++;
-                } else {
-                    // Ajouter une nouvelle note
+                if (!existingIds.has(importedNote.id)) {
                     notes.push(importedNote);
-                    addedCount++;
+                    importCount++;
                 }
             });
-
-            // Enregistrer le tableau de notes mis à jour
+            
+            // Sauvegarder dans localStorage
             saveNotes(notes);
-
-            // Afficher un message de succès
-            if (importStatus) {
-                importStatus.textContent = `Import réussi : ${addedCount} notes ajoutées, ${updatedCount} notes mises à jour.`;
-                importStatus.className = 'success';
-                importStatus.style.display = 'block';
-
-                setTimeout(() => {
-                    importStatus.style.display = 'none';
-                }, 3000);
+            
+            if (statusElement) {
+                statusElement.textContent = `${importCount} notes importées avec succès`;
+                statusElement.className = 'status-success';
             }
-
-            // Mettre à jour l'interface utilisateur
+            
+            // Exécuter le callback si fourni
             if (callback) {
                 callback();
             }
-
         } catch (error) {
-            console.error('Erreur lors de l\'importation :', error);
-            
-            if (importStatus) {
-                importStatus.textContent = `Erreur : ${error.message}`;
-                importStatus.className = 'error';
-                importStatus.style.display = 'block';
-
-                setTimeout(() => {
-                    importStatus.style.display = 'none';
-                }, 3000);
+            console.error('Erreur lors de l\'importation des notes:', error);
+            if (statusElement) {
+                statusElement.textContent = `Erreur: ${error.message}`;
+                statusElement.className = 'status-error';
             }
         }
     };
-
+    
+    reader.onerror = function() {
+        if (statusElement) {
+            statusElement.textContent = 'Erreur lors de la lecture du fichier';
+            statusElement.className = 'status-error';
+        }
+    };
+    
     reader.readAsText(file);
 }

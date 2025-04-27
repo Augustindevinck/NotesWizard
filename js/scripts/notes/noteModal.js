@@ -301,7 +301,12 @@ export function saveCurrentNote(notes, callback) {
     const hashtags = Array.from(hashtagElements).map(el => el.textContent.trim().substring(1)); // Remove # prefix
 
     // Extract YouTube URLs from content
-    const videoUrls = extractYoutubeUrls(content);
+    let videoUrls = [];
+    if (extractYoutubeUrlsFn) {
+        videoUrls = extractYoutubeUrlsFn(content);
+    } else {
+        console.error('extractYoutubeUrls non initialisé');
+    }
 
     // Create note data
     const noteData = {
@@ -314,7 +319,12 @@ export function saveCurrentNote(notes, callback) {
     };
 
     // Save the note and get the ID
-    const savedNoteId = saveNote(noteData, notes, callback);
+    let savedNoteId = null;
+    if (saveNoteFn) {
+        savedNoteId = saveNoteFn(noteData, notes, callback);
+    } else {
+        console.error('saveNote non initialisé');
+    }
 
     // Hide the modal
     cleanupHighlightedElements();
