@@ -764,18 +764,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSearch() {
         const query = searchInput.value.trim();
         const revisitSections = document.querySelector('.revisit-sections');
+        const notesContainer = document.getElementById('notes-container');
 
         if (query === '') {
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('active');
+            if (searchResults) {
+                searchResults.innerHTML = '';
+                searchResults.classList.remove('active');
+            }
             currentSearchTerms = []; // Réinitialiser les termes de recherche
             renderEmptyState(); // Afficher l'état vide au lieu de toutes les notes
-            revisitSections.style.display = 'flex'; // Réafficher les sections de révision
+            if (revisitSections) {
+                revisitSections.style.display = 'flex'; // Réafficher les sections de révision
+            }
             return;
         }
 
         // Masquer les sections de révision pendant la recherche
-        revisitSections.style.display = 'none';
+        if (revisitSections) {
+            revisitSections.style.display = 'none';
+        }
 
         // Enregistrer les termes de recherche (mots individuels)
         currentSearchTerms = query.split(/\s+/).filter(term => term.length > 1);
@@ -786,8 +793,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Display search results
         if (searchResultItems.length > 0) {
             // Masquer les suggestions après la recherche
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('active');
+            if (searchResults) {
+                searchResults.innerHTML = '';
+                searchResults.classList.remove('active');
+            }
 
             // Marquer chaque note comme résultat de recherche
             searchResultItems.forEach(result => {
@@ -795,15 +804,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Afficher les résultats dans la vue principale
-            renderNotes(searchResultItems.map(result => result.note));
+            if (notesContainer) {
+                notesContainer.style.display = 'grid';
+                renderNotes(searchResultItems.map(result => result.note));
+            }
         } else {
             // Aucun résultat trouvé
-            searchResults.innerHTML = '';
-            searchResults.classList.remove('active');
-            renderNotes([]);
-
-            // Afficher un message d'information
-            notesContainer.innerHTML = `
+            if (searchResults) {
+                searchResults.innerHTML = '';
+                searchResults.classList.remove('active');
+            }
+            if (notesContainer) {
+                notesContainer.style.display = 'block';
+                notesContainer.innerHTML = `
                 <div class="empty-state">
                     <h2>Aucune note trouvée</h2>
                     <p>Aucune note ne correspond à votre recherche.</p>
