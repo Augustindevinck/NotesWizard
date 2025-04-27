@@ -50,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
         section2: 14
     };
 
+    // Set pour stocker les IDs des notes relues
+    const readNotes = new Set();
+
     // Initialize the application
     init();
 
@@ -159,6 +162,16 @@ document.addEventListener('DOMContentLoaded', () => {
         exportBtn.addEventListener('click', exportNotes);
         importBtn.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', importNotes);
+
+        // Marquer comme lu button
+        document.getElementById('mark-as-read-btn').addEventListener('click', () => {
+            const currentNoteId = document.querySelector('.modal').dataset.noteId;
+            if (currentNoteId) {
+                readNotes.add(currentNoteId);
+                noteModal.style.display = 'none';
+                renderRevisitSections();
+            }
+        });
     }
 
     // Fonction pour nettoyer tous les éléments surlignés
@@ -294,6 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const viewTitle = document.getElementById('note-view-title');
         const viewContent = document.getElementById('note-view-content');
         const editButton = document.getElementById('edit-note-btn');
+        const markAsReadBtn = document.getElementById('mark-as-read-btn');
 
         // Clear previous note data
         noteTitle.value = '';
@@ -368,6 +382,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Surligner dans les catégories et hashtags
                 highlightSearchTermsInTags(selectedCategories, '.category-tag');
                 highlightSearchTermsInTags(detectedHashtags, '.hashtag-tag');
+            }
+
+            if (note && !fromSearch) {
+                const isRevisitNote = document.querySelector('.revisit-sections').contains(event.target);
+                markAsReadBtn.style.display = isRevisitNote ? 'block' : 'none';
+                noteModal.dataset.noteId = note.id;
+            } else {
+                markAsReadBtn.style.display = 'none';
+                delete noteModal.dataset.noteId;
             }
         }
 
@@ -1205,13 +1228,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getNotesForDate(targetDate) {
-        // Obtenir les notes créées exactement à la date cible
-        // Format de date pour comparaison (YYYY-MM-DD)
         const targetYear = targetDate.getFullYear();
         const targetMonth = targetDate.getMonth();
         const targetDay = targetDate.getDate();
 
         return notes.filter(note => {
+            if (readNotes.has(note.id)) return false;
             const noteDate = new Date(note.createdAt);
             return noteDate.getFullYear() === targetYear && 
                    noteDate.getMonth() === targetMonth && 
