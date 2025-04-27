@@ -1380,16 +1380,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = '';
 
-        // Filtrer les notes marquées comme lues
-        const unreadNotes = notesToRender.filter(note => !readNotes.has(note.id));
-
-        if (unreadNotes.length === 0) {
+        if (notesToRender.length === 0) {
             container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
             if (showMoreBtn) {
                 showMoreBtn.style.display = 'none';
             }
             return;
         }
+
+        // Filtrer les notes marquées comme lues
+        const unreadNotes = notesToRender.filter(note => !readNotes.has(note.id));
 
         // Pour l'affichage compact, montrer max 3 notes par défaut
         const initialCount = Math.min(3, unreadNotes.length);
@@ -1439,7 +1439,10 @@ document.addEventListener('DOMContentLoaded', () => {
             showMoreBtn = document.getElementById('show-more-2');
         }
 
-        if (!container || !showMoreBtn || !notesToShow) return;
+        if (!container || !showMoreBtn) return;
+
+        // Filtrer les notes non lues
+        const unreadNotes = notesToShow.filter(note => !readNotes.has(note.id));
 
         // Vérifier si on est déjà en vue étendue
         if (container.dataset.expandedView === 'true') {
