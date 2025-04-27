@@ -13,7 +13,7 @@ import { initRevisit, renderRevisitSections, showMoreNotes, openDaysEditModal, s
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './categories/hashtagManager.js';
 import { initSearchManager, handleSearch, showSearchSuggestions, getCurrentSearchTerms } from './search/searchManager.js';
-import { navigateToGeneralView } from '../components/utils/navigation.js';
+import { renderCategoryTree } from '../categoryTree.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', () => {
@@ -147,8 +147,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const generalViewBtn = document.getElementById('general-view-btn');
         if (generalViewBtn) {
             generalViewBtn.addEventListener('click', () => {
-                // Utiliser la nouvelle fonction de navigation vers la vue générale
-                navigateToGeneralView();
+                // Masquer les sections de révision
+                revisitSections.style.display = 'none';
+                notesContainer.style.display = 'block';
+                
+                // Afficher l'arborescence des catégories
+                renderCategoryTree(
+                    notesContainer, 
+                    appState.notes, 
+                    createNoteElement, 
+                    (notes) => saveNotes(notes)
+                );
             });
         }
 
