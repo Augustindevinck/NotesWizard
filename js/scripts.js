@@ -154,6 +154,24 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Home button - retour à l'accueil
+        const homeBtn = document.getElementById('home-btn');
+        if (homeBtn) {
+            homeBtn.addEventListener('click', () => {
+                // Afficher les sections de révision
+                const revisitSections = document.querySelector('.revisit-sections');
+                if (revisitSections) {
+                    revisitSections.style.display = 'flex';
+                }
+                
+                // Vider et masquer le conteneur principal
+                const notesContainer = document.getElementById('notes-container');
+                if (notesContainer) {
+                    notesContainer.innerHTML = '';
+                }
+            });
+        }
+
         // Close modals when clicking on close button or outside
         modalCloseButtons.forEach(button => {
             button.addEventListener('click', () => {

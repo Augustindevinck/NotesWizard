@@ -50,7 +50,25 @@ header {
     z-index: 10;
     background-color: var(--bg-color);
     padding: 3px 0;
+    gap: 10px;
 }
+
+.home-button {
+    /* Style du bouton home */
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+}
+
+.home-button:hover {
+    background-color: #3a51d1;
+}
+
 
 .search-container {
     flex: 1;
@@ -921,5 +939,4 @@ html {
 .hashtag-link:hover {
     background-color: var(--primary-color);
     color: white;
-}rline;
 }
