@@ -103,20 +103,37 @@ header {
     padding: 20px;
 }
 
+.note-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
 .note-modal .note-content {
     margin: 20px 0;
     white-space: pre-wrap;
 }
 
-.note-modal .confirm-revisit-btn {
+.note-modal .modal-footer {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.modal-confirm-btn {
     background: var(--primary-color);
     color: white;
     padding: 10px 20px;
     border: none;
     border-radius: var(--border-radius);
     cursor: pointer;
-    width: 100%;
-    margin-top: 20px;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
+
+.modal-confirm-btn:hover {
+    background-color: #3a51d1;
 }
 
 .note-modal .confirm-revisit-btn:hover {

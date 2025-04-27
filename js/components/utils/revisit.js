@@ -121,10 +121,14 @@ function openNoteModal(note, date) {
     modal.className = 'modal note-modal';
     modal.innerHTML = `
         <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>${note.title || 'Sans titre'}</h2>
+            <div class="modal-header">
+                <h2>${note.title || 'Sans titre'}</h2>
+                <span class="close">&times;</span>
+            </div>
             <div class="note-content">${note.content}</div>
-            <button class="confirm-revisit-btn">Confirmer la lecture</button>
+            <div class="modal-footer">
+                <button class="confirm-revisit-btn modal-confirm-btn">Marquer comme lu</button>
+            </div>
         </div>
     `;
 
