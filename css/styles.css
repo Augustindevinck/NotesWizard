@@ -260,14 +260,14 @@ header {
 .note-card {
     background: var(--card-bg);
     border-radius: var(--border-radius);
-    padding: 15px;
+    padding: 10px;
     box-shadow: var(--shadow);
     transition: var(--transition);
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    min-height: 120px;
-    max-height: 180px;
+    min-height: auto;
+    max-height: auto;
 }
 
 .note-card:hover {
@@ -714,7 +714,7 @@ header {
 }
 
 .revisit-note {
-    padding: 0.6vh 1vh;
+    padding: 0.4vh 0.8vh;
     border-radius: var(--border-radius);
     background-color: var(--secondary-color);
     cursor: pointer;
@@ -722,9 +722,10 @@ header {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: clamp(0.85rem, 1.4vw, 1rem);
-    margin-bottom: 0.4vh;
+    font-size: clamp(0.75rem, 1.2vw, 0.9rem);
+    margin-bottom: 0.2vh;
     border: 1px solid transparent;
+    min-height: auto;
 }
 
 .revisit-note:hover {
@@ -839,7 +840,8 @@ header {
     }
 
     .note-card {
-        min-height: 100px;
+        min-height: auto;
+        max-height: auto;
     }
 
     .revisit-sections {
