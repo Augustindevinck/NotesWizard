@@ -380,7 +380,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 viewContent.innerHTML = highlightedContent;
             } else {
                 viewTitle.textContent = note.title || 'Sans titre';
-                viewContent.textContent = displayContent;
+                // Convertir les hashtags en liens cliquables
+                const contentWithClickableHashtags = displayContent.replace(/#(\w+)/g, '<a href="#" class="hashtag-link" data-tag="$1">#$1</a>');
+                viewContent.innerHTML = contentWithClickableHashtags;
+
+                // Ajouter les gestionnaires d'événements pour les hashtags cliquables
+                viewContent.querySelectorAll('.hashtag-link').forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const tag = e.target.dataset.tag;
+                        // Fermer le modal
+                        noteModal.style.display = 'none';
+                        // Mettre à jour la recherche
+                        searchInput.value = tag;
+                        handleSearch();
+                    });
+                });
             }
 
             // Préparer le mode édition

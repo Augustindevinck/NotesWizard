@@ -889,3 +889,13 @@ html {
     background-color: var(--card-bg);
     color: var(--text-color);
 }
+
+.hashtag-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.hashtag-link:hover {
+    text-decoration: underline;
+}
