@@ -58,36 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
         section2: 14
     };
 
-    // Stocker les IDs des notes marquées comme lues avec leur timestamp
-    let readNotes = new Map();
+    // Stocker les IDs des notes marquées comme lues temporairement
+    let readNotes = new Set();
 
     // Initialize the application
     init();
 
-    // Nettoyer les notes lues de plus de 24h
-    function cleanupReadNotes() {
-        const now = Date.now();
-        readNotes.forEach((timestamp, id) => {
-            if (now - timestamp > 24 * 60 * 60 * 1000) { // 24h en millisecondes
-                readNotes.delete(id);
-            }
-        });
-        localStorage.setItem('readNotes', JSON.stringify(Array.from(readNotes.entries())));
-    }
-
-    // Charger les notes lues depuis localStorage
-    function loadReadNotes() {
-        const stored = localStorage.getItem('readNotes');
-        if (stored) {
-            readNotes = new Map(JSON.parse(stored));
-            cleanupReadNotes();
-        }
-    }
-
     function init() {
-        // Load notes and read status from localStorage
+        // Load notes from localStorage
         loadNotes();
-        loadReadNotes();
 
         // Charger les paramètres de révision depuis localStorage
         loadRevisitSettings();
@@ -515,8 +494,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 markAsReadBtn.style.marginTop = '10px';
                 markAsReadBtn.textContent = 'Marquer comme lue';
                 markAsReadBtn.addEventListener('click', () => {
-                    readNotes.set(note.id, Date.now());
-                    localStorage.setItem('readNotes', JSON.stringify(Array.from(readNotes.entries())));
+                    readNotes.add(note.id);
                     noteModal.style.display = 'none';
                     renderRevisitSections();
                 });
