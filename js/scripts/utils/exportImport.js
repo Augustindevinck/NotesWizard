@@ -61,8 +61,14 @@ export function exportNotes(notes, statusElement) {
  * @returns {boolean} - True si le contenu est identique, false sinon
  */
 function areNotesContentIdentical(note1, note2) {
+    // Vérification sécurisée (certains champs peuvent ne pas exister)
+    const title1 = note1.title || '';
+    const title2 = note2.title || '';
+    const content1 = note1.content || '';
+    const content2 = note2.content || '';
+    
     // Comparaison des champs essentiels
-    if (note1.title !== note2.title || note1.content !== note2.content) {
+    if (title1 !== title2 || content1 !== content2) {
         return false;
     }
     
@@ -89,6 +95,8 @@ function areNotesContentIdentical(note1, note2) {
             return false;
         }
     }
+    
+    // Ignorer les différences de dates (createdAt, updatedAt) et autres champs non essentiels
     
     return true;
 }
@@ -124,10 +132,10 @@ export function importNotes(event, notes, callback, statusElement) {
                 throw new Error('Format invalide: les notes doivent être un tableau');
             }
             
-            // Vérifier la structure des notes importées
+            // Vérifier la structure minimale des notes importées
             importedNotes.forEach(note => {
-                if (!note.id || !note.createdAt) {
-                    throw new Error('Format invalide: certaines notes sont mal structurées');
+                if (!note.id) {
+                    throw new Error('Format invalide: certaines notes n\'ont pas d\'ID');
                 }
             });
             
@@ -185,19 +193,29 @@ export function importNotes(event, notes, callback, statusElement) {
             saveNotes(notes);
             
             // Générer le message de statut
-            let statusMessage = `Import réussi:\n`;
-            if (newNotes.length > 0) {
-                statusMessage += `- ${newNotes.length} nouvelle(s) note(s) ajoutée(s)\n`;
-            }
-            if (identicalNotes.length > 0) {
-                statusMessage += `- ${identicalNotes.length} note(s) déjà existante(s) (contenu identique)\n`;
-            }
-            if (differentContentNotes.length > 0) {
-                statusMessage += `- ${updatedNotes} note(s) existante(s) mise(s) à jour\n`;
+            let statusMessage = '';
+            
+            // Résumé en une ligne pour un aperçu rapide
+            const totalProcessed = newNotes.length + identicalNotes.length + differentContentNotes.length;
+            statusMessage = `Import réussi : ${totalProcessed} note(s) traitée(s)`;
+            
+            // Détails par catégorie
+            if (newNotes.length > 0 || identicalNotes.length > 0 || updatedNotes > 0) {
+                statusMessage += '<div class="import-details">';
+                if (newNotes.length > 0) {
+                    statusMessage += `<div>✅ ${newNotes.length} nouvelle(s) note(s) ajoutée(s)</div>`;
+                }
+                if (identicalNotes.length > 0) {
+                    statusMessage += `<div>ℹ️ ${identicalNotes.length} note(s) déjà existante(s) (contenu identique)</div>`;
+                }
+                if (differentContentNotes.length > 0) {
+                    statusMessage += `<div>${updatedNotes > 0 ? '🔄' : '⏸️'} ${updatedNotes} / ${differentContentNotes.length} note(s) existante(s) mise(s) à jour</div>`;
+                }
+                statusMessage += '</div>';
             }
             
             if (statusElement) {
-                statusElement.textContent = statusMessage.trim();
+                statusElement.innerHTML = statusMessage;
                 statusElement.className = 'status-success';
             }
             
