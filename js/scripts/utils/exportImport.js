@@ -3,6 +3,7 @@
  */
 
 import { saveNotes } from './localStorage.js';
+import { renderNotes } from '../notes/notesManager.js';
 
 /**
  * Exporte les notes au format JSON dans un fichier téléchargeable
