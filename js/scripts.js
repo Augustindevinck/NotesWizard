@@ -1404,7 +1404,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filtrer les notes marquées comme lues
         const unreadNotes = notesToRender.filter(note => !readNotes.has(note.id));
-        renderRevisitNotesForSection(unreadNotes, container, showMoreBtn, sectionId);
 
         if (unreadNotes.length === 0) {
             container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
