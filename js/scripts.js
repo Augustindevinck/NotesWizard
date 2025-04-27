@@ -380,30 +380,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 viewContent.innerHTML = highlightedContent;
             } else {
                 viewTitle.textContent = note.title || 'Sans titre';
-                // Convertir les hashtags en liens cliquables avec regex
-                // Séparer le contenu en mots et traiter chaque mot
-                const words = displayContent.split(/(\s+)/);
-                const processedContent = words.map(word => {
-                    if (word.match(/^#\w+/)) {
-                        const tag = word.substring(1);
-                        return `<a href="#" class="hashtag-link" data-tag="${tag}">${word}</a>`;
-                    }
-                    return word;
-                }).join('');
-                
-                viewContent.innerHTML = processedContent;
+                // Convertir les hashtags en liens cliquables
+                const contentWithClickableHashtags = displayContent.replace(/#(\w+)/g, '<a href="#" class="hashtag-link" data-tag="$1">#$1</a>');
+                viewContent.innerHTML = contentWithClickableHashtags;
 
                 // Ajouter les gestionnaires d'événements pour les hashtags cliquables
-                viewContent.querySelectorAll('.hashtag-link').forEach(link => {
+                const hashtagLinks = viewContent.querySelectorAll('.hashtag-link');
+                hashtagLinks.forEach(link => {
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         const tag = e.target.dataset.tag;
-                        if (tag) {
-                            noteModal.style.display = 'none';
-                            searchInput.value = tag;
-                            handleSearch();
-                        }
+                        noteModal.style.display = 'none';
+                        searchInput.value = tag;
+                        handleSearch();
                     });
                 });
             }

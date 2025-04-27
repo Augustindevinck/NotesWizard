@@ -894,12 +894,13 @@ html {
     color: var(--primary-color);
     text-decoration: none;
     cursor: pointer;
-    padding: 0 2px;
+    padding: 2px 4px;
     border-radius: 3px;
+    transition: all 0.2s ease;
 }
 
 .hashtag-link:hover {
-    text-decoration: underline;
-    background-color: rgba(var(--primary-color-rgb), 0.1);
+    background-color: var(--primary-color);
+    color: white;
 }rline;
 }
