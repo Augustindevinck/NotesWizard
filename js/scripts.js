@@ -380,28 +380,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 viewContent.innerHTML = highlightedContent;
             } else {
                 viewTitle.textContent = note.title || 'Sans titre';
-                // Convertir les hashtags en liens cliquables
-                const contentWithClickableHashtags = displayContent.split(' ').map(word => {
-                    if (word.startsWith('#')) {
-                        const tag = word.substring(1);
-                        return `<a href="#" class="hashtag-link" data-tag="${tag}">#${tag}</a>`;
-                    }
-                    return word;
-                }).join(' ');
+                // Convertir les hashtags en liens cliquables avec regex
+                const contentWithClickableHashtags = displayContent.replace(/#(\w+)/g, (match, tag) => {
+                    return `<a href="#" class="hashtag-link" data-tag="${tag}">#${tag}</a>`;
+                });
                 
                 viewContent.innerHTML = contentWithClickableHashtags;
 
                 // Ajouter les gestionnaires d'événements pour les hashtags cliquables
-                viewContent.querySelectorAll('.hashtag-link').forEach(link => {
-                    link.addEventListener('click', (e) => {
+                const hashtagLinks = viewContent.querySelectorAll('.hashtag-link');
+                hashtagLinks.forEach(link => {
+                    link.onclick = (e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         const tag = e.target.dataset.tag;
-                        // Fermer le modal
                         noteModal.style.display = 'none';
-                        // Mettre à jour la recherche
                         searchInput.value = tag;
                         handleSearch();
-                    });
+                    };
                 });
             }
 
