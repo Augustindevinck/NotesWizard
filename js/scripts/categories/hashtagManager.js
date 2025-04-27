@@ -9,14 +9,14 @@
  */
 export function detectHashtags(content, detectedHashtags) {
     if (!content || !detectedHashtags) return;
-
-    // Vider le conteneur des hashtags
-    detectedHashtags.innerHTML = '';
-
-    // Extraire les hashtags
+    
+    // Extraire les hashtags du contenu
     const hashtags = extractHashtags(content);
-
-    // Afficher les hashtags détectés
+    
+    // Vider le conteneur des hashtags détectés
+    detectedHashtags.innerHTML = '';
+    
+    // Ajouter chaque hashtag comme un tag
     if (hashtags.length > 0) {
         hashtags.forEach(tag => {
             addHashtagTag(tag, detectedHashtags);
@@ -31,16 +31,14 @@ export function detectHashtags(content, detectedHashtags) {
  */
 export function extractHashtags(content) {
     if (!content) return [];
-
-    const hashtags = new Set();
-    const hashtagRegex = /#([a-zA-Z0-9_-]+)/g;
-    let match;
     
-    while ((match = hashtagRegex.exec(content)) !== null) {
-        hashtags.add(match[1].toLowerCase());
-    }
+    // Utiliser une regex pour trouver tous les hashtags
+    // un hashtag commence par # et est suivi d'un ou plusieurs caractères qui ne sont pas des espaces ou des ponctuations
+    const regex = /#([a-zA-Z0-9_\u00C0-\u017F]+)/g;
+    const matches = content.match(regex) || [];
     
-    return Array.from(hashtags);
+    // Retirer le # et éliminer les doublons
+    return [...new Set(matches.map(tag => tag.substring(1)))];
 }
 
 /**
@@ -50,18 +48,22 @@ export function extractHashtags(content) {
  */
 export function extractYoutubeUrls(content) {
     if (!content) return [];
-
-    const videoUrls = [];
-    const urlRegex = /https:\/\/(www\.)?youtu(be\.com\/watch\?v=|\.be\/)([a-zA-Z0-9_-]+)/g;
-    let match;
     
-    while ((match = urlRegex.exec(content)) !== null) {
-        const videoId = match[3];
-        const embedUrl = `https://www.youtube.com/embed/${videoId}`;
-        videoUrls.push(embedUrl);
+    // Regex pour trouver les URLs YouTube (supporte les formats courts et longs)
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
+    const matches = content.matchAll(regex);
+    const urls = [];
+    
+    // Extraire les IDs vidéo et créer des URLs intégrables
+    for (const match of matches) {
+        const videoId = match[1];
+        if (videoId) {
+            urls.push(`https://www.youtube.com/embed/${videoId}`);
+        }
     }
     
-    return videoUrls;
+    // Éliminer les doublons
+    return [...new Set(urls)];
 }
 
 /**
@@ -72,15 +74,16 @@ export function extractYoutubeUrls(content) {
 export function addHashtagTag(tag, container) {
     // Vérifier si le hashtag existe déjà
     const existingTags = container.querySelectorAll('.hashtag-tag');
-    for (const existingTag of existingTags) {
-        if (existingTag.textContent.trim() === `#${tag}`) {
+    for (let existingTag of existingTags) {
+        if (existingTag.textContent === `#${tag}`) {
             return; // Éviter les doublons
         }
     }
-
-    // Créer le tag de hashtag
-    const tagElement = document.createElement('span');
-    tagElement.className = 'hashtag-tag';
-    tagElement.textContent = `#${tag}`;
-    container.appendChild(tagElement);
+    
+    // Créer le tag
+    const hashtagTag = document.createElement('span');
+    hashtagTag.className = 'hashtag-tag';
+    hashtagTag.textContent = `#${tag}`;
+    
+    container.appendChild(hashtagTag);
 }

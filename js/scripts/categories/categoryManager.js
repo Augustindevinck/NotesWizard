@@ -1,17 +1,17 @@
 /**
- * Gestion des catégories et suggestions
+ * Gestion des catégories
  */
 
-// Ensemble de toutes les catégories existantes
-let allCategories = new Set();
+// Ensemble des catégories existantes
+let categories = new Set();
 
 /**
  * Initialise le gestionnaire de catégories
- * @param {Set} categories - Ensemble des catégories existantes
+ * @param {Set} existingCategories - Ensemble des catégories existantes
  */
-export function initCategoryManager(categories) {
-    if (categories) {
-        allCategories = categories;
+export function initCategoryManager(existingCategories) {
+    if (existingCategories) {
+        categories = existingCategories;
     }
 }
 
@@ -22,35 +22,35 @@ export function initCategoryManager(categories) {
  * @param {HTMLElement} categorySuggestions - Le conteneur pour les suggestions
  */
 export function handleCategoryInput(event, categoryInput, categorySuggestions) {
-    const inputText = categoryInput.value.trim();
+    const input = categoryInput.value.trim();
     categorySuggestions.innerHTML = '';
-
-    if (inputText.length === 0) {
+    
+    if (!input) {
         categorySuggestions.style.display = 'none';
         return;
     }
-
-    // Afficher les suggestions de catégories existantes
-    const matchingCategories = Array.from(allCategories).filter(cat => 
-        cat.toLowerCase().includes(inputText.toLowerCase())
+    
+    const matchingCategories = Array.from(categories).filter(category => 
+        category.toLowerCase().includes(input.toLowerCase())
     );
-
+    
     if (matchingCategories.length > 0) {
-        categorySuggestions.style.display = 'block';
-
         matchingCategories.forEach(category => {
             const suggestionItem = document.createElement('div');
             suggestionItem.className = 'category-suggestion';
             suggestionItem.textContent = category;
             
             suggestionItem.addEventListener('click', () => {
-                addCategoryTag(category, categoryInput.parentElement.previousElementSibling);
+                addCategoryTag(category, document.getElementById('selected-categories'));
                 categoryInput.value = '';
+                categorySuggestions.innerHTML = '';
                 categorySuggestions.style.display = 'none';
             });
             
             categorySuggestions.appendChild(suggestionItem);
         });
+        
+        categorySuggestions.style.display = 'block';
     } else {
         categorySuggestions.style.display = 'none';
     }
@@ -64,17 +64,26 @@ export function handleCategoryInput(event, categoryInput, categorySuggestions) {
  * @param {HTMLElement} categorySuggestions - Le conteneur pour les suggestions
  */
 export function handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions) {
-    if (event.key === 'Enter' || event.key === ',') {
+    if (event.key === 'Enter' && categoryInput.value.trim()) {
         event.preventDefault();
+        const newCategory = categoryInput.value.trim();
         
-        const inputText = categoryInput.value.trim();
-        if (inputText.length > 0) {
-            addCategoryTag(inputText, selectedCategories);
-            categoryInput.value = '';
-            categorySuggestions.style.display = 'none';
-        }
-    } else if (event.key === 'Escape') {
+        // Ajouter la catégorie
+        addCategoryTag(newCategory, selectedCategories);
+        
+        // Mettre à jour l'ensemble des catégories
+        categories.add(newCategory);
+        
+        // Réinitialiser le champ de saisie
+        categoryInput.value = '';
+        categorySuggestions.innerHTML = '';
         categorySuggestions.style.display = 'none';
+    } else if (event.key === 'Backspace' && categoryInput.value === '') {
+        // Si le champ est vide et qu'on appuie sur Backspace, supprimer la dernière catégorie
+        const categoryTags = selectedCategories.querySelectorAll('.category-tag');
+        if (categoryTags.length > 0) {
+            selectedCategories.removeChild(categoryTags[categoryTags.length - 1]);
+        }
     }
 }
 
@@ -86,29 +95,26 @@ export function handleCategoryKeydown(event, categoryInput, selectedCategories, 
 export function addCategoryTag(category, container) {
     // Vérifier si la catégorie existe déjà
     const existingTags = container.querySelectorAll('.category-tag');
-    for (const tag of existingTags) {
-        if (tag.textContent.trim() === category) {
+    for (let tag of existingTags) {
+        if (tag.textContent === category) {
             return; // Éviter les doublons
         }
     }
     
-    // Créer le tag de catégorie
-    const tagElement = document.createElement('span');
-    tagElement.className = 'category-tag';
-    tagElement.textContent = category;
+    // Créer le tag
+    const categoryTag = document.createElement('span');
+    categoryTag.className = 'category-tag';
+    categoryTag.textContent = category;
     
     // Ajouter un bouton de suppression
     const removeBtn = document.createElement('span');
     removeBtn.className = 'remove-tag';
-    removeBtn.textContent = '×';
+    removeBtn.innerHTML = '&times;';
     removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Éviter la propagation au conteneur
-        container.removeChild(tagElement);
+        e.stopPropagation();
+        container.removeChild(categoryTag);
     });
     
-    tagElement.appendChild(removeBtn);
-    container.appendChild(tagElement);
-    
-    // Ajouter à l'ensemble des catégories
-    allCategories.add(category);
+    categoryTag.appendChild(removeBtn);
+    container.appendChild(categoryTag);
 }

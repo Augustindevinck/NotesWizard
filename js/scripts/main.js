@@ -220,13 +220,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchBtn = document.getElementById('search-btn');
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
-                handleSearch(
+                const results = handleSearch(
                     searchInput.value,
                     appState.notes,
                     searchResults,
                     notesContainer,
                     revisitSections
                 );
+                
+                if (results && results.length > 0) {
+                    renderNotes(notesContainer, appState.notes, results, getCurrentSearchTerms());
+                }
             });
         }
 
@@ -234,13 +238,17 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
-                handleSearch(
+                const results = handleSearch(
                     searchInput.value,
                     appState.notes,
                     searchResults,
                     notesContainer,
                     revisitSections
                 );
+                
+                if (results && results.length > 0) {
+                    renderNotes(notesContainer, appState.notes, results, getCurrentSearchTerms());
+                }
             }
         });
 
