@@ -86,33 +86,57 @@ export function importNotes(file, statusElement) {
                 const existingNotes = JSON.parse(localStorage.getItem('notes') || '[]');
                 const existingIds = new Set(existingNotes.map(note => note.id));
                 
-                // Fusionner les notes
-                const mergedNotes = [...existingNotes];
-                let newCount = 0;
-                let updatedCount = 0;
+                // Séparer les notes nouvelles et existantes
+                const newNotes = [];
+                const existingNotesToUpdate = [];
 
                 importedNotes.forEach(importedNote => {
                     if (existingIds.has(importedNote.id)) {
-                        // Mettre à jour la note existante
-                        const index = mergedNotes.findIndex(n => n.id === importedNote.id);
-                        mergedNotes[index] = importedNote;
-                        updatedCount++;
+                        existingNotesToUpdate.push(importedNote);
                     } else {
-                        // Ajouter la nouvelle note
-                        mergedNotes.push(importedNote);
-                        newCount++;
+                        newNotes.push(importedNote);
                     }
                 });
 
-                // Sauvegarder les notes fusionnées
-                saveNotes(mergedNotes);
+                // Si des notes existantes sont trouvées, demander confirmation
+                let finalNotes = [...existingNotes];
+                if (existingNotesToUpdate.length > 0) {
+                    const keepExisting = confirm(
+                        `${existingNotesToUpdate.length} note(s) existante(s) trouvée(s). ` +
+                        'Cliquez sur OK pour remplacer les notes existantes par les nouvelles versions, ' +
+                        'ou sur Annuler pour conserver les versions existantes.'
+                    );
+
+                    if (keepExisting) {
+                        // Remplacer les notes existantes
+                        existingNotesToUpdate.forEach(updatedNote => {
+                            const index = finalNotes.findIndex(note => note.id === updatedNote.id);
+                            if (index !== -1) {
+                                finalNotes[index] = updatedNote;
+                            }
+                        });
+                    }
+                }
+
+                // Ajouter les nouvelles notes
+                finalNotes = [...finalNotes, ...newNotes];
+
+                // Sauvegarder dans localStorage
+                localStorage.setItem('notes', JSON.stringify(finalNotes));
 
                 if (statusElement) {
-                    statusElement.textContent = `Import réussi ! ${newCount} nouvelle(s) note(s), ${updatedCount} note(s) mise(s) à jour`;
+                    const message = `Import réussi ! ${newNotes.length} nouvelle(s) note(s)` +
+                        (existingNotesToUpdate.length > 0 ? 
+                            ` et ${existingNotesToUpdate.length} note(s) existante(s) traitée(s)` : 
+                            '');
+                    statusElement.textContent = message;
                     statusElement.className = 'status-success';
                 }
 
-                resolve(mergedNotes);
+                resolve(finalNotes);
+                
+                // Recharger la page pour actualiser l'affichage
+                location.reload();
             } catch (error) {
                 console.error('Erreur lors de l\'importation:', error);
                 if (statusElement) {
