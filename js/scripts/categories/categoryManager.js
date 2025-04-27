@@ -90,24 +90,14 @@ export function addCategoryTag(category, container) {
     // Vérifier si la catégorie existe déjà
     const existingTags = container.querySelectorAll('.category-tag');
     for (let tag of existingTags) {
-        if (tag.textContent === category) {
+        if (tag.textContent.trim() === category) {
             return; // Éviter les doublons
         }
     }
 
-    // Créer le tag sans aucun élément supplémentaire
+    // Créer un simple span pour le tag
     const categoryTag = document.createElement('span');
     categoryTag.className = 'category-tag';
     categoryTag.textContent = category;
-    categoryTag.setAttribute('tabindex', '0');
-    categoryTag.setAttribute('role', 'button');
-    
-    // Ajouter la possibilité de supprimer avec la touche Delete
-    categoryTag.addEventListener('keydown', (e) => {
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-            container.removeChild(categoryTag);
-        }
-    });
-
     container.appendChild(categoryTag);
 }
