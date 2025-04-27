@@ -97,6 +97,31 @@ header {
     color: white;
     border: none;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
+
+.confirm-revisit-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    margin-left: 8px;
+    cursor: pointer;
+    float: right;
+    transition: transform 0.2s ease;
+}
+
+.confirm-revisit-btn:hover {
+    transform: scale(1.1);
+}
+
+.revisit-note {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
     cursor: pointer;
     display: flex;
     align-items: center;

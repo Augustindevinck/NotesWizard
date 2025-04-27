@@ -1,3 +1,4 @@
+
 import { createNoteElement } from './notes.js';
 
 const REVISIT_CONFIRMATIONS_KEY = 'revisitConfirmations';
@@ -9,10 +10,11 @@ function getRevisitConfirmations() {
 
 function confirmRevisitNote(noteId, date) {
     const confirmations = getRevisitConfirmations();
-    if (!confirmations[date]) {
-        confirmations[date] = [];
+    const dateKey = new Date(date).toDateString();
+    if (!confirmations[dateKey]) {
+        confirmations[dateKey] = [];
     }
-    confirmations[date].push(noteId);
+    confirmations[dateKey].push(noteId);
     localStorage.setItem(REVISIT_CONFIRMATIONS_KEY, JSON.stringify(confirmations));
 }
 
@@ -29,10 +31,16 @@ function createRevisitNoteElement(note, date) {
     noteDiv.textContent = note.title || note.content.substring(0, 40) + '...';
 
     const confirmButton = document.createElement('button');
-    confirmButton.textContent = 'Confirmé';
-    confirmButton.addEventListener('click', () => {
+    confirmButton.className = 'confirm-revisit-btn';
+    confirmButton.textContent = '✓';
+    confirmButton.title = 'Marquer comme lu';
+    confirmButton.addEventListener('click', (e) => {
+        e.stopPropagation();
         confirmRevisitNote(note.id, date);
-        //Potentially update UI to reflect confirmation
+        noteDiv.remove();
+        if (noteDiv.parentElement && noteDiv.parentElement.children.length === 0) {
+            noteDiv.parentElement.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
+        }
     });
 
     noteDiv.appendChild(confirmButton);
@@ -108,7 +116,6 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
     container.dataset.expandedView = 'false';
 }
 
-// Placeholder for openNoteModal function - needs to be implemented elsewhere
 function openNoteModal(note, date) {
     console.log("Note opened:", note, "Date:", date);
     // Add your modal opening logic here.
