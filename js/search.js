@@ -496,23 +496,21 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             importFile.addEventListener('change', (event) => {
-                importNotes(event, (importedNotes) => {
-                    // Fusionner les notes importées avec les existantes
-                    appState.notes = [...appState.notes, ...importedNotes];
-                    saveNotes(appState.notes);
-                    
-                    // Mettre à jour les catégories
-                    appState.allCategories.clear();
-                    appState.notes.forEach(note => {
-                        if (note.categories) {
-                            note.categories.forEach(category => appState.allCategories.add(category));
+                importNotes(event, appState.notes, (importedNotes) => {
+                    if (importedNotes && Array.isArray(importedNotes)) {
+                        // Mettre à jour les catégories
+                        appState.allCategories.clear();
+                        appState.notes.forEach(note => {
+                            if (note.categories) {
+                                note.categories.forEach(category => appState.allCategories.add(category));
+                            }
+                        });
+                        
+                        // Rafraîchir les résultats de recherche
+                        populateCategoryFilter();
+                        if (appState.lastQuery) {
+                            executeSearch(appState.lastQuery);
                         }
-                    });
-                    
-                    // Rafraîchir les résultats de recherche
-                    populateCategoryFilter();
-                    if (appState.lastQuery) {
-                        executeSearch(appState.lastQuery);
                     }
                     
                     // Fermer le modal après importation réussie
@@ -521,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (importStatus) importStatus.textContent = '';
                         importFile.value = '';
                     }, 3000);
-                });
+                }, importStatus);
             });
         }
     }

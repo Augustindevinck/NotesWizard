@@ -273,21 +273,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         importFile.addEventListener('change', (event) => {
-            importNotes(event, (importedNotes) => {
-                // Fusionner les notes importées avec les existantes
-                appState.notes = [...appState.notes, ...importedNotes];
-                saveNotes(appState.notes);
-                
-                // Mettre à jour les catégories
-                appState.allCategories.clear();
-                appState.notes.forEach(note => {
-                    if (note.categories) {
-                        note.categories.forEach(category => appState.allCategories.add(category));
-                    }
-                });
-                
-                // Actualiser l'affichage
-                renderRevisitSections(appState.notes);
+            importNotes(event, appState.notes, (importedNotes) => {
+                if (importedNotes && Array.isArray(importedNotes)) {
+                    // Mettre à jour les catégories
+                    appState.allCategories.clear();
+                    appState.notes.forEach(note => {
+                        if (note.categories) {
+                            note.categories.forEach(category => appState.allCategories.add(category));
+                        }
+                    });
+                    
+                    // Actualiser l'affichage
+                    renderRevisitSections(appState.notes);
+                }
                 
                 // Fermer le modal après importation réussie
                 setTimeout(() => {
@@ -295,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     importStatus.textContent = '';
                     importFile.value = '';
                 }, 3000);
-            });
+            }, importStatus);
         });
 
         // Édition du nombre de jours pour les sections de révision
