@@ -684,10 +684,73 @@ header {
 
 .status-error {
     background-color: rgba(198, 40, 40, 0.1);
-    color: #e53935;
-    padding: 10px;
+    padding: 15px;
     border-radius: var(--border-radius);
     border: 1px solid rgba(198, 40, 40, 0.3);
+    margin: 10px 0;
+}
+
+.import-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.error-icon {
+    font-size: 24px;
+}
+
+.error-content {
+    flex: 1;
+}
+
+.error-title {
+    color: #e53935;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.error-message {
+    color: #d32f2f;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.import-success {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background-color: rgba(46, 125, 50, 0.1);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border: 1px solid rgba(46, 125, 50, 0.3);
+    margin: 10px 0;
+}
+
+.success-icon {
+    font-size: 24px;
+}
+
+.success-content {
+    flex: 1;
+}
+
+.success-title {
+    color: #2e7d32;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.success-message {
+    color: #1b5e20;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.success-details {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #388e3c;
 }
 
 /* Sections de révision */

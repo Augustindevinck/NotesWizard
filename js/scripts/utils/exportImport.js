@@ -276,20 +276,29 @@ export function importNotes(event, notes, callback, statusElement) {
         } catch (error) {
             console.error('Erreur lors de l\'importation des notes:', error);
             if (statusElement) {
-                let errorMessage = 'Une erreur s\'est produite lors de l\'importation';
+                let errorMessage = '';
                 
-                // Essayer d'extraire un message d'erreur plus spécifique
-                if (error && typeof error === 'object') {
-                    if (error.message) {
-                        errorMessage = error.message;
-                    } else if (error.toString() !== '[object Object]') {
-                        errorMessage = error.toString();
-                    }
-                } else if (error) {
-                    errorMessage = String(error);
+                // Messages d'erreur personnalisés selon le type d'erreur
+                if (error instanceof SyntaxError) {
+                    errorMessage = 'Le fichier JSON est mal formaté. Vérifiez que le fichier est valide.';
+                } else if (error.message?.includes('notes must be an array')) {
+                    errorMessage = 'Format incorrect : le fichier doit contenir un tableau de notes.';
+                } else if (error.message?.includes('invalid file format')) {
+                    errorMessage = 'Format de fichier non reconnu. Veuillez utiliser un fichier JSON exporté depuis l\'application.';
+                } else if (error && typeof error === 'object') {
+                    errorMessage = error.message || 'Une erreur inconnue s\'est produite.';
+                } else {
+                    errorMessage = 'Une erreur inattendue s\'est produite lors de l\'importation.';
                 }
                 
-                statusElement.textContent = `Erreur: ${errorMessage}`;
+                statusElement.innerHTML = `
+                    <div class="import-error">
+                        <span class="error-icon">⚠️</span>
+                        <div class="error-content">
+                            <div class="error-title">Échec de l'importation</div>
+                            <div class="error-message">${errorMessage}</div>
+                        </div>
+                    </div>`;
                 statusElement.className = 'status-error';
             }
         }
