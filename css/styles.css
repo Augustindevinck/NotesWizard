@@ -645,7 +645,7 @@ header {
     flex-direction: column;
     gap: 1.5vh;
     margin-bottom: 3vh;
-    height: 50vh;
+    height: auto;
 }
 
 .revisit-section {
@@ -654,10 +654,8 @@ header {
     box-shadow: var(--shadow);
     padding: 1vh;
     flex: 1;
-    min-height: 0;
-    max-height: 16vh;
-    overflow: auto;
-    transition: max-height 0.3s ease;
+    height: auto;
+    transition: height 0.3s ease;
 }
 
 .revisit-header {
