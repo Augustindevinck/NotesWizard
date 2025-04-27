@@ -90,14 +90,37 @@ export function addCategoryTag(category, container) {
     // Vérifier si la catégorie existe déjà
     const existingTags = container.querySelectorAll('.category-tag');
     for (let tag of existingTags) {
-        if (tag.textContent.trim() === category) {
+        const tagName = tag.querySelector('.tag-name');
+        if (tagName && tagName.textContent.trim() === category) {
             return; // Éviter les doublons
         }
     }
 
-    // Créer un simple span pour le tag
+    // Créer un span pour le tag avec une structure interne
     const categoryTag = document.createElement('span');
     categoryTag.className = 'category-tag';
-    categoryTag.textContent = category;
+    
+    // Créer un span pour le nom de la catégorie
+    const tagName = document.createElement('span');
+    tagName.className = 'tag-name';
+    tagName.textContent = category;
+    
+    // Ajouter le nom au tag
+    categoryTag.appendChild(tagName);
+    
+    // Optionnellement, ajouter un bouton de suppression visible
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'remove-tag';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Retirer';
+    removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        categoryTag.remove();
+    };
+    
+    // Ajouter le bouton de suppression au tag
+    categoryTag.appendChild(removeBtn);
+    
+    // Ajouter le tag au conteneur
     container.appendChild(categoryTag);
 }

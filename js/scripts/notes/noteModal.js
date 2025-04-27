@@ -294,11 +294,23 @@ export function saveCurrentNote(notes, callback) {
 
     // Get categories
     const categoryElements = selectedCategories.querySelectorAll('.category-tag');
-    const categories = Array.from(categoryElements).map(el => el.textContent.trim());
+    const categories = Array.from(categoryElements).map(el => {
+        // Chercher le span contenant le nom de la catégorie
+        const tagName = el.querySelector('.tag-name');
+        // Si le span existe, utiliser son contenu, sinon utiliser le contenu complet du tag
+        return tagName ? tagName.textContent.trim() : el.textContent.trim();
+    });
 
     // Get hashtags
     const hashtagElements = detectedHashtags.querySelectorAll('.hashtag-tag');
-    const hashtags = Array.from(hashtagElements).map(el => el.textContent.trim().substring(1)); // Remove # prefix
+    const hashtags = Array.from(hashtagElements).map(el => {
+        // Chercher le span contenant le nom du hashtag
+        const tagName = el.querySelector('.tag-name');
+        // Si le span existe, utiliser son contenu, sinon utiliser le contenu complet du tag
+        const text = tagName ? tagName.textContent.trim() : el.textContent.trim();
+        // Retirer le # du début
+        return text.substring(1);
+    });
 
     // Extract YouTube URLs from content
     let videoUrls = [];

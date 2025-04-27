@@ -75,15 +75,23 @@ export function addHashtagTag(tag, container) {
     // Vérifier si le hashtag existe déjà
     const existingTags = container.querySelectorAll('.hashtag-tag');
     for (let existingTag of existingTags) {
-        if (existingTag.textContent === `#${tag}`) {
+        const tagName = existingTag.querySelector('.tag-name');
+        if (tagName && tagName.textContent === `#${tag}` || existingTag.textContent === `#${tag}`) {
             return; // Éviter les doublons
         }
     }
     
-    // Créer le tag
+    // Créer un span pour le tag avec une structure interne
     const hashtagTag = document.createElement('span');
     hashtagTag.className = 'hashtag-tag';
-    hashtagTag.textContent = `#${tag}`;
+    
+    // Créer un span pour le nom du hashtag
+    const tagName = document.createElement('span');
+    tagName.className = 'tag-name';
+    tagName.textContent = `#${tag}`;
+    
+    // Ajouter le nom au tag
+    hashtagTag.appendChild(tagName);
     
     container.appendChild(hashtagTag);
 }
