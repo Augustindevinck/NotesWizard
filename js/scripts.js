@@ -1402,17 +1402,17 @@ document.addEventListener('DOMContentLoaded', () => {
         let container, showMoreBtn;
 
         if (sectionId === 'today') {
-            container = revisitNotesToday;
-            showMoreBtn = showMoreBtnToday;
+            container = document.getElementById('revisit-notes-today');
+            showMoreBtn = document.getElementById('show-more-today');
         } else if (sectionId === 'section1') {
-            container = revisitNotes1;
-            showMoreBtn = showMoreBtn1;
+            container = document.getElementById('revisit-notes-1');
+            showMoreBtn = document.getElementById('show-more-1');
         } else if (sectionId === 'section2') {
-            container = revisitNotes2;
-            showMoreBtn = showMoreBtn2;
+            container = document.getElementById('revisit-notes-2');
+            showMoreBtn = document.getElementById('show-more-2');
         }
 
-        if (!container || !showMoreBtn) return;
+        if (!container || !showMoreBtn || !notesToShow) return;
 
         // Vérifier si on est déjà en vue étendue
         if (container.dataset.expandedView === 'true') {
