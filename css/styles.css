@@ -190,7 +190,7 @@ header {
 }
 
 .icon-button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Notes display */
@@ -215,7 +215,7 @@ header {
 }
 
 .note-card:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
     transform: translateY(-2px);
 }
 
@@ -469,6 +469,8 @@ header {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 14px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
 
 .category-suggestions {
@@ -476,7 +478,7 @@ header {
     top: 100%;
     left: 0;
     width: 100%;
-    background: white;
+    background: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     z-index: 100;
@@ -609,7 +611,7 @@ header {
 }
 
 .revisit-section {
-    background-color: white;
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow);
     padding: 1vh;
@@ -718,6 +720,8 @@ header {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 16px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
 
 #save-days-btn {
@@ -881,4 +885,6 @@ html {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     font-size: 14px;
+    background-color: var(--card-bg);
+    color: var(--text-color);
 }
