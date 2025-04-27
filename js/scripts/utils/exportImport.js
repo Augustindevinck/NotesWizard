@@ -128,11 +128,30 @@ export function importNotes(event, notes, callback, statusElement) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            let importedNotes = JSON.parse(e.target.result);
-            
-            // Convertir en tableau si ce n'est pas déjà un tableau
-            if (!Array.isArray(importedNotes)) {
-                importedNotes = [importedNotes];
+            let importedNotes;
+            try {
+                importedNotes = JSON.parse(e.target.result);
+                
+                // S'assurer que notes est un tableau
+                if (!Array.isArray(importedNotes)) {
+                    if (importedNotes === null || typeof importedNotes !== 'object') {
+                        throw new Error('Format de fichier invalide');
+                    }
+                    importedNotes = [importedNotes];
+                }
+            } catch (parseError) {
+                console.error('Erreur de parsing JSON:', parseError);
+                if (statusElement) {
+                    statusElement.innerHTML = `
+                        <div class="import-error">
+                            <span class="error-icon">⚠️</span>
+                            <div class="error-content">
+                                <div class="error-title">Format de fichier invalide</div>
+                                <div class="error-message">Le fichier n'est pas un JSON valide</div>
+                            </div>
+                        </div>`;
+                }
+                return;
             }
             
             // Vérifier la structure minimale des notes importées
