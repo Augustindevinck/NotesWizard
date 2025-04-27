@@ -1391,6 +1391,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filtrer les notes marquées comme lues
         const unreadNotes = notesToRender.filter(note => !readNotes.has(note.id));
 
+        // Si toutes les notes sont lues
+        if (unreadNotes.length === 0) {
+            container.innerHTML = '<div class="empty-revisit">Aucune note non lue pour cette période</div>';
+            if (showMoreBtn) {
+                showMoreBtn.style.display = 'none';
+            }
+            return;
+        }
+
         // Pour l'affichage compact, montrer max 3 notes par défaut
         const initialCount = Math.min(3, unreadNotes.length);
         const hasMore = unreadNotes.length > initialCount;
