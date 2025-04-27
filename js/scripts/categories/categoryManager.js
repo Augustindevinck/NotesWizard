@@ -11,7 +11,15 @@ let categories = new Set();
  */
 export function initCategoryManager(existingCategories) {
     if (existingCategories) {
-        categories = existingCategories;
+        // Nettoyer les doublons et les variations (avec/sans 'x')
+        const cleanedCategories = new Set();
+        existingCategories.forEach(category => {
+            const baseName = category.replace(/x$/, '');
+            if (!Array.from(cleanedCategories).some(c => c.replace(/x$/, '') === baseName)) {
+                cleanedCategories.add(category);
+            }
+        });
+        categories = cleanedCategories;
     }
 }
 
@@ -93,11 +101,13 @@ export function handleCategoryKeydown(event, categoryInput, selectedCategories, 
  * @param {HTMLElement} container - Le conteneur où ajouter le tag
  */
 export function addCategoryTag(category, container) {
-    // Vérifier si la catégorie existe déjà
+    // Vérifier si la catégorie ou une variation existe déjà
     const existingTags = container.querySelectorAll('.category-tag');
+    const baseName = category.replace(/x$/, '');
     for (let tag of existingTags) {
-        if (tag.textContent === category) {
-            return; // Éviter les doublons
+        const tagBaseName = tag.textContent.replace(/x$/, '');
+        if (tagBaseName === baseName) {
+            return; // Éviter les doublons et variations
         }
     }
     
