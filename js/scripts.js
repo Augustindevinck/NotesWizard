@@ -220,29 +220,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (showMoreBtnToday) {
             showMoreBtnToday.addEventListener('click', () => {
-                const notesContainer = document.getElementById('notes-container');
-                notesContainer.style.display = 'grid';
                 const noteIds = JSON.parse(revisitNotesToday.dataset.allNotes || '[]');
                 const notesToShow = notes.filter(note => noteIds.includes(note.id));
-                renderNotes(notesToShow);
+                showMoreNotes('today', notesToShow);
             });
         }
         if (showMoreBtn1) {
             showMoreBtn1.addEventListener('click', () => {
-                const notesContainer = document.getElementById('notes-container');
-                notesContainer.style.display = 'grid';
                 const noteIds = JSON.parse(revisitNotes1.dataset.allNotes || '[]');
                 const notesToShow = notes.filter(note => noteIds.includes(note.id));
-                renderNotes(notesToShow);
+                showMoreNotes('section1', notesToShow);
             });
         }
         if (showMoreBtn2) {
             showMoreBtn2.addEventListener('click', () => {
-                const notesContainer = document.getElementById('notes-container');
-                notesContainer.style.display = 'grid';
                 const noteIds = JSON.parse(revisitNotes2.dataset.allNotes || '[]');
                 const notesToShow = notes.filter(note => noteIds.includes(note.id));
-                renderNotes(notesToShow);
+                showMoreNotes('section2', notesToShow);
             });
         }
 
@@ -1404,7 +1398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return noteDiv;
     }
 
-    function showMoreNotes(sectionId) {
+    function showMoreNotes(sectionId, notesToShow) {
         let container, showMoreBtn;
 
         if (sectionId === 'today') {
@@ -1424,41 +1418,27 @@ document.addEventListener('DOMContentLoaded', () => {
         if (container.dataset.expandedView === 'true') {
             // Réduire la vue
             container.dataset.expandedView = 'false';
-
-            // Supprimer toutes les notes actuelles
             container.innerHTML = '';
 
-            // Récupérer les IDs de toutes les notes et les objets correspondants
-            const noteIds = JSON.parse(container.dataset.allNotes);
-            const notesToRender = noteIds.map(id => notes.find(note => note.id === id)).filter(Boolean);
-
-            // Afficher seulement les 3 premières
-            const initialCount = Math.min(3, notesToRender.length);
-            notesToRender.slice(0, initialCount).forEach(note => {
+            // Afficher seulement les 3 premières notes
+            const initialCount = Math.min(3, notesToShow.length);
+            notesToShow.slice(0, initialCount).forEach(note => {
                 const noteElement = createRevisitNoteElement(note);
                 container.appendChild(noteElement);
             });
 
-            // Changer le texte du bouton
             showMoreBtn.textContent = 'Voir plus';
         } else {
             // Étendre la vue
             container.dataset.expandedView = 'true';
-
-            // Récupérer toutes les notes et les afficher
-            const noteIds = JSON.parse(container.dataset.allNotes);
-            const notesToRender = noteIds.map(id => notes.find(note => note.id === id)).filter(Boolean);
-
-            // Supprimer les notes actuelles
             container.innerHTML = '';
 
-            // Ajouter toutes les notes
-            notesToRender.forEach(note => {
+            // Afficher toutes les notes
+            notesToShow.forEach(note => {
                 const noteElement = createRevisitNoteElement(note);
                 container.appendChild(noteElement);
             });
 
-            // Changer le texte du bouton
             showMoreBtn.textContent = 'Voir moins';
         }
     }
