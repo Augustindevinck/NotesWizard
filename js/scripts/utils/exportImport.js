@@ -28,10 +28,12 @@ export function exportNotes(notes, statusElement) {
         const a = document.createElement('a');
         a.href = url;
         
-        // Générer un nom de fichier avec la date
+        // Générer un nom de fichier avec la date et l'heure
         const date = new Date();
         const dateStr = date.toISOString().split('T')[0];
-        a.download = `notes_export_${dateStr}.json`;
+        const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
+        const noteCount = notes.length;
+        a.download = `notes_export_${dateStr}_${timeStr}_${noteCount}notes.json`;
         
         // Déclencher le téléchargement
         document.body.appendChild(a);
@@ -133,9 +135,56 @@ export function importNotes(event, notes, callback, statusElement) {
             }
             
             // Vérifier la structure minimale des notes importées
+            if (importedNotes.length === 0) {
+                throw new Error('Le fichier ne contient aucune note');
+            }
+            
+            let notesWithoutId = 0;
+            let notesWithoutContent = 0;
+            
             importedNotes.forEach(note => {
                 if (!note.id) {
-                    throw new Error('Format invalide: certaines notes n\'ont pas d\'ID');
+                    notesWithoutId++;
+                }
+                if (!note.content && !note.title) {
+                    notesWithoutContent++;
+                }
+            });
+            
+            if (notesWithoutId > 0) {
+                throw new Error(`Format invalide: ${notesWithoutId} note(s) n'ont pas d'identifiant`);
+            }
+            
+            if (notesWithoutContent > 0) {
+                console.warn(`Attention: ${notesWithoutContent} note(s) n'ont ni titre ni contenu`);
+            }
+            
+            // S'assurer que les dates sont au format ISO ou les corriger
+            importedNotes.forEach(note => {
+                // Ajouter les dates manquantes
+                if (!note.createdAt) {
+                    note.createdAt = new Date().toISOString();
+                }
+                if (!note.updatedAt) {
+                    note.updatedAt = note.createdAt;
+                }
+                
+                // Vérifier que les dates sont au format ISO
+                try {
+                    const createdDate = new Date(note.createdAt);
+                    const updatedDate = new Date(note.updatedAt);
+                    
+                    // Si les dates ne sont pas valides, les remplacer
+                    if (isNaN(createdDate.getTime())) {
+                        note.createdAt = new Date().toISOString();
+                    }
+                    if (isNaN(updatedDate.getTime())) {
+                        note.updatedAt = note.createdAt;
+                    }
+                } catch (e) {
+                    // En cas d'erreur, utiliser la date actuelle
+                    note.createdAt = new Date().toISOString();
+                    note.updatedAt = note.createdAt;
                 }
             });
             
@@ -226,7 +275,20 @@ export function importNotes(event, notes, callback, statusElement) {
         } catch (error) {
             console.error('Erreur lors de l\'importation des notes:', error);
             if (statusElement) {
-                statusElement.textContent = `Erreur: ${error.message}`;
+                let errorMessage = 'Une erreur s\'est produite lors de l\'importation';
+                
+                // Essayer d'extraire un message d'erreur plus spécifique
+                if (error && typeof error === 'object') {
+                    if (error.message) {
+                        errorMessage = error.message;
+                    } else if (error.toString() !== '[object Object]') {
+                        errorMessage = error.toString();
+                    }
+                } else if (error) {
+                    errorMessage = String(error);
+                }
+                
+                statusElement.textContent = `Erreur: ${errorMessage}`;
                 statusElement.className = 'status-error';
             }
         }

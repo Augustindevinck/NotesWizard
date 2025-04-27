@@ -208,7 +208,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(err => {
                     console.error('Erreur lors du chargement du module d\'export:', err);
-                    importStatus.textContent = 'Erreur lors de l\'exportation';
+                    
+                    // Obtenir un message d'erreur approprié
+                    let errorMessage = 'Erreur lors de l\'exportation';
+                    if (err && err.message) {
+                        errorMessage += `: ${err.message}`;
+                    }
+                    
+                    importStatus.textContent = errorMessage;
                     importStatus.className = 'error';
                     importStatus.style.display = 'block';
                 });
@@ -234,9 +241,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 })
                 .catch(err => {
                     console.error('Erreur lors du chargement du module d\'import:', err);
-                    importStatus.textContent = 'Erreur lors de l\'importation';
+                    
+                    // Obtenir un message d'erreur approprié
+                    let errorMessage = 'Erreur lors de l\'importation';
+                    if (err && err.message) {
+                        errorMessage += `: ${err.message}`;
+                    }
+                    
+                    importStatus.textContent = errorMessage;
                     importStatus.className = 'error';
                     importStatus.style.display = 'block';
+                    
+                    // Réinitialiser l'input de fichier pour permettre une nouvelle tentative
+                    importFile.value = '';
                 });
         });
 
