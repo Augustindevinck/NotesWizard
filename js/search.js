@@ -1,3 +1,4 @@
+
 /**
  * Script principal pour la page de recherche
  */
@@ -10,13 +11,14 @@ import { createNoteElement, deleteNote, saveNote, initNotesManager } from './scr
 import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { initSearchManager, performSearch } from './scripts/search/searchManager.js';
+import { initSearchManager, handleSearch } from './scripts/search/searchManager.js';
 import { navigateToPage, getUrlParams } from './scripts/utils/navigation.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('search-input');
+    // Récupération des éléments du DOM
+    const searchInput = document.getElementById('advanced-search-input');
     const searchResults = document.getElementById('search-results');
-    const searchResultsList = document.getElementById('search-results-list');
+    const searchResultsContainer = document.getElementById('search-results-container');
     const noteModal = document.getElementById('note-modal');
     const noteTitle = document.getElementById('note-title');
     const noteContent = document.getElementById('note-content');
@@ -28,88 +30,106 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveNoteBtn = document.getElementById('save-note-btn');
     const deleteNoteBtn = document.getElementById('delete-note-btn');
 
-
+    // État de l'application
     const appState = {
-        notes: loadNotes(),
-        allCategories: new Set(),
-        searchResults: []
+        notes: loadNotes() || [],
+        allCategories: new Set()
     };
 
-    // Initialiser les composants nécessaires
-    initNotesManager(openNoteModal);
-    initNoteModal({
-        noteModal,
-        noteTitle,
-        noteContent,
-        selectedCategories,
-        detectedHashtags,
-        deleteNoteBtn,
-        saveNoteBtn
-    });
+    // Initialisation de la recherche
+    initSearchManager();
 
-    // Configuration des événements
-    const homeBtn = document.getElementById('home-btn');
-    if (homeBtn) {
-        homeBtn.addEventListener('click', () => navigateToPage('index.html'));
+    // Configuration des événements de recherche
+    function performSearch(query) {
+        const results = handleSearch(
+            query,
+            appState.notes,
+            searchResults,
+            searchResultsContainer,
+            document.querySelector('.revisit-sections')
+        );
+
+        if (Array.isArray(results) && results.length > 0) {
+            displaySearchResults(results);
+        }
     }
 
-    searchInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            performSearch(searchInput.value, searchResultsList);
-        }
-    });
+    // Affichage des résultats de recherche
+    function displaySearchResults(results) {
+        if (!searchResultsContainer) return;
+        
+        searchResultsContainer.innerHTML = '';
+        results.forEach(note => {
+            const noteElement = createNoteElement(note);
+            searchResultsContainer.appendChild(noteElement);
+        });
+    }
 
-    const searchBtn = document.getElementById('search-btn');
+    // Initialisation des gestionnaires d'événements
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                performSearch(searchInput.value);
+            }
+        });
+    }
+
+    const searchBtn = document.getElementById('advanced-search-btn');
     if (searchBtn) {
         searchBtn.addEventListener('click', () => {
-            performSearch(searchInput.value, searchResultsList);
+            performSearch(searchInput.value);
         });
     }
 
     // Vérifier s'il y a une requête dans l'URL
     const params = getUrlParams();
-    if (params.query) {
+    if (params.query && searchInput) {
         searchInput.value = params.query;
-        performSearch(params.query, searchResultsList);
+        performSearch(params.query);
     }
 
-    // Saisie de catégorie pour l'autocomplétion
-    categoryInput.addEventListener('input', (event) => {
-        handleCategoryInput(event, categoryInput, categorySuggestions);
-    });
+    // Configuration des autres événements
+    if (categoryInput) {
+        categoryInput.addEventListener('input', (event) => {
+            handleCategoryInput(event, categoryInput, categorySuggestions);
+        });
 
-    categoryInput.addEventListener('keydown', (event) => {
-        handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions);
-    });
+        categoryInput.addEventListener('keydown', (event) => {
+            handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions);
+        });
+    }
 
-    // Détection des hashtags pendant la saisie
-    noteContent.addEventListener('input', () => {
-        detectHashtags(noteContent.value, detectedHashtags);
-    });
+    if (noteContent) {
+        noteContent.addEventListener('input', () => {
+            detectHashtags(noteContent.value, detectedHashtags);
+        });
+    }
 
-    // Bouton d'ajout de note
-    addNoteBtn.addEventListener('click', () => openNoteModal());
+    if (addNoteBtn) {
+        addNoteBtn.addEventListener('click', () => openNoteModal());
+    }
 
-    // Bouton de sauvegarde de note
-    saveNoteBtn.addEventListener('click', () => {
-        saveCurrentNote(appState.notes);
-    });
+    if (saveNoteBtn) {
+        saveNoteBtn.addEventListener('click', () => {
+            saveCurrentNote(appState.notes);
+        });
+    }
 
-    // Bouton de suppression de note dans le modal
-    deleteNoteBtn.addEventListener('click', () => {
-        if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
-            const currentNoteId = deleteNoteBtn.dataset.currentNoteId;
-            if (currentNoteId) {
-                deleteNote(currentNoteId, appState.notes, () => {});
-                cleanupHighlightedElements();
-                noteModal.style.display = 'none';
+    if (deleteNoteBtn) {
+        deleteNoteBtn.addEventListener('click', () => {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
+                const currentNoteId = deleteNoteBtn.dataset.currentNoteId;
+                if (currentNoteId) {
+                    deleteNote(currentNoteId, appState.notes, () => {});
+                    cleanupHighlightedElements();
+                    noteModal.style.display = 'none';
+                }
             }
-        }
-    });
+        });
+    }
 
-
-    // Import/Export (Preserved from original code)
+    // Configuration des modales
     const importExportBtn = document.getElementById('import-export-btn');
     const importExportModal = document.getElementById('import-export-modal');
     const exportBtn = document.getElementById('export-btn');
@@ -118,46 +138,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const importStatus = document.getElementById('import-status');
     const modalCloseButtons = document.querySelectorAll('.close');
 
-    importExportBtn.addEventListener('click', () => {
-        importExportModal.style.display = 'flex';
-    });
+    if (importExportBtn) {
+        importExportBtn.addEventListener('click', () => {
+            importExportModal.style.display = 'flex';
+        });
+    }
 
-    exportBtn.addEventListener('click', () => {
-        exportNotes(appState.notes);
-    });
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => {
+            exportNotes(appState.notes);
+        });
+    }
 
-    importBtn.addEventListener('click', () => {
-        importFile.click();
-    });
+    if (importBtn && importFile) {
+        importBtn.addEventListener('click', () => {
+            importFile.click();
+        });
 
-    importFile.addEventListener('change', (event) => {
-        importNotes(event, (importedNotes) => {
-            appState.notes = [...appState.notes, ...importedNotes];
-            saveNotes(appState.notes);
-
-            // Mettre à jour les catégories
-            appState.allCategories.clear();
-            appState.notes.forEach(note => {
-                if (note.categories) {
-                    note.categories.forEach(category => appState.allCategories.add(category));
+        importFile.addEventListener('change', (event) => {
+            importNotes(event, (importedNotes) => {
+                appState.notes = [...appState.notes, ...importedNotes];
+                saveNotes(appState.notes);
+                
+                if (importExportModal && importStatus) {
+                    setTimeout(() => {
+                        importExportModal.style.display = 'none';
+                        importStatus.textContent = '';
+                        importFile.value = '';
+                    }, 3000);
                 }
             });
-
-            // Fermer le modal après importation réussie
-            setTimeout(() => {
-                importExportModal.style.display = 'none';
-                importStatus.textContent = '';
-                importFile.value = '';
-            }, 3000);
         });
-    });
+    }
 
-    // Fermeture des modals avec le bouton de fermeture ou en cliquant à l'extérieur
+    // Gestion de la fermeture des modales
     modalCloseButtons.forEach(button => {
         button.addEventListener('click', () => {
-            cleanupHighlightedElements();
-            noteModal.style.display = 'none';
-            importExportModal.style.display = 'none';
+            if (noteModal) {
+                cleanupHighlightedElements();
+                noteModal.style.display = 'none';
+            }
+            if (importExportModal) {
+                importExportModal.style.display = 'none';
+            }
         });
     });
 
@@ -170,5 +193,4 @@ document.addEventListener('DOMContentLoaded', () => {
             importExportModal.style.display = 'none';
         }
     });
-
 });
