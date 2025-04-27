@@ -1,3 +1,4 @@
+
 /**
  * Gestion des catégories
  */
@@ -105,6 +106,7 @@ export function addCategoryTag(category, container) {
     const categoryTag = document.createElement('span');
     categoryTag.className = 'category-tag';
     categoryTag.textContent = category;
+    categoryTag.tabIndex = 0; // Permet la sélection par tabulation
     
     // Ajouter l'événement de suppression sur la touche Delete
     categoryTag.addEventListener('keydown', (e) => {
@@ -113,6 +115,5 @@ export function addCategoryTag(category, container) {
         }
     });
     
-    categoryTag.tabIndex = 0; // Permet la sélection par tabulation
     container.appendChild(categoryTag);
 }
