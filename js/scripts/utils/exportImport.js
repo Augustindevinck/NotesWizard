@@ -243,30 +243,37 @@ export function importNotes(event, notes, callback, statusElement) {
             saveNotes(notes);
             
             // Générer le message de statut
-            let statusMessage = '';
-            
-            // Résumé en une ligne pour un aperçu rapide
             const totalProcessed = newNotes.length + identicalNotes.length + differentContentNotes.length;
-            statusMessage = `Import réussi : ${totalProcessed} note(s) traitée(s)`;
             
-            // Détails par catégorie
+            let statusMessage = `
+                <div class="import-success">
+                    <span class="success-icon">✅</span>
+                    <div class="success-content">
+                        <div class="success-title">Import réussi</div>
+                        <div class="success-message">${totalProcessed} note(s) traitée(s)</div>`;
+            
+            // Ajouter les détails si nécessaire
             if (newNotes.length > 0 || identicalNotes.length > 0 || updatedNotes > 0) {
-                statusMessage += '<div class="import-details">';
+                statusMessage += '<div class="success-details">';
                 if (newNotes.length > 0) {
-                    statusMessage += `<div>✅ ${newNotes.length} nouvelle(s) note(s) ajoutée(s)</div>`;
+                    statusMessage += `<div>• ${newNotes.length} nouvelle(s) note(s) ajoutée(s)</div>`;
                 }
                 if (identicalNotes.length > 0) {
-                    statusMessage += `<div>ℹ️ ${identicalNotes.length} note(s) déjà existante(s) (contenu identique)</div>`;
+                    statusMessage += `<div>• ${identicalNotes.length} note(s) déjà existante(s)</div>`;
                 }
                 if (differentContentNotes.length > 0) {
-                    statusMessage += `<div>${updatedNotes > 0 ? '🔄' : '⏸️'} ${updatedNotes} / ${differentContentNotes.length} note(s) existante(s) mise(s) à jour</div>`;
+                    statusMessage += `<div>• ${updatedNotes} sur ${differentContentNotes.length} note(s) existante(s) mise(s) à jour</div>`;
                 }
                 statusMessage += '</div>';
             }
             
+            statusMessage += `
+                    </div>
+                </div>`;
+            
             if (statusElement) {
                 statusElement.innerHTML = statusMessage;
-                statusElement.className = 'status-success';
+                statusElement.style.display = 'block';
             }
             
             // Exécuter le callback si fourni
