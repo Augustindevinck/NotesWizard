@@ -764,26 +764,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSearch() {
         const query = searchInput.value.trim();
         const revisitSections = document.querySelector('.revisit-sections');
-        const searchResultsContainer = document.getElementById('search-results');
-        const notesContainer = document.getElementById('notes-container');
 
         if (query === '') {
-            if (searchResultsContainer) {
-                searchResultsContainer.innerHTML = '';
-                searchResultsContainer.classList.remove('active');
-            }
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
             currentSearchTerms = []; // Réinitialiser les termes de recherche
             renderEmptyState(); // Afficher l'état vide au lieu de toutes les notes
-            if (revisitSections) {
-                revisitSections.style.display = 'flex'; // Réafficher les sections de révision
-            }
+            revisitSections.style.display = 'flex'; // Réafficher les sections de révision
             return;
         }
 
         // Masquer les sections de révision pendant la recherche
-        if (revisitSections) {
-            revisitSections.style.display = 'none';
-        }
+        revisitSections.style.display = 'none';
 
         // Enregistrer les termes de recherche (mots individuels)
         currentSearchTerms = query.split(/\s+/).filter(term => term.length > 1);
@@ -792,15 +784,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchResultItems = performSearch(query);
 
         // Display search results
-        const searchResultsContainer = document.getElementById('search-results');
-        const notesContainer = document.getElementById('notes-container');
-
         if (searchResultItems.length > 0) {
             // Masquer les suggestions après la recherche
-            if (searchResultsContainer) {
-                searchResultsContainer.innerHTML = '';
-                searchResultsContainer.classList.remove('active');
-            }
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
 
             // Marquer chaque note comme résultat de recherche
             searchResultItems.forEach(result => {
@@ -808,20 +795,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // Afficher les résultats dans la vue principale
-            if (notesContainer) {
-                notesContainer.style.display = 'grid';
-                renderNotes(searchResultItems.map(result => result.note));
-            }
+            renderNotes(searchResultItems.map(result => result.note));
         } else {
             // Aucun résultat trouvé
-            if (searchResultsContainer) {
-                searchResultsContainer.innerHTML = '';
-                searchResultsContainer.classList.remove('active');
-            }
-            if (notesContainer) {
-                notesContainer.style.display = 'grid';
-                renderNotes([]);
-            }
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
+            renderNotes([]);
 
             // Afficher un message d'information
             notesContainer.innerHTML = `
