@@ -141,8 +141,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Vérifier s'il y a une requête de recherche dans l'URL
         const params = getUrlParams();
         if (params.query) {
+            // Remplir les deux champs de recherche si disponibles
+            if (hasSearchElements) {
+                searchInput.value = params.query;
+            }
             advancedSearchInput.value = params.query;
+            
+            // Exécuter la recherche
             executeSearch(params.query);
+            
+            console.log(`Recherche exécutée avec la requête: ${params.query}`);
+        } else {
+            console.log("Aucune requête trouvée dans l'URL");
         }
 
         // Configurer les écouteurs d'événements
@@ -253,10 +263,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Transformer les résultats pour correspondre au format attendu
-        const formattedResults = searchResults.map(result => result.note);
+        // Trier par score (le scoring est déjà fait dans performSearch) et préserver les scores
+        searchResults.sort((a, b) => b.score - a.score);
         
-        // Trier par score (le scoring est déjà fait dans performSearch)
+        // Transformer les résultats pour correspondre au format attendu tout en gardant le score
+        const formattedResults = searchResults.map(result => {
+            return { 
+                ...result.note, 
+                searchScore: result.score  // Conserver le score pour pouvoir le visualiser si nécessaire
+            };
+        });
+        
         return formattedResults;
     }
 
@@ -294,7 +311,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Ajouter chaque résultat à la grille
         results.forEach(note => {
+            // Créer l'élément de note
             const noteElement = createNoteElement(note, searchTerms);
+            
+            // Ajouter l'information de score si disponible (pour le débogage)
+            if (note.searchScore !== undefined) {
+                const scoreInfo = document.createElement('div');
+                scoreInfo.className = 'search-score';
+                scoreInfo.textContent = `Score: ${note.searchScore.toFixed(2)}`;
+                scoreInfo.style.fontSize = '0.75rem';
+                scoreInfo.style.color = '#777';
+                scoreInfo.style.textAlign = 'right';
+                scoreInfo.style.padding = '0.25rem';
+                
+                // Ajouter l'info de score au début de l'élément
+                noteElement.insertBefore(scoreInfo, noteElement.firstChild);
+            }
+            
+            // Ajouter l'élément à la grille
             resultsGrid.appendChild(noteElement);
         });
         
