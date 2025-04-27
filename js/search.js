@@ -1,4 +1,3 @@
-
 /**
  * Script principal pour la page de recherche
  */
@@ -56,8 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Affichage des résultats de recherche
     function displaySearchResults(results) {
-        if (!searchResultsContainer) return;
-        
+        const searchResultsContainer = document.getElementById('search-results-list');
+        if (!searchResultsContainer || !Array.isArray(results)) return;
+
         searchResultsContainer.innerHTML = '';
         results.forEach(note => {
             const noteElement = createNoteElement(note);
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
             importNotes(event, (importedNotes) => {
                 appState.notes = [...appState.notes, ...importedNotes];
                 saveNotes(appState.notes);
-                
+
                 if (importExportModal && importStatus) {
                     setTimeout(() => {
                         importExportModal.style.display = 'none';
