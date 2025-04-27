@@ -95,9 +95,12 @@ export function createNoteElement(note, currentSearchTerms) {
  * @param {Function} renderEmptyState - Fonction pour afficher l'état vide
  * @returns {boolean} - True si la note a été supprimée, false sinon
  */
-export function deleteNote(noteId, notes, renderEmptyState) {
+export function deleteNote(noteId) {
     // Ask for confirmation before deleting
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
+        // Récupérer les notes du localStorage
+        let notes = JSON.parse(localStorage.getItem('notes') || '[]');
+        
         // Find the note index by id
         const noteIndex = notes.findIndex(note => note.id === noteId);
 
@@ -108,17 +111,13 @@ export function deleteNote(noteId, notes, renderEmptyState) {
             // Save to localStorage
             saveNotes(notes);
 
-            // Revenir à l'état vide
-            if (renderEmptyState) {
-                renderEmptyState();
-            }
-
             // Mettre à jour les sections de révision
             if (renderRevisitSectionsFn) {
                 renderRevisitSectionsFn(notes);
-            } else {
-                console.error('renderRevisitSections n\'est pas initialisé');
             }
+            
+            // Recharger la page pour actualiser l'affichage
+            location.reload();
             
             return true;
         }
