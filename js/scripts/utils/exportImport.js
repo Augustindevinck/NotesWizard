@@ -74,21 +74,37 @@ export function importNotes(file, statusElement) {
 
         reader.onload = async (e) => {
             try {
-                const importedData = JSON.parse(e.target.result);
+                let importedData;
+                try {
+                    importedData = JSON.parse(e.target.result);
+                } catch (error) {
+                    throw new Error('Le fichier n\'est pas un JSON valide');
+                }
+
                 let importedNotes;
 
                 // Vérifier le format
-                if (importedData.version && Array.isArray(importedData.notes)) {
-                    importedNotes = importedData.notes;
-                } else if (Array.isArray(importedData)) {
-                    importedNotes = importedData;
+                if (importedData && typeof importedData === 'object') {
+                    if (importedData.version && Array.isArray(importedData.notes)) {
+                        importedNotes = importedData.notes;
+                    } else if (Array.isArray(importedData)) {
+                        importedNotes = importedData;
+                    } else {
+                        throw new Error('Format de fichier invalide - Le fichier doit contenir un tableau de notes ou un objet avec une propriété "notes"');
+                    }
                 } else {
-                    throw new Error('Format de fichier invalide');
+                    throw new Error('Format de fichier invalide - Le contenu n\'est pas un objet JSON valide');
                 }
 
                 // Vérifier la structure des notes
-                if (!importedNotes.every(note => note.id && note.content)) {
-                    throw new Error('Certaines notes sont mal structurées');
+                if (!Array.isArray(importedNotes) || importedNotes.length === 0) {
+                    throw new Error('Format de fichier invalide - Aucune note trouvée');
+                }
+
+                // Vérifier chaque note
+                const invalidNotes = importedNotes.filter(note => !note || typeof note !== 'object' || !note.id || !note.content);
+                if (invalidNotes.length > 0) {
+                    throw new Error(`${invalidNotes.length} note(s) sont mal structurées - Chaque note doit avoir un ID et un contenu`);
                 }
 
                 // Récupérer les notes existantes
