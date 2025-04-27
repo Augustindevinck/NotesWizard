@@ -1,3 +1,4 @@
+
 /**
  * Fonctions pour l'exportation et l'importation des notes
  */
@@ -57,16 +58,47 @@ export function exportNotes(notes, statusElement) {
 }
 
 /**
+ * Compare deux notes pour détecter les différences
+ */
+function compareNotes(note1, note2) {
+    const fields = ['title', 'content', 'categories', 'hashtags', 'videoUrls'];
+    const differences = [];
+    
+    fields.forEach(field => {
+        if (Array.isArray(note1[field])) {
+            if (JSON.stringify(note1[field]) !== JSON.stringify(note2[field])) {
+                differences.push(field);
+            }
+        } else if (note1[field] !== note2[field]) {
+            differences.push(field);
+        }
+    });
+    
+    return differences;
+}
+
+/**
  * Importe des notes depuis un fichier JSON
  */
 export function importNotes(file, statusElement) {
     return new Promise((resolve, reject) => {
-        if (!file || !file.type.includes('json')) {
+        if (!file) {
+            const error = new Error('Aucun fichier sélectionné');
             if (statusElement) {
-                statusElement.textContent = '❌ Format de fichier invalide. Veuillez sélectionner un fichier JSON.';
+                statusElement.textContent = `❌ Erreur: ${error.message}`;
                 statusElement.className = 'status-error';
             }
-            reject(new Error('Format de fichier invalide'));
+            reject(error);
+            return;
+        }
+
+        if (!file.type.includes('json')) {
+            const error = new Error('Format de fichier invalide. Veuillez sélectionner un fichier JSON.');
+            if (statusElement) {
+                statusElement.textContent = `❌ Erreur: ${error.message}`;
+                statusElement.className = 'status-error';
+            }
+            reject(error);
             return;
         }
 
@@ -90,56 +122,68 @@ export function importNotes(file, statusElement) {
                     } else if (Array.isArray(importedData)) {
                         importedNotes = importedData;
                     } else {
-                        throw new Error('Format de fichier invalide - Le fichier doit contenir un tableau de notes ou un objet avec une propriété "notes"');
+                        throw new Error('Format invalide - Le fichier doit contenir un tableau de notes');
                     }
                 } else {
-                    throw new Error('Format de fichier invalide - Le contenu n\'est pas un objet JSON valide');
+                    throw new Error('Format invalide - Le contenu n\'est pas un objet JSON valide');
                 }
 
                 // Vérifier la structure des notes
                 if (!Array.isArray(importedNotes) || importedNotes.length === 0) {
-                    throw new Error('Format de fichier invalide - Aucune note trouvée');
+                    throw new Error('Aucune note à importer');
                 }
 
                 // Vérifier chaque note
-                const invalidNotes = importedNotes.filter(note => !note || typeof note !== 'object' || !note.id || !note.content);
+                const invalidNotes = importedNotes.filter(note => 
+                    !note || typeof note !== 'object' || !note.id || !note.content
+                );
                 if (invalidNotes.length > 0) {
-                    throw new Error(`${invalidNotes.length} note(s) sont mal structurées - Chaque note doit avoir un ID et un contenu`);
+                    throw new Error(`${invalidNotes.length} note(s) mal structurée(s)`);
                 }
 
                 // Récupérer les notes existantes
                 const existingNotes = JSON.parse(localStorage.getItem('notes') || '[]');
-
+                
                 // Analyser les notes
                 let newNotes = [];
                 let identicalNotes = [];
-                let modifiedNotes = [];
+                let conflictingNotes = [];
 
-                importedNotes.forEach(importedNote => {
+                for (const importedNote of importedNotes) {
                     const existingNote = existingNotes.find(n => n.id === importedNote.id);
+                    
                     if (!existingNote) {
                         newNotes.push(importedNote);
-                    } else if (JSON.stringify(existingNote) === JSON.stringify(importedNote)) {
-                        identicalNotes.push(importedNote);
                     } else {
-                        modifiedNotes.push({
-                            existing: existingNote,
-                            imported: importedNote
-                        });
+                        const differences = compareNotes(existingNote, importedNote);
+                        if (differences.length === 0) {
+                            identicalNotes.push(importedNote);
+                        } else {
+                            conflictingNotes.push({
+                                existing: existingNote,
+                                imported: importedNote,
+                                differences
+                            });
+                        }
                     }
-                });
+                }
 
-                // Gérer les notes modifiées
+                // Gérer les conflits
                 let updatedNotes = 0;
-                if (modifiedNotes.length > 0) {
+                if (conflictingNotes.length > 0) {
                     const message = `📝 Analyse des notes:\n
 • ${newNotes.length} nouvelle(s) note(s)
 • ${identicalNotes.length} note(s) identique(s)
-• ${modifiedNotes.length} note(s) avec des modifications\n
+• ${conflictingNotes.length} note(s) avec des modifications\n
+Détails des modifications:
+${conflictingNotes.map(conflict => 
+    `- Note "${conflict.existing.title || 'Sans titre'}"
+     Champs modifiés: ${conflict.differences.join(', ')}`
+).join('\n')}\n
 Voulez-vous remplacer les notes existantes par les versions importées ?`;
 
                     if (confirm(message)) {
-                        modifiedNotes.forEach(({existing, imported}) => {
+                        conflictingNotes.forEach(({existing, imported}) => {
                             const index = existingNotes.findIndex(n => n.id === existing.id);
                             if (index !== -1) {
                                 existingNotes[index] = imported;
@@ -167,10 +211,10 @@ Voulez-vous remplacer les notes existantes par les versions importées ?`;
                     if (updatedNotes > 0) {
                         message += `• ${updatedNotes} note(s) mise(s) à jour<br>`;
                     }
-                    if (modifiedNotes.length > 0 && updatedNotes === 0) {
-                        message += `• ${modifiedNotes.length} note(s) non modifiée(s)<br>`;
+                    if (conflictingNotes.length > 0 && updatedNotes === 0) {
+                        message += `• ${conflictingNotes.length} note(s) conservée(s) sans modification<br>`;
                     }
-                    message += `• Total: ${finalNotes.length} notes`;
+                    message += `• Total final: ${finalNotes.length} notes`;
 
                     statusElement.innerHTML = message;
                     statusElement.className = 'status-success';
@@ -178,7 +222,7 @@ Voulez-vous remplacer les notes existantes par les versions importées ?`;
 
                 resolve(finalNotes);
 
-                // Recharger la page
+                // Recharger la page après un court délai
                 setTimeout(() => location.reload(), 2000);
             } catch (error) {
                 console.error('Erreur lors de l\'importation:', error);
@@ -191,11 +235,12 @@ Voulez-vous remplacer les notes existantes par les versions importées ?`;
         };
 
         reader.onerror = () => {
+            const error = new Error('Erreur lors de la lecture du fichier');
             if (statusElement) {
-                statusElement.textContent = '❌ Erreur lors de la lecture du fichier';
+                statusElement.textContent = `❌ Erreur: ${error.message}`;
                 statusElement.className = 'status-error';
             }
-            reject(new Error('Erreur de lecture du fichier'));
+            reject(error);
         };
 
         reader.readAsText(file);
