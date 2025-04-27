@@ -82,44 +82,41 @@ export function handleCategoryKeydown(event, categoryInput, selectedCategories, 
 }
 
 /**
- * Ajoute un tag de catégorie
+ * Création complètement revue du système de tags de catégories
+ * pour éviter tout problème avec le caractère "×"
  * @param {string} category - Le nom de la catégorie à ajouter
  * @param {HTMLElement} container - Le conteneur où ajouter le tag
  */
 export function addCategoryTag(category, container) {
     // Vérifier si la catégorie existe déjà
-    const existingTags = container.querySelectorAll('.category-tag');
-    for (let tag of existingTags) {
-        const tagName = tag.querySelector('.tag-name');
-        if (tagName && tagName.textContent.trim() === category) {
-            return; // Éviter les doublons
-        }
+    const existingCategoryNames = Array.from(container.querySelectorAll('.category-tag')).map(tag => {
+        const dataValue = tag.getAttribute('data-category-value');
+        return dataValue;
+    });
+    
+    if (existingCategoryNames.includes(category)) {
+        return; // Éviter les doublons
     }
 
-    // Créer un span pour le tag avec une structure interne
-    const categoryTag = document.createElement('span');
+    // Créer un div pour le tag avec sa valeur stockée dans un attribut data-
+    const categoryTag = document.createElement('div');
     categoryTag.className = 'category-tag';
+    categoryTag.setAttribute('data-category-value', category);
     
-    // Créer un span pour le nom de la catégorie
-    const tagName = document.createElement('span');
-    tagName.className = 'tag-name';
-    tagName.textContent = category;
+    // Ajouter le nom de la catégorie dans le tag
+    categoryTag.innerHTML = `
+        <span class="tag-name">${category}</span>
+        <button type="button" class="remove-tag" title="Retirer">&times;</button>
+    `;
     
-    // Ajouter le nom au tag
-    categoryTag.appendChild(tagName);
-    
-    // Optionnellement, ajouter un bouton de suppression visible
-    const removeBtn = document.createElement('span');
-    removeBtn.className = 'remove-tag';
-    removeBtn.textContent = '×';
-    removeBtn.title = 'Retirer';
-    removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        categoryTag.remove();
-    };
-    
-    // Ajouter le bouton de suppression au tag
-    categoryTag.appendChild(removeBtn);
+    // Ajouter l'écouteur de clic sur le bouton de suppression
+    const removeBtn = categoryTag.querySelector('.remove-tag');
+    if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            categoryTag.remove();
+        });
+    }
     
     // Ajouter le tag au conteneur
     container.appendChild(categoryTag);

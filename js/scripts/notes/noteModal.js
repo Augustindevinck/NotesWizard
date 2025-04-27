@@ -292,24 +292,16 @@ export function saveCurrentNote(notes, callback) {
     const title = noteTitle.value.trim();
     const content = noteContent.value.trim();
 
-    // Get categories
+    // Get categories - nouvelle méthode utilisant l'attribut data-category-value
     const categoryElements = selectedCategories.querySelectorAll('.category-tag');
     const categories = Array.from(categoryElements).map(el => {
-        // Chercher le span contenant le nom de la catégorie
-        const tagName = el.querySelector('.tag-name');
-        // Si le span existe, utiliser son contenu, sinon utiliser le contenu complet du tag
-        return tagName ? tagName.textContent.trim() : el.textContent.trim();
+        return el.getAttribute('data-category-value');
     });
 
-    // Get hashtags
+    // Get hashtags - nouvelle méthode utilisant l'attribut data-hashtag-value
     const hashtagElements = detectedHashtags.querySelectorAll('.hashtag-tag');
     const hashtags = Array.from(hashtagElements).map(el => {
-        // Chercher le span contenant le nom du hashtag
-        const tagName = el.querySelector('.tag-name');
-        // Si le span existe, utiliser son contenu, sinon utiliser le contenu complet du tag
-        const text = tagName ? tagName.textContent.trim() : el.textContent.trim();
-        // Retirer le # du début
-        return text.substring(1);
+        return el.getAttribute('data-hashtag-value');
     });
 
     // Extract YouTube URLs from content
