@@ -100,9 +100,6 @@ export function deleteNote(noteId) {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         // Récupérer les notes du localStorage
         let notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        if (!Array.isArray(notes)) {
-            notes = [];
-        }
         
         // Find the note index by id
         const noteIndex = notes.findIndex(note => note.id === noteId);
