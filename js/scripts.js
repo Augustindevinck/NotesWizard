@@ -58,6 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
         section2: 14
     };
 
+    // Stocker les IDs des notes marquées comme lues temporairement
+    let readNotes = new Set();
+
     // Initialize the application
     init();
 
@@ -481,6 +484,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 viewContent.appendChild(videoContainer);
             }
+
+            // Ajout du bouton "Marquer comme lue"
+            let markAsReadBtn = document.getElementById('mark-as-read-btn');
+            if (!markAsReadBtn) {
+                markAsReadBtn = document.createElement('button');
+                markAsReadBtn.id = 'mark-as-read-btn';
+                markAsReadBtn.className = 'action-button';
+                markAsReadBtn.style.marginTop = '10px';
+                markAsReadBtn.textContent = 'Marquer comme lue';
+                markAsReadBtn.addEventListener('click', () => {
+                    readNotes.add(note.id);
+                    noteModal.style.display = 'none';
+                    renderRevisitSections();
+                });
+                viewMode.appendChild(markAsReadBtn);
+            }
+
 
             // Si on vient d'une recherche et qu'il y a des termes à surligner
             if (fromSearch && currentSearchTerms.length > 0) {
@@ -1356,7 +1376,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sectionId) {
-        if (notesToRender.length === 0) {
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        // Filtrer les notes marquées comme lues
+        const unreadNotes = notesToRender.filter(note => !readNotes.has(note.id));
+
+        if (unreadNotes.length === 0) {
             container.innerHTML = '<div class="empty-revisit">Aucune note pour cette période</div>';
             if (showMoreBtn) {
                 showMoreBtn.style.display = 'none';
@@ -1365,11 +1392,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Pour l'affichage compact, montrer max 3 notes par défaut
-        const initialCount = Math.min(3, notesToRender.length);
-        const hasMore = notesToRender.length > initialCount;
+        const initialCount = Math.min(3, unreadNotes.length);
+        const hasMore = unreadNotes.length > initialCount;
 
         // Créer les éléments pour les 3 premières notes
-        notesToRender.slice(0, initialCount).forEach(note => {
+        unreadNotes.slice(0, initialCount).forEach(note => {
             const noteElement = createRevisitNoteElement(note);
             container.appendChild(noteElement);
         });
@@ -1380,7 +1407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Stocker toutes les notes pour ce jour dans un attribut data pour "Voir plus"
-        container.dataset.allNotes = JSON.stringify(notesToRender.map(note => note.id));
+        container.dataset.allNotes = JSON.stringify(unreadNotes.map(note => note.id));
         container.dataset.expandedView = 'false';
     }
 
