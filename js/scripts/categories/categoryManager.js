@@ -96,30 +96,19 @@ export function addCategoryTag(category, container) {
         }
     }
 
-    // Créer un span pour le tag avec une structure interne
+    // Créer un span pour le tag (structure simplifiée)
     const categoryTag = document.createElement('span');
     categoryTag.className = 'category-tag';
+    categoryTag.dataset.value = category; // Stocker la valeur dans un attribut data
     
-    // Créer un span pour le nom de la catégorie
-    const tagName = document.createElement('span');
-    tagName.className = 'tag-name';
-    tagName.textContent = category;
+    // Ajouter directement le texte de la catégorie
+    categoryTag.textContent = category;
     
-    // Ajouter le nom au tag
-    categoryTag.appendChild(tagName);
-    
-    // Optionnellement, ajouter un bouton de suppression visible
-    const removeBtn = document.createElement('span');
-    removeBtn.className = 'remove-tag';
-    removeBtn.textContent = '×';
-    removeBtn.title = 'Retirer';
-    removeBtn.onclick = (e) => {
+    // Ajouter un événement de clic pour la suppression
+    categoryTag.addEventListener('click', (e) => {
         e.stopPropagation();
         categoryTag.remove();
-    };
-    
-    // Ajouter le bouton de suppression au tag
-    categoryTag.appendChild(removeBtn);
+    });
     
     // Ajouter le tag au conteneur
     container.appendChild(categoryTag);

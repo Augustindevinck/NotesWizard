@@ -81,17 +81,11 @@ export function addHashtagTag(tag, container) {
         }
     }
     
-    // Créer un span pour le tag avec une structure interne
+    // Créer un span pour le tag (structure simplifiée)
     const hashtagTag = document.createElement('span');
     hashtagTag.className = 'hashtag-tag';
-    
-    // Créer un span pour le nom du hashtag
-    const tagName = document.createElement('span');
-    tagName.className = 'tag-name';
-    tagName.textContent = `#${tag}`;
-    
-    // Ajouter le nom au tag
-    hashtagTag.appendChild(tagName);
+    hashtagTag.dataset.value = tag; // Stocker la valeur dans un attribut data
+    hashtagTag.textContent = `#${tag}`;
     
     container.appendChild(hashtagTag);
 }
