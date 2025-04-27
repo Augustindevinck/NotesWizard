@@ -68,6 +68,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Charger les paramètres de révision depuis localStorage
         loadRevisitSettings();
 
+        // Ajouter l'écouteur pour le bouton de vue générale
+        const generalViewBtn = document.getElementById('general-view-btn');
+        if (generalViewBtn) {
+            generalViewBtn.addEventListener('click', () => {
+                import('./components/utils/navigation.js')
+                    .then(module => {
+                        module.navigateToGeneralView();
+                    })
+                    .catch(err => console.error('Erreur lors du chargement du module de navigation:', err));
+            });
+        }
+
         // Affiche un état vide au démarrage (pas de notes) dans la section principale
         renderEmptyState();
 

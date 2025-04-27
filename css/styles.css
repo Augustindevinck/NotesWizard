@@ -91,6 +91,25 @@ header {
     background-color: #3a51d1;
 }
 
+.general-view-button {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 15px 0;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 16px;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+}
+
+.general-view-button:hover {
+    background-color: #3a51d1;
+    transform: translateY(-2px);
+}
+
 #search-input:focus {
     outline: none;
     border-color: var(--primary-color);
