@@ -13,12 +13,16 @@ export function initCategoryManager(existingCategories) {
     if (existingCategories) {
         // Nettoyer les doublons et les variations (avec/sans 'x')
         const cleanedCategories = new Set();
+        const categoryMap = new Map(); // Pour garder trace de la première version vue
+
         existingCategories.forEach(category => {
             const baseName = category.replace(/x$/, '');
-            if (!Array.from(cleanedCategories).some(c => c.replace(/x$/, '') === baseName)) {
+            if (!categoryMap.has(baseName)) {
+                categoryMap.set(baseName, category);
                 cleanedCategories.add(category);
             }
         });
+
         categories = cleanedCategories;
     }
 }
