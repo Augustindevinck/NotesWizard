@@ -354,10 +354,34 @@ document.addEventListener('DOMContentLoaded', () => {
             // Afficher en mode consultation
             viewMode.classList.remove('hidden');
             editMode.classList.add('hidden');
-            viewTitle.textContent = note.title || 'Sans titre';
-            // Masquer les URLs YouTube dans le contenu affiché
+            
+            // Créer le contenu avec mise en évidence si c'est un résultat de recherche
             const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
-            viewContent.textContent = displayContent;
+            
+            if (fromSearch && currentSearchTerms.length > 0) {
+                // Mise en évidence du titre
+                let highlightedTitle = note.title || 'Sans titre';
+                currentSearchTerms.forEach(term => {
+                    if (term.length > 1) {
+                        const regex = new RegExp(`(${term})`, 'gi');
+                        highlightedTitle = highlightedTitle.replace(regex, '<span class="highlighted-term">$1</span>');
+                    }
+                });
+                viewTitle.innerHTML = highlightedTitle;
+
+                // Mise en évidence du contenu
+                let highlightedContent = displayContent;
+                currentSearchTerms.forEach(term => {
+                    if (term.length > 1) {
+                        const regex = new RegExp(`(${term})`, 'gi');
+                        highlightedContent = highlightedContent.replace(regex, '<span class="highlighted-term">$1</span>');
+                    }
+                });
+                viewContent.innerHTML = highlightedContent;
+            } else {
+                viewTitle.textContent = note.title || 'Sans titre';
+                viewContent.textContent = displayContent;
+            }
 
             // Préparer le mode édition
             noteTitle.value = note.title || '';
