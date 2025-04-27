@@ -493,12 +493,13 @@ header {
 }
 
 .category-tag, .hashtag-tag {
-    display: flex;
-    align-items: center;
+    display: inline-block;
     padding: 5px 10px;
     background-color: var(--secondary-color);
     border-radius: 20px;
     font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
 }
 
 .category-tag {
@@ -511,10 +512,10 @@ header {
     border: 1px solid var(--border-color);
 }
 
-.remove-tag {
-    margin-left: 5px;
-    cursor: pointer;
-    font-size: 16px;
+/* Effet de survol pour montrer qu'ils sont cliquables */
+.category-tag:hover, .hashtag-tag:hover {
+    background-color: rgba(74, 107, 250, 0.1);
+    transform: scale(1.05);
 }
 
 .category-input-container {
