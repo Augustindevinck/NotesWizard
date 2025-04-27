@@ -11,19 +11,7 @@ let categories = new Set();
  */
 export function initCategoryManager(existingCategories) {
     if (existingCategories) {
-        // Nettoyer les doublons et les variations (avec/sans 'x')
-        const cleanedCategories = new Set();
-        const categoryMap = new Map(); // Pour garder trace de la première version vue
-
-        existingCategories.forEach(category => {
-            const baseName = category.replace(/x$/, '');
-            if (!categoryMap.has(baseName)) {
-                categoryMap.set(baseName, category);
-                cleanedCategories.add(category);
-            }
-        });
-
-        categories = cleanedCategories;
+        categories = new Set(existingCategories);
     }
 }
 
