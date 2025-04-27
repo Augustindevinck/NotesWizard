@@ -146,7 +146,7 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
  * @returns {HTMLElement} - L'élément DOM de la note
  */
 function createRevisitNoteElement(note) {
-    // On réutilise la fonction createNoteElement mais avec une classe spécifique
+    // Afficher une erreur si la fonction createNoteElement n'est pas injectée
     if (!createNoteElementFn) {
         console.error('createNoteElement n\'est pas initialisé dans revisit.js');
         const div = document.createElement('div');
@@ -154,6 +154,8 @@ function createRevisitNoteElement(note) {
         div.textContent = 'Erreur de chargement de la note';
         return div;
     }
+    
+    // On réutilise la fonction createNoteElement mais avec une classe spécifique
     const noteElement = createNoteElementFn(note, []);
     noteElement.classList.add('revisit-note');
     return noteElement;

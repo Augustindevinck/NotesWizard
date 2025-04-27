@@ -81,10 +81,9 @@ export function showSearchSuggestions(query, notes, searchResults, onSuggestionC
             // Mettre en évidence les termes dans le contenu
             const highlightedContent = highlightSearchResults(content, currentSearchTerms);
             
-            // Ajouter le contenu HTML
+            // Ajouter uniquement le titre (sans contenu)
             suggestionItem.innerHTML = `
                 <div class="suggestion-title">${highlightedTitle}</div>
-                <div class="suggestion-content">${highlightedContent}</div>
             `;
             
             // Ajouter l'écouteur d'événement pour le clic

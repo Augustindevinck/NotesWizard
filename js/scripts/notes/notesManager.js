@@ -53,15 +53,10 @@ export function createNoteElement(note, currentSearchTerms) {
         ? note.hashtags.map(tag => `<span class="note-hashtag">#${tag}</span>`).join('')
         : '';
 
-    // Add delete button and note content
+    // Add delete button and only the title (no content, categories or hashtags)
     noteDiv.innerHTML = `
         <div class="delete-note" title="Supprimer cette note">&times;</div>
         <h3 class="note-title">${note.title || 'Sans titre'}</h3>
-        <p class="note-content">${displayContent}</p>
-        <div class="note-meta">
-            ${categoriesHTML}
-            ${hashtagsHTML}
-        </div>
         <div class="note-date">Créée le ${formattedDate}</div>
     `;
 
