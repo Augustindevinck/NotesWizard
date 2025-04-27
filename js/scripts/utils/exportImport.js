@@ -116,28 +116,49 @@ export function importNotes(file, statusElement) {
                     }
                 });
 
-                // Si des notes existantes sont trouvées, demander confirmation
+                // Analyser les notes existantes pour détecter les changements
                 let finalNotes = [...existingNotes];
                 let notesUpdated = 0;
+                let notesIdentical = 0;
+                let notesWithChanges = [];
                 
                 if (existingNotesToUpdate.length > 0) {
-                    const message = `📝 Notes détectées:
-• ${newNotes.length} nouvelle(s) note(s)
-• ${existingNotesToUpdate.length} note(s) existante(s)
-
-Que souhaitez-vous faire avec les notes existantes ?`;
-
-                    const keepExisting = confirm(message + '\n\nCliquez sur OK pour remplacer les notes existantes par les nouvelles versions, ou sur Annuler pour conserver les versions existantes.');
-
-                    if (keepExisting) {
-                        // Remplacer les notes existantes
-                        existingNotesToUpdate.forEach(updatedNote => {
-                            const index = finalNotes.findIndex(note => note.id === updatedNote.id);
-                            if (index !== -1) {
-                                finalNotes[index] = updatedNote;
-                                notesUpdated++;
+                    existingNotesToUpdate.forEach(importedNote => {
+                        const existingNote = finalNotes.find(note => note.id === importedNote.id);
+                        if (existingNote) {
+                            // Comparer le contenu des notes
+                            if (JSON.stringify(existingNote) === JSON.stringify(importedNote)) {
+                                notesIdentical++;
+                            } else {
+                                notesWithChanges.push({
+                                    id: importedNote.id,
+                                    existing: existingNote,
+                                    imported: importedNote
+                                });
                             }
-                        });
+                        }
+                    });
+
+                    // S'il y a des notes avec des changements, demander confirmation
+                    if (notesWithChanges.length > 0) {
+                        const message = `📝 Analyse des notes:
+• ${newNotes.length} nouvelle(s) note(s)
+• ${notesIdentical} note(s) identique(s)
+• ${notesWithChanges.length} note(s) avec des modifications
+
+Souhaitez-vous remplacer les notes existantes par les versions importées ?`;
+
+                        const replaceExisting = confirm(message + '\n\nCliquez sur OK pour remplacer les notes existantes par les nouvelles versions, ou sur Annuler pour conserver les versions existantes.');
+
+                        if (replaceExisting) {
+                            notesWithChanges.forEach(({imported}) => {
+                                const index = finalNotes.findIndex(note => note.id === imported.id);
+                                if (index !== -1) {
+                                    finalNotes[index] = imported;
+                                    notesUpdated++;
+                                }
+                            });
+                        }
                     }
                 }
 
@@ -152,11 +173,14 @@ Que souhaitez-vous faire avec les notes existantes ?`;
                     if (newNotes.length > 0) {
                         message += `• ${newNotes.length} nouvelle(s) note(s) ajoutée(s)<br>`;
                     }
+                    if (notesIdentical > 0) {
+                        message += `• ${notesIdentical} note(s) identique(s) déjà présente(s)<br>`;
+                    }
                     if (notesUpdated > 0) {
                         message += `• ${notesUpdated} note(s) mise(s) à jour<br>`;
                     }
-                    if (existingNotesToUpdate.length > 0 && notesUpdated === 0) {
-                        message += `• ${existingNotesToUpdate.length} note(s) existante(s) conservée(s)<br>`;
+                    if (notesWithChanges.length > 0 && notesUpdated === 0) {
+                        message += `• ${notesWithChanges.length} note(s) existante(s) conservées (modifications ignorées)<br>`;
                     }
                     message += `• Total: ${finalNotes.length} notes`;
                     
