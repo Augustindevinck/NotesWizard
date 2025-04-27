@@ -37,7 +37,6 @@
         </header>
 
         <div class="page-header">
-            <h1>Recherche avancée</h1>
             <div class="nav-buttons">
                 <a href="index.html" class="nav-button">Vue principale</a>
                 <a href="categories.html" class="nav-button">Catégories</a>
@@ -46,7 +45,9 @@
         </div>
 
         <div class="search-page-container">
-            <div class="search-form">
+            <!-- Les éléments de recherche avancée sont masqués visuellement mais maintenus dans le DOM
+                 pour préserver la fonctionnalité de recherche -->
+            <div class="search-form" style="display: none;">
                 <div class="search-form-group">
                     <label for="advanced-search-input">Rechercher dans toutes les notes :</label>
                     <div class="search-input-group">

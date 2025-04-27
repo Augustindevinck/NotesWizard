@@ -141,16 +141,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Vérifier s'il y a une requête de recherche dans l'URL
         const params = getUrlParams();
         if (params.query) {
+            const query = params.query;
+            
             // Remplir les deux champs de recherche si disponibles
             if (hasSearchElements) {
-                searchInput.value = params.query;
+                searchInput.value = query;
             }
-            advancedSearchInput.value = params.query;
+            advancedSearchInput.value = query;
             
             // Exécuter la recherche
-            executeSearch(params.query);
+            executeSearch(query);
             
-            console.log(`Recherche exécutée avec la requête: ${params.query}`);
+            console.log(`Recherche exécutée avec la requête: ${query}`);
         } else {
             console.log("Aucune requête trouvée dans l'URL");
         }
@@ -350,13 +352,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Recherche depuis la barre principale (si elle existe)
         if (hasSearchElements) {
+            // Synchroniser la recherche en temps réel
+            searchInput.addEventListener('input', () => {
+                // Synchroniser avec le champ de recherche avancée (caché)
+                advancedSearchInput.value = searchInput.value;
+            });
+            
+            // Exécuter la recherche quand on appuie sur Entrée
             searchInput.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
                     const query = searchInput.value.trim();
                     if (query) {
-                        // Remplir l'entrée de recherche avancée avec la requête
-                        advancedSearchInput.value = query;
                         // Exécuter la recherche
                         executeSearch(query);
                     }
@@ -371,9 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 searchBtn.addEventListener('click', () => {
                     const query = searchInput.value.trim();
                     if (query) {
-                        // Remplir l'entrée de recherche avancée avec la requête
-                        advancedSearchInput.value = query;
-                        // Exécuter la recherche
+                        // Exécuter la recherche (advancedSearchInput est déjà synchronisé)
                         executeSearch(query);
                     }
                 });
