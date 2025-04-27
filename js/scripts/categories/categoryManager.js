@@ -11,7 +11,7 @@ let categories = new Set();
  */
 export function initCategoryManager(existingCategories) {
     if (existingCategories) {
-        categories = new Set(existingCategories);
+        categories = existingCategories;
     }
 }
 
@@ -93,13 +93,11 @@ export function handleCategoryKeydown(event, categoryInput, selectedCategories, 
  * @param {HTMLElement} container - Le conteneur où ajouter le tag
  */
 export function addCategoryTag(category, container) {
-    // Vérifier si la catégorie ou une variation existe déjà
+    // Vérifier si la catégorie existe déjà
     const existingTags = container.querySelectorAll('.category-tag');
-    const baseName = category.replace(/x$/, '');
     for (let tag of existingTags) {
-        const tagBaseName = tag.textContent.replace(/x$/, '');
-        if (tagBaseName === baseName) {
-            return; // Éviter les doublons et variations
+        if (tag.textContent === category) {
+            return; // Éviter les doublons
         }
     }
     
@@ -111,7 +109,7 @@ export function addCategoryTag(category, container) {
     // Ajouter un bouton de suppression
     const removeBtn = document.createElement('span');
     removeBtn.className = 'remove-tag';
-    removeBtn.innerHTML = '🗑️';
+    removeBtn.innerHTML = '&times;';
     removeBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         container.removeChild(categoryTag);
