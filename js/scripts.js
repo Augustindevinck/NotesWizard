@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (revisitSections) {
                     revisitSections.style.display = 'flex';
                 }
-                
+
                 // Vider et masquer le conteneur principal
                 const notesContainer = document.getElementById('notes-container');
                 if (notesContainer) {
@@ -214,14 +214,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Ajouter les écouteurs pour les boutons "Voir plus"
+        const showMoreBtnToday = document.getElementById('show-more-today');
+        const showMoreBtn1 = document.getElementById('show-more-1');
+        const showMoreBtn2 = document.getElementById('show-more-2');
+
         if (showMoreBtnToday) {
-            showMoreBtnToday.addEventListener('click', () => showMoreNotes('today'));
+            showMoreBtnToday.addEventListener('click', () => {
+                console.log('Clic sur Voir plus (today)');
+                showMoreNotes('today');
+            });
         }
         if (showMoreBtn1) {
-            showMoreBtn1.addEventListener('click', () => showMoreNotes('section1'));
+            showMoreBtn1.addEventListener('click', () => {
+                console.log('Clic sur Voir plus (section1)');
+                showMoreNotes('section1');
+            });
         }
         if (showMoreBtn2) {
-            showMoreBtn2.addEventListener('click', () => showMoreNotes('section2'));
+            showMoreBtn2.addEventListener('click', () => {
+                console.log('Clic sur Voir plus (section2)');
+                showMoreNotes('section2');
+            });
         }
 
         if (saveDaysBtn) {
@@ -384,10 +397,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Afficher en mode consultation
             viewMode.classList.remove('hidden');
             editMode.classList.add('hidden');
-            
+
             // Créer le contenu avec mise en évidence si c'est un résultat de recherche
             const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
-            
+
             if (fromSearch && currentSearchTerms.length > 0) {
                 // Mise en évidence du titre
                 let highlightedTitle = note.title || 'Sans titre';
