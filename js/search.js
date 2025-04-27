@@ -204,7 +204,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function advancedSearch(query, options) {
         // Nettoyer la requête
-        const cleanedQuery = query.trim().toLowerCase();
+        const cleanedQuery = cleanText(query);
         
         // Filtrer par catégorie si nécessaire
         let filteredNotes = appState.notes;
@@ -214,94 +214,44 @@ document.addEventListener('DOMContentLoaded', () => {
             );
         }
         
-        // Recherche directe (correspondance exacte)
-        let results = filteredNotes.filter(note => {
-            if (options.searchInTitles && note.title && note.title.toLowerCase().includes(cleanedQuery)) {
-                return true;
+        // Utiliser le système de recherche avancé existant avec scoring
+        const searchResults = [];
+        
+        // Filtrer selon les options de recherche
+        filteredNotes.forEach(note => {
+            let shouldProcess = false;
+            
+            if (options.searchInTitles && note.title) {
+                shouldProcess = true;
             }
             
-            if (options.searchInContent && note.content && note.content.toLowerCase().includes(cleanedQuery)) {
-                return true;
+            if (options.searchInContent && note.content) {
+                shouldProcess = true;
             }
             
-            if (options.searchInCategories && note.categories) {
-                for (const category of note.categories) {
-                    if (category.toLowerCase().includes(cleanedQuery)) {
-                        return true;
-                    }
+            if (options.searchInCategories && note.categories && note.categories.length > 0) {
+                shouldProcess = true;
+            }
+            
+            if (options.searchInTags && note.content) {
+                // Les hashtags sont extraits du contenu
+                shouldProcess = true;
+            }
+            
+            if (shouldProcess) {
+                // Effectuer la recherche avec le système de scoring
+                const results = performSearch(query, [note]);
+                if (results.length > 0) {
+                    searchResults.push(...results);
                 }
             }
-            
-            if (options.searchInTags) {
-                const hashtags = extractHashtags(note.content || '');
-                for (const tag of hashtags) {
-                    if (tag.toLowerCase().includes(cleanedQuery)) {
-                        return true;
-                    }
-                }
-            }
-            
-            return false;
         });
         
-        // Si pas assez de résultats, essayer une recherche floue
-        if (results.length < 5) {
-            // Ensemble des notes déjà trouvées
-            const foundNoteIds = new Set(results.map(note => note.id));
-            
-            // Recherche floue
-            const fuzzyResults = filteredNotes
-                .filter(note => !foundNoteIds.has(note.id)) // Exclure les notes déjà trouvées
-                .filter(note => {
-                    // Distance de Levenshtein maximale acceptable (proportionnelle à la longueur de la requête)
-                    const maxDistance = Math.max(Math.floor(cleanedQuery.length * 0.3), 2);
-                    
-                    if (options.searchInTitles && note.title) {
-                        const words = note.title.toLowerCase().split(/\s+/);
-                        for (const word of words) {
-                            if (levenshteinDistance(word, cleanedQuery) <= maxDistance) {
-                                return true;
-                            }
-                        }
-                    }
-                    
-                    if (options.searchInContent && note.content) {
-                        const words = note.content.toLowerCase().split(/\s+/);
-                        for (const word of words) {
-                            if (levenshteinDistance(word, cleanedQuery) <= maxDistance) {
-                                return true;
-                            }
-                        }
-                    }
-                    
-                    if (options.searchInCategories && note.categories) {
-                        for (const category of note.categories) {
-                            const parts = category.toLowerCase().split('/');
-                            for (const part of parts) {
-                                if (levenshteinDistance(part, cleanedQuery) <= maxDistance) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (options.searchInTags) {
-                        const hashtags = extractHashtags(note.content || '');
-                        for (const tag of hashtags) {
-                            if (levenshteinDistance(tag.toLowerCase(), cleanedQuery) <= maxDistance) {
-                                return true;
-                            }
-                        }
-                    }
-                    
-                    return false;
-                });
-            
-            // Ajouter les résultats flous aux résultats directs
-            results = [...results, ...fuzzyResults];
-        }
+        // Transformer les résultats pour correspondre au format attendu
+        const formattedResults = searchResults.map(result => result.note);
         
-        return results;
+        // Trier par score (le scoring est déjà fait dans performSearch)
+        return formattedResults;
     }
 
     /**
@@ -330,9 +280,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const resultsGrid = document.createElement('div');
         resultsGrid.className = 'notes-grid';
         
+        // Préparer les termes de recherche pour la mise en évidence
+        const searchTerms = query.trim().toLowerCase().split(/\s+/);
+        
+        // Mettre à jour les termes de recherche dans le gestionnaire de recherche
+        initSearchManager(searchTerms);
+        
         // Ajouter chaque résultat à la grille
         results.forEach(note => {
-            const noteElement = createNoteElement(note, query.split(/\s+/));
+            const noteElement = createNoteElement(note, searchTerms);
             resultsGrid.appendChild(noteElement);
         });
         
@@ -352,6 +308,34 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
+        // Recherche depuis la barre principale
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const query = searchInput.value.trim();
+                if (query) {
+                    // Remplir l'entrée de recherche avancée avec la requête
+                    advancedSearchInput.value = query;
+                    // Exécuter la recherche
+                    executeSearch(query);
+                }
+            }
+        });
+        
+        // Bouton de recherche principal
+        const searchBtn = document.getElementById('search-btn');
+        if (searchBtn) {
+            searchBtn.addEventListener('click', () => {
+                const query = searchInput.value.trim();
+                if (query) {
+                    // Remplir l'entrée de recherche avancée avec la requête
+                    advancedSearchInput.value = query;
+                    // Exécuter la recherche
+                    executeSearch(query);
+                }
+            });
+        }
+
         // Bouton d'ajout de note
         addNoteBtn.addEventListener('click', () => openNoteModal());
 
