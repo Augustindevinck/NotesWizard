@@ -106,15 +106,13 @@ export function addCategoryTag(category, container) {
     categoryTag.className = 'category-tag';
     categoryTag.textContent = category;
     
-    // Ajouter un bouton de suppression
-    const removeBtn = document.createElement('span');
-    removeBtn.className = 'remove-tag';
-    removeBtn.innerHTML = '&times;';
-    removeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        container.removeChild(categoryTag);
+    // Ajouter l'événement de suppression sur la touche Delete
+    categoryTag.addEventListener('keydown', (e) => {
+        if (e.key === 'Delete') {
+            container.removeChild(categoryTag);
+        }
     });
     
-    categoryTag.appendChild(removeBtn);
+    categoryTag.tabIndex = 0; // Permet la sélection par tabulation
     container.appendChild(categoryTag);
 }
