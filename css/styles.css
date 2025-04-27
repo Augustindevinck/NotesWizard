@@ -178,7 +178,7 @@ header {
 }
 
 .icon-button {
-    background: transparent;
+    background: var(--primary-color);
     border: none;
     cursor: pointer;
     display: flex;
@@ -187,10 +187,11 @@ header {
     padding: 8px;
     border-radius: 50%;
     transition: var(--transition);
+    color: white;
 }
 
 .icon-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: #3a51d1;
 }
 
 /* Notes display */
