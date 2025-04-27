@@ -95,10 +95,19 @@ export function addCategoryTag(category, container) {
         }
     }
 
-    // Créer le tag
+    // Créer le tag sans aucun élément supplémentaire
     const categoryTag = document.createElement('span');
     categoryTag.className = 'category-tag';
     categoryTag.textContent = category;
+    categoryTag.setAttribute('tabindex', '0');
+    categoryTag.setAttribute('role', 'button');
+    
+    // Ajouter la possibilité de supprimer avec la touche Delete
+    categoryTag.addEventListener('keydown', (e) => {
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            container.removeChild(categoryTag);
+        }
+    });
 
     container.appendChild(categoryTag);
 }
