@@ -2477,8 +2477,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function fuzzySearch(cleanedQuery) {
         const results = [];
-        const queryWords = cleanedQuery.split(' ');
-        notes.forEach(note => {
+        const queryWords = cleanedQuery.split(' ');        notes.forEach(note => {
             let score = 0;
             const cleanTitle = cleanText(note.title || '');
             const cleanContent = cleanText(note.content || '');
