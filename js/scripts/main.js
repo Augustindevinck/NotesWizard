@@ -13,6 +13,7 @@ import { initRevisit, renderRevisitSections, showMoreNotes, openDaysEditModal, s
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './categories/hashtagManager.js';
 import { initSearchManager, handleSearch, showSearchSuggestions, getCurrentSearchTerms } from './search/searchManager.js';
+import { navigateToGeneralView } from '../components/utils/navigation.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', () => {
@@ -146,10 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const generalViewBtn = document.getElementById('general-view-btn');
         if (generalViewBtn) {
             generalViewBtn.addEventListener('click', () => {
-                // Afficher toutes les notes dans la vue principale
-                revisitSections.style.display = 'none';
-                notesContainer.style.display = 'grid';
-                renderNotes(notesContainer, appState.notes);
+                // Utiliser la nouvelle fonction de navigation vers la vue générale
+                navigateToGeneralView();
             });
         }
 
