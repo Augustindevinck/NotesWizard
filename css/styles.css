@@ -158,6 +158,21 @@ header {
     transform: scale(1.1);
 }
 
+.confirm-button {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background-color 0.2s ease;
+}
+
+.confirm-button:hover {
+    background-color: #3a51d1;
+}
+
 .revisit-note {
     display: flex;
     justify-content: space-between;

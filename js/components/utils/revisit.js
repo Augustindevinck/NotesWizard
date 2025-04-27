@@ -118,7 +118,8 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
 
 function openNoteModal(note, date) {
     const modal = document.createElement('div');
-    modal.className = 'modal note-modal';
+    modal.className = 'modal';
+    modal.style.display = 'block';
     modal.innerHTML = `
         <div class="modal-content">
             <div class="modal-header">
@@ -127,7 +128,7 @@ function openNoteModal(note, date) {
             </div>
             <div class="note-content">${note.content}</div>
             <div class="modal-footer">
-                <button class="confirm-revisit-btn modal-confirm-btn">Marquer comme lu</button>
+                <button class="confirm-button">Marquer comme lu</button>
             </div>
         </div>
     `;
