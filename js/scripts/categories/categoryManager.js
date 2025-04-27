@@ -1,4 +1,3 @@
-
 /**
  * Gestion des catégories
  */
@@ -25,32 +24,32 @@ export function initCategoryManager(existingCategories) {
 export function handleCategoryInput(event, categoryInput, categorySuggestions) {
     const input = categoryInput.value.trim();
     categorySuggestions.innerHTML = '';
-    
+
     if (!input) {
         categorySuggestions.style.display = 'none';
         return;
     }
-    
+
     const matchingCategories = Array.from(categories).filter(category => 
         category.toLowerCase().includes(input.toLowerCase())
     );
-    
+
     if (matchingCategories.length > 0) {
         matchingCategories.forEach(category => {
             const suggestionItem = document.createElement('div');
             suggestionItem.className = 'category-suggestion';
             suggestionItem.textContent = category;
-            
+
             suggestionItem.addEventListener('click', () => {
                 addCategoryTag(category, document.getElementById('selected-categories'));
                 categoryInput.value = '';
                 categorySuggestions.innerHTML = '';
                 categorySuggestions.style.display = 'none';
             });
-            
+
             categorySuggestions.appendChild(suggestionItem);
         });
-        
+
         categorySuggestions.style.display = 'block';
     } else {
         categorySuggestions.style.display = 'none';
@@ -68,23 +67,17 @@ export function handleCategoryKeydown(event, categoryInput, selectedCategories, 
     if (event.key === 'Enter' && categoryInput.value.trim()) {
         event.preventDefault();
         const newCategory = categoryInput.value.trim();
-        
+
         // Ajouter la catégorie
         addCategoryTag(newCategory, selectedCategories);
-        
+
         // Mettre à jour l'ensemble des catégories
         categories.add(newCategory);
-        
+
         // Réinitialiser le champ de saisie
         categoryInput.value = '';
         categorySuggestions.innerHTML = '';
         categorySuggestions.style.display = 'none';
-    } else if (event.key === 'Backspace' && categoryInput.value === '') {
-        // Si le champ est vide et qu'on appuie sur Backspace, supprimer la dernière catégorie
-        const categoryTags = selectedCategories.querySelectorAll('.category-tag');
-        if (categoryTags.length > 0) {
-            selectedCategories.removeChild(categoryTags[categoryTags.length - 1]);
-        }
     }
 }
 
@@ -101,19 +94,11 @@ export function addCategoryTag(category, container) {
             return; // Éviter les doublons
         }
     }
-    
+
     // Créer le tag
     const categoryTag = document.createElement('span');
     categoryTag.className = 'category-tag';
     categoryTag.textContent = category;
-    categoryTag.tabIndex = 0; // Permet la sélection par tabulation
-    
-    // Ajouter l'événement de suppression sur la touche Delete
-    categoryTag.addEventListener('keydown', (e) => {
-        if (e.key === 'Delete') {
-            container.removeChild(categoryTag);
-        }
-    });
-    
+
     container.appendChild(categoryTag);
 }
