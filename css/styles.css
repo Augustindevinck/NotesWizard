@@ -873,22 +873,3 @@ html {
     border-radius: var(--border-radius);
     font-size: 14px;
 }
-.note-view-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.mark-read-button {
-    background-color: var(--success-color, #4CAF50);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.mark-read-button:hover {
-    background-color: var(--success-hover-color, #45a049);
-}
