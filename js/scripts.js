@@ -22,6 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const importStatus = document.getElementById('import-status');
     const modalCloseButtons = document.querySelectorAll('.close');
 
+    // Vérifions que tous les éléments requis sont présents
+    if (!searchInput || !searchResults || !notesContainer || !addNoteBtn || !noteModal ||
+        !noteTitle || !noteContent || !saveNoteBtn || !deleteNoteBtn || !categoryInput ||
+        !categorySuggestions || !selectedCategories || !detectedHashtags) {
+        console.error('Éléments DOM manquants - Initialisation impossible');
+        return;
+    }
+
     // Éléments pour les sections de révision
     const revisitSectionToday = document.getElementById('revisit-section-today');
     const revisitSection1 = document.getElementById('revisit-section-1');
@@ -37,12 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const daysInput = document.getElementById('days-input');
     const saveDaysBtn = document.getElementById('save-days-btn');
 
+
     // Application state
     let notes = [];
     let currentNoteId = null;
     let allCategories = new Set();
-    let currentSearchTerms = []; // Pour stocker les mots de la recherche actuelle
-    let editingDaysForSection = null; // Pour savoir quelle section est en cours d'édition
+    let currentSearchTerms = [];
 
     // Valeurs par défaut pour le nombre de jours à revisiter
     let revisitDays = {
@@ -122,7 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Search button - pour la recherche complète
         const searchBtn = document.getElementById('search-btn');
-        searchBtn.addEventListener('click', handleSearch);
+        if (searchBtn) {
+            searchBtn.addEventListener('click', handleSearch);
+        }
 
         // Search input - submit on Enter
         searchInput.addEventListener('keydown', (event) => {
@@ -138,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cleanupHighlightedElements();
                 noteModal.style.display = 'none';
                 importExportModal.style.display = 'none';
+                daysEditModal.style.display = 'none';
             });
         });
 
@@ -149,6 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (event.target === importExportModal) {
                 importExportModal.style.display = 'none';
             }
+            if (event.target === daysEditModal) {
+                daysEditModal.style.display = 'none';
+            }
         });
 
         // Import/Export functionality
@@ -159,6 +173,30 @@ document.addEventListener('DOMContentLoaded', () => {
         exportBtn.addEventListener('click', exportNotes);
         importBtn.addEventListener('click', () => importFile.click());
         importFile.addEventListener('change', importNotes);
+
+
+        // Fonctions pour les sections de révision
+        editDaysBtns.forEach((btn, index) => {
+            btn.addEventListener('click', () => {
+                const section = `section${index + 1}`;
+                openDaysEditModal(section);
+            });
+        });
+
+        // Ajouter les écouteurs pour les boutons "Voir plus"
+        if (showMoreBtnToday) {
+            showMoreBtnToday.addEventListener('click', () => showMoreNotes('today'));
+        }
+        if (showMoreBtn1) {
+            showMoreBtn1.addEventListener('click', () => showMoreNotes('section1'));
+        }
+        if (showMoreBtn2) {
+            showMoreBtn2.addEventListener('click', () => showMoreNotes('section2'));
+        }
+
+        if (saveDaysBtn) {
+            saveDaysBtn.addEventListener('click', saveDaysSettings);
+        }
     }
 
     // Fonction pour nettoyer tous les éléments surlignés
@@ -822,6 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>Aucune note ne correspond à votre recherche.</p>
                 </div>
             `;
+            }
         }
     }
 
@@ -1048,7 +1087,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const overlappingNotes = [];
 
 
-
                 importedNotes.forEach(importedNote => {
                     if (existingNoteIds.has(importedNote.id)) {
                         overlappingNotes.push({
@@ -1098,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderRevisitSections();
 
                 // Show success message
-                importStatus.textContent = `Import réussi ! ${newNotes.length} nouvelle(s) note(s) ajoutée(s)` + 
+                importStatus.textContent = `Import réussi ! ${newNotes.length} nouvelle(s) note(s) ajoutée(s)` +
                     (overlappingNotes.length > 0 ? ` et ${notesUpdated} note(s) existante(s) mise(s) à jour.` : '.');
                 importStatus.className = 'success';
                 importStatus.style.display = 'block';
@@ -1226,8 +1264,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         return notes.filter(note => {
             const noteDate = new Date(note.createdAt);
-            return noteDate.getFullYear() === targetYear && 
-                   noteDate.getMonth() === targetMonth && 
+            return noteDate.getFullYear() === targetYear &&
+                   noteDate.getMonth() === targetMonth &&
                    noteDate.getDate() === targetDay;
         });
     }
