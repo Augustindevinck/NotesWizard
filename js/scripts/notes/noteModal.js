@@ -3,10 +3,25 @@
  */
 
 import { cleanupHighlightedElements } from '../utils/domHelpers.js';
-import { extractHashtags, extractYoutubeUrls } from '../categories/hashtagManager.js';
-import { addCategoryTag } from '../categories/categoryManager.js';
-import { addHashtagTag } from '../categories/hashtagManager.js';
-import { saveNote } from './notesManager.js';
+
+// Fonctions à injecter
+let extractHashtagsFn = null;
+let extractYoutubeUrlsFn = null;
+let addCategoryTagFn = null;
+let addHashtagTagFn = null;
+let saveNoteFn = null;
+
+/**
+ * Initialise les fonctions externes nécessaires au module
+ * @param {Object} functions - Les fonctions à injecter
+ */
+export function initModalFunctions(functions) {
+    extractHashtagsFn = functions.extractHashtags;
+    extractYoutubeUrlsFn = functions.extractYoutubeUrls;
+    addCategoryTagFn = functions.addCategoryTag;
+    addHashtagTagFn = functions.addHashtagTag;
+    saveNoteFn = functions.saveNote;
+}
 
 // Variables pour les éléments du modal
 let noteModal;
@@ -213,14 +228,22 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Add categories
         if (note.categories && note.categories.length > 0) {
             note.categories.forEach(category => {
-                addCategoryTag(category, selectedCategories);
+                if (addCategoryTagFn) {
+                    addCategoryTagFn(category, selectedCategories);
+                } else {
+                    console.error('addCategoryTag non initialisé');
+                }
             });
         }
 
         // Show hashtags
         if (note.hashtags && note.hashtags.length > 0) {
             note.hashtags.forEach(tag => {
-                addHashtagTag(tag, detectedHashtags);
+                if (addHashtagTagFn) {
+                    addHashtagTagFn(tag, detectedHashtags);
+                } else {
+                    console.error('addHashtagTag non initialisé');
+                }
             });
         }
 

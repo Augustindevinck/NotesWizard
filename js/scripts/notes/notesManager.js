@@ -4,8 +4,20 @@
 
 import { saveNotes } from '../utils/localStorage.js';
 import { generateUniqueId, formatDate } from '../utils/domHelpers.js';
-import { openNoteModal } from './noteModal.js';
-import { renderRevisitSections } from './revisit.js';
+
+// Variable pour stocker la fonction openNoteModal (à initialiser)
+let openNoteModalFn = null;
+let renderRevisitSectionsFn = null;
+
+/**
+ * Initialise les fonctions externes nécessaires au module
+ * @param {Function} openModal - Fonction pour ouvrir le modal de note
+ * @param {Function} renderRevisit - Fonction pour rendre les sections de révision
+ */
+export function initNotesManager(openModal, renderRevisit) {
+    openNoteModalFn = openModal;
+    renderRevisitSectionsFn = renderRevisit;
+}
 
 /**
  * Crée un élément DOM pour une note
@@ -64,7 +76,11 @@ export function createNoteElement(note, currentSearchTerms) {
 
         // Vérifier si on vient d'une recherche (si des termes de recherche sont actifs)
         const fromSearch = currentSearchTerms && currentSearchTerms.length > 0;
-        openNoteModal(note, fromSearch, currentSearchTerms);
+        if (openNoteModalFn) {
+            openNoteModalFn(note, fromSearch, currentSearchTerms);
+        } else {
+            console.error('openNoteModal n\'est pas initialisé');
+        }
     });
 
     // Add specific click handler for delete button
@@ -103,7 +119,11 @@ export function deleteNote(noteId, notes, renderEmptyState) {
             }
 
             // Mettre à jour les sections de révision
-            renderRevisitSections(notes);
+            if (renderRevisitSectionsFn) {
+                renderRevisitSectionsFn(notes);
+            } else {
+                console.error('renderRevisitSections n\'est pas initialisé');
+            }
             
             return true;
         }
@@ -151,7 +171,11 @@ export function saveNote(noteData, notes, callback) {
     saveNotes(notes);
 
     // Mettre à jour les sections de révision
-    renderRevisitSections(notes);
+    if (renderRevisitSectionsFn) {
+        renderRevisitSectionsFn(notes);
+    } else {
+        console.error('renderRevisitSections n\'est pas initialisé');
+    }
 
     // Exécuter le callback si fourni
     if (callback) {

@@ -4,7 +4,9 @@
 
 import { formatDate } from '../utils/domHelpers.js';
 import { saveRevisitSettings } from '../utils/localStorage.js';
-import { createNoteElement } from './notesManager.js';
+
+// Fonction pour créer un élément de note (sera injectée)
+let createNoteElementFn = null;
 
 // Paramètres de révision par défaut
 let revisitSettings = {
@@ -15,6 +17,14 @@ let revisitSettings = {
 // Éléments DOM pour les sections de révision
 let revisitContainers = {};
 let showMoreBtns = {};
+
+/**
+ * Initialise la fonction de création d'élément de note
+ * @param {Function} createNoteElement - Fonction pour créer un élément de note
+ */
+export function initCreateNoteElement(createNoteElement) {
+    createNoteElementFn = createNoteElement;
+}
 
 /**
  * Initialise les éléments pour les sections de révision
@@ -137,7 +147,14 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
  */
 function createRevisitNoteElement(note) {
     // On réutilise la fonction createNoteElement mais avec une classe spécifique
-    const noteElement = createNoteElement(note, []);
+    if (!createNoteElementFn) {
+        console.error('createNoteElement n\'est pas initialisé dans revisit.js');
+        const div = document.createElement('div');
+        div.className = 'revisit-note error-note';
+        div.textContent = 'Erreur de chargement de la note';
+        return div;
+    }
+    const noteElement = createNoteElementFn(note, []);
     noteElement.classList.add('revisit-note');
     return noteElement;
 }
