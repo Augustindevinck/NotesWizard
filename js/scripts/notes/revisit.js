@@ -119,7 +119,7 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
     container.dataset.allNotes = JSON.stringify(allNoteIds);
     
     if (notesToRender.length === 0) {
-        container.innerHTML = '<div class="empty-section">Aucune note pour cette période</div>';
+        container.innerHTML = '';
         if (showMoreBtn) {
             showMoreBtn.style.display = 'none';
         }

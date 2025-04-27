@@ -40,12 +40,8 @@ export function generateUniqueId() {
 export function renderEmptyState(container) {
     if (!container) return;
     
-    container.innerHTML = `
-        <div class="empty-state">
-            <p>Aucune note à afficher.</p>
-            <p>Cliquez sur le bouton + pour ajouter une note.</p>
-        </div>
-    `;
+    // Ne rien afficher pour respecter la demande de l'utilisateur
+    container.innerHTML = '';
 }
 
 /**
