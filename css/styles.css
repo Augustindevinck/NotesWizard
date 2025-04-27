@@ -938,16 +938,3 @@ html {
     background-color: var(--primary-color);
     color: white;
 }
-.action-button {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.action-button:hover {
-    background-color: #3a59e0;
-}
