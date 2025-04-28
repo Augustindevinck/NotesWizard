@@ -8,7 +8,7 @@ import { createNoteElement, initNotesManager } from './scripts/notes/notesManage
 import { initNoteModal, openNoteModal, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { getCurrentSearchTerms, cleanText, initSearchManager } from './scripts/search/searchManager.js';
+import { getCurrentSearchTerms, cleanText, initSearchManager, performSearch } from './scripts/search/searchManager.js';
 import { navigateToPage, getUrlParams } from './scripts/utils/navigation.js';
 import { 
     fetchAllNotes, 
