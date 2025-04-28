@@ -99,27 +99,59 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
     // Ask for confirmation before deleting
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         try {
+            console.log(`Début de la suppression de la note ${noteId}...`);
+            
             // Supprimer la note via Supabase
             const success = await deleteSupabaseNote(noteId);
 
             if (success) {
+                console.log(`Note ${noteId} supprimée avec succès dans Supabase`);
+                
+                // Mise à jour synchrone du stockage local via localStorage
+                try {
+                    const localStorage = await import('../utils/localStorage.js');
+                    const localNotes = localStorage.getAllNotes();
+                    const updatedLocalNotes = localNotes.filter(note => note.id !== noteId);
+                    localStorage.saveAllNotes(updatedLocalNotes);
+                    console.log(`Note ${noteId} supprimée du stockage local, ${updatedLocalNotes.length} notes restantes`);
+                } catch (localStorageError) {
+                    console.error('Erreur lors de la mise à jour du stockage local:', localStorageError);
+                }
+                
                 // Si des notes sont fournies, mettre à jour l'état local aussi
                 if (notes && notes.length > 0) {
                     const noteIndex = notes.findIndex(note => note.id === noteId);
                     if (noteIndex !== -1) {
                         notes.splice(noteIndex, 1);
+                        console.log(`Note ${noteId} supprimée du tableau local, ${notes.length} notes restantes`);
                     }
                 }
-
+                
                 // Mettre à jour les sections de révision si la fonction est disponible
                 if (renderRevisitSectionsFn) {
                     await renderRevisitSectionsFn(notes);
+                    console.log('Sections de révision mises à jour après suppression');
                 }
-
-                // Recharger la page pour actualiser l'affichage
-                location.reload();
-
-                return true;
+                
+                try {
+                    // Forcer une synchronisation complète avec Supabase pour mettre à jour l'état local
+                    const supabaseService = await import('../utils/supabaseService.js');
+                    await supabaseService.syncWithSupabase();
+                    console.log('Synchronisation avec Supabase terminée après suppression');
+                    
+                    // Recharger la page pour actualiser l'affichage
+                    console.log('Rechargement de la page pour actualiser l\'affichage');
+                    window.location.href = window.location.href;
+                    
+                    return true;
+                } catch (syncError) {
+                    console.error('Erreur lors de la synchronisation après suppression:', syncError);
+                    // En cas d'erreur de synchronisation, forcer quand même le rechargement
+                    window.location.href = window.location.href;
+                    return true;
+                }
+            } else {
+                console.error(`Échec de la suppression de la note ${noteId} dans Supabase`);
             }
         } catch (error) {
             console.error('Erreur lors de la suppression de la note:', error);

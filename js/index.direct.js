@@ -124,6 +124,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                     try {
                         await initializeTables();
                         console.log('Tables Supabase initialisées');
+                        
+                        // Vérifier si des notes existent dans Supabase
+                        const supabaseStorage = await import('./scripts/utils/supabaseStorage.js');
+                        const localStorage = await import('./scripts/utils/localStorage.js');
+                        
+                        const supabaseNotes = await supabaseStorage.getAllNotes();
+                        const localNotes = localStorage.getAllNotes();
+                        
+                        console.log(`Vérification des données: ${supabaseNotes.length} notes dans Supabase, ${localNotes.length} notes en local`);
+                        
+                        // Si Supabase est vide mais que le stockage local contient des notes, nettoyer le stockage local
+                        if (supabaseNotes.length === 0 && localNotes.length > 0) {
+                            console.log("Nettoyage du stockage local car Supabase est vide");
+                            localStorage.saveAllNotes([]);
+                            localStorage.saveAllNotes(supabaseNotes); // Assure que le stockage local est synchronisé avec Supabase
+                            
+                            // Force un rechargement de la page pour refléter les changements
+                            window.location.reload();
+                            return; // Arrête l'exécution de cette fonction
+                        }
                     } catch (initError) {
                         console.error('Erreur lors de l\'initialisation des tables:', initError);
                     }

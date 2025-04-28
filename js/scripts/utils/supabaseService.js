@@ -302,6 +302,15 @@ export function syncWithSupabase() {
                     const supabaseNotes = await supabaseStorage.getAllNotes();
                     console.log(`${supabaseNotes.length} notes trouvées dans Supabase.`);
                     
+                    // Si Supabase n'a aucune note mais le stockage local en a, vider le stockage local
+                    if (supabaseNotes.length === 0 && localNotes.length > 0) {
+                        console.log('Aucune note dans Supabase mais des notes existent en local - Nettoyage du stockage local');
+                        localStorage.saveAllNotes([]);
+                        console.log('Stockage local vidé avec succès pour correspondre à Supabase vide');
+                        resolve(true);
+                        return;
+                    }
+                    
                     // Créer un map des notes Supabase pour faciliter la recherche
                     const supabaseNotesMap = new Map();
                     supabaseNotes.forEach(note => {
