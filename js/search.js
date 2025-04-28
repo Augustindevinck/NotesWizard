@@ -453,7 +453,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchTerms = query.trim().toLowerCase().split(/\s+/);
         
         // Mettre à jour les termes de recherche dans le gestionnaire de recherche
-        initSearchManager(searchTerms);
+        try {
+            initSearchManager(searchTerms);
+        } catch (error) {
+            console.log('Note: initSearchManager non disponible ou erreur', error);
+            // Continuer sans l'initialisation du gestionnaire de recherche
+        }
         
         // Ajouter chaque résultat à la grille
         results.forEach(note => {

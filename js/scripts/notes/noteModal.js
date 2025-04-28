@@ -326,15 +326,49 @@ export function saveCurrentNote(notes, callback) {
 
     // Save the note and get the ID
     let savedNoteId = null;
-    if (saveNoteFn) {
-        savedNoteId = saveNoteFn(noteData, notes, callback);
-    } else {
-        console.error('saveNote non initialisé');
+    
+    try {
+        if (saveNoteFn) {
+            // Si saveNoteFn renvoie une promesse, la gérer correctement
+            const result = saveNoteFn(noteData, notes, callback);
+            
+            if (result && typeof result.then === 'function') {
+                // C'est une promesse, l'exécuter
+                result.then(savedNote => {
+                    if (savedNote && savedNote.id) {
+                        savedNoteId = savedNote.id;
+                    }
+                    // Cacher le modal après la sauvegarde
+                    cleanupHighlightedElements();
+                    noteModal.style.display = 'none';
+                    
+                    // Callback si nécessaire
+                    if (typeof callback === 'function') {
+                        callback(savedNote);
+                    }
+                }).catch(error => {
+                    console.error("Erreur lors de la sauvegarde:", error);
+                    // Même en cas d'erreur, fermer le modal car la sauvegarde peut avoir réussi malgré l'erreur
+                    cleanupHighlightedElements();
+                    noteModal.style.display = 'none';
+                });
+                
+                // Comme nous utilisons des promesses, nous retournons simplement l'ID actuel
+                return currentNoteId;
+            } else {
+                // Si ce n'est pas une promesse, nous pouvons procéder comme avant
+                savedNoteId = result;
+            }
+        } else {
+            console.error('saveNote non initialisé');
+        }
+    } catch (error) {
+        console.error("Exception lors de la sauvegarde:", error);
     }
-
-    // Hide the modal
+    
+    // Hide the modal (seulement si nous n'avons pas exécuté de promesse)
     cleanupHighlightedElements();
     noteModal.style.display = 'none';
-
+    
     return savedNoteId;
 }
