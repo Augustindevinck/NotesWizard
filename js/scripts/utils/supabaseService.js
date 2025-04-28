@@ -252,18 +252,9 @@ export async function syncWithSupabase() {
  */
 export async function saveRevisitSettings(settings) {
     try {
-        // Sauvegarder dans le stockage local
+        // Sauvegarder uniquement dans le stockage local
+        console.log('Sauvegarde des paramètres de révision dans le stockage local');
         localStorage.saveSettings('revisitSettings', settings);
-        
-        // Vérifier si Supabase est configuré
-        if (isSupabaseConfigured()) {
-            try {
-                // Sauvegarder dans Supabase
-                await supabaseStorage.saveSettings('revisitSettings', settings);
-            } catch (supabaseError) {
-                console.error('Erreur lors de la sauvegarde des paramètres dans Supabase:', supabaseError);
-            }
-        }
         
         return true;
     } catch (error) {
@@ -281,31 +272,9 @@ export async function loadRevisitSettings() {
         // Paramètres par défaut
         const defaultSettings = { section1: 7, section2: 14 };
         
-        // Vérifier si Supabase est configuré
-        if (isSupabaseConfigured()) {
-            try {
-                // Charger depuis Supabase
-                const supabaseSettings = await supabaseStorage.getSettings('revisitSettings', null);
-                
-                if (supabaseSettings) {
-                    // Mettre à jour le stockage local
-                    localStorage.saveSettings('revisitSettings', supabaseSettings);
-                    return supabaseSettings;
-                }
-            } catch (supabaseError) {
-                console.error('Erreur lors du chargement des paramètres depuis Supabase:', supabaseError);
-            }
-        }
-        
-        // Charger depuis le stockage local
+        // Utiliser seulement le stockage local, car Supabase n'a pas de table settings
+        console.log('Chargement des paramètres de révision depuis le stockage local');
         const localSettings = localStorage.getSettings('revisitSettings', defaultSettings);
-        
-        // Si des paramètres ont été trouvés dans le stockage local mais pas dans Supabase,
-        // les sauvegarder dans Supabase si disponible
-        if (localSettings && isSupabaseConfigured()) {
-            supabaseStorage.saveSettings('revisitSettings', localSettings)
-                .catch(error => console.error('Erreur lors de la sauvegarde des paramètres dans Supabase:', error));
-        }
         
         return localSettings;
     } catch (error) {
