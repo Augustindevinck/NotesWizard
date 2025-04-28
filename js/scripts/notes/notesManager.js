@@ -203,7 +203,30 @@ export async function saveNote(noteData, notes = [], callback = null) {
         // Sauvegarder la note dans Supabase
         const savedNote = await saveSupabaseNote(noteToSave);
 
-        // Si l'opération a échoué, la fonction saveSupabaseNote aurait déjà lancé une exception
+        // Vérifier et convertir les catégories si nécessaire
+        if (savedNote) {
+            if (typeof savedNote.categories === 'string') {
+                savedNote.categories = savedNote.categories.split(',').filter(Boolean).map(s => s.trim());
+            }
+            if (!Array.isArray(savedNote.categories)) {
+                savedNote.categories = [];
+            }
+
+            if (typeof savedNote.hashtags === 'string') {
+                savedNote.hashtags = savedNote.hashtags.split(',').filter(Boolean).map(s => s.trim());
+            }
+            if (!Array.isArray(savedNote.hashtags)) {
+                savedNote.hashtags = [];
+            }
+
+            if (typeof savedNote.videoUrls === 'string') {
+                savedNote.videoUrls = savedNote.videoUrls.split(',').filter(Boolean).map(s => s.trim());
+            }
+            if (!Array.isArray(savedNote.videoUrls)) {
+                savedNote.videoUrls = [];
+            }
+        }
+
 
         // Mettre à jour les sections de révision si la fonction est disponible
         if (renderRevisitSectionsFn) {

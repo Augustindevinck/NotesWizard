@@ -51,13 +51,19 @@ export function fetchAllNotes() {
 export async function createNote(noteData) {
     return new Promise(async (resolve, reject) => {
         try {
-            // S'assurer que Supabase est configuré et connecté
-            if (isSupabaseConfigured()) {
-                const client = getClient();
-                if (!client) {
-                    await client.auth.signInAnonymously();
-                }
+            const client = getClient();
+            if (!client) {
+                console.error('Client Supabase non disponible');
+                return resolve(null);
             }
+
+            // S'assurer que les tableaux sont bien initialisés
+            const processedNote = {
+                ...noteData,
+                categories: Array.isArray(noteData.categories) ? noteData.categories : [],
+                hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
+                videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : []
+            };
 
             // Créer la note dans le stockage local pour une réponse rapide
             const localNote = localStorage.createNote(noteData);
