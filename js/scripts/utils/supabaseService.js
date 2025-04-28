@@ -6,6 +6,7 @@
 import { getSupabaseClient, loadSupabaseFromLocalStorage, isSupabaseConfigured } from './supabaseDirectConfig.js';
 import * as supabaseStorage from './supabaseStorage.js';
 import * as localStorage from './localStorage.js';
+import { getClient } from './supabaseClient.js';
 
 /**
  * Récupère toutes les notes depuis la source de données appropriée
@@ -50,6 +51,16 @@ export async function createNote(noteData) {
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
+                // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+                const client = getClient();
+                if (client) {
+                    const { data: { session } } = await client.auth.getSession();
+                    if (!session) {
+                        console.log('Connexion anonyme pour la création de note...');
+                        await client.auth.signInAnonymously();
+                    }
+                }
+                
                 // Créer la note dans Supabase
                 const supabaseNote = await supabaseStorage.createNote(noteData);
                 
@@ -85,6 +96,16 @@ export async function updateNote(noteId, noteData) {
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
+                // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+                const client = getClient();
+                if (client) {
+                    const { data: { session } } = await client.auth.getSession();
+                    if (!session) {
+                        console.log('Connexion anonyme pour la mise à jour de note...');
+                        await client.auth.signInAnonymously();
+                    }
+                }
+                
                 // Mettre à jour la note dans Supabase
                 const supabaseUpdatedNote = await supabaseStorage.updateNote(noteId, noteData);
                 
@@ -119,6 +140,16 @@ export async function deleteNote(noteId) {
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
+                // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+                const client = getClient();
+                if (client) {
+                    const { data: { session } } = await client.auth.getSession();
+                    if (!session) {
+                        console.log('Connexion anonyme pour la suppression de note...');
+                        await client.auth.signInAnonymously();
+                    }
+                }
+                
                 // Supprimer la note dans Supabase
                 const success = await supabaseStorage.deleteNote(noteId);
                 
@@ -155,6 +186,16 @@ export async function searchNotes(query) {
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
+                // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+                const client = getClient();
+                if (client) {
+                    const { data: { session } } = await client.auth.getSession();
+                    if (!session) {
+                        console.log('Connexion anonyme pour la recherche...');
+                        await client.auth.signInAnonymously();
+                    }
+                }
+                
                 // Rechercher dans Supabase pour de meilleurs résultats
                 const supabaseResults = await supabaseStorage.searchNotes(query);
                 
@@ -184,6 +225,16 @@ export async function syncWithSupabase() {
         // Vérifier si Supabase est configuré
         if (!isSupabaseConfigured()) {
             return false;
+        }
+        
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const client = getClient();
+        if (client) {
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) {
+                console.log('Connexion anonyme pour la synchronisation...');
+                await client.auth.signInAnonymously();
+            }
         }
         
         // Récupérer les notes locales

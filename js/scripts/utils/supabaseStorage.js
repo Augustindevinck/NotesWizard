@@ -18,6 +18,13 @@ export async function getAllNotes() {
     }
     
     try {
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour récupérer les notes...');
+            await client.auth.signInAnonymously();
+        }
+        
         const { data, error } = await client
             .from('notes')
             .select('*')
