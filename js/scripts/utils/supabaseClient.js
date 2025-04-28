@@ -4,15 +4,72 @@
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
+// Variable pour stocker le client Supabase
 let supabaseClient = null;
 
-export function initSupabase(url, key) {
-    if (!supabaseClient && url && key) {
-        supabaseClient = createClient(url, key);
+/**
+ * Initialise le client Supabase avec les paramètres donnés
+ * @param {string} url - URL du projet Supabase
+ * @param {string} key - Clé API publique/anon
+ * @returns {Object} - Client Supabase
+ */
+export async function initSupabase(url, key) {
+    if (!url || !key) {
+        console.warn('Paramètres Supabase manquants');
+        return null;
     }
-    return supabaseClient;
+    
+    try {
+        supabaseClient = createClient(url, key);
+        
+        // S'assurer que categories est toujours un tableau
+        const transformCategories = (payload) => {
+            if (payload.categories && typeof payload.categories === 'string') {
+                try {
+                    payload.categories = JSON.parse(payload.categories);
+                } catch {
+                    payload.categories = [];
+                }
+            }
+            if (!Array.isArray(payload.categories)) {
+                payload.categories = [];
+            }
+            return payload;
+        };
+
+        // Intercepter les réponses pour transformer les categories
+        const { fetch: originalFetch } = supabaseClient;
+        supabaseClient.fetch = async (...args) => {
+            const response = await originalFetch.apply(supabaseClient, args);
+            if (response.data) {
+                if (Array.isArray(response.data)) {
+                    response.data = response.data.map(transformCategories);
+                } else {
+                    response.data = transformCategories(response.data);
+                }
+            }
+            return response;
+        };
+        
+        // Connecter en tant qu'utilisateur anonyme pour que RLS fonctionne
+        const { data, error } = await supabaseClient.auth.signInAnonymously();
+        if (error) {
+            console.error('Erreur lors de la connexion anonyme:', error);
+        } else {
+            console.log('Connecté en tant qu\'utilisateur anonyme avec ID:', data.user?.id);
+        }
+        
+        return supabaseClient;
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation de Supabase:', error);
+        return null;
+    }
 }
 
+/**
+ * Retourne le client Supabase existant ou null
+ * @returns {Object|null} - Client Supabase
+ */
 export function getClient() {
     return supabaseClient;
 }
@@ -33,19 +90,19 @@ export async function testConnection() {
     if (!supabaseClient) {
         return false;
     }
-
+    
     try {
         // Tester la connexion en récupérant une note
         const { data, error } = await supabaseClient
             .from('notes')
             .select('id')
             .limit(1);
-
+        
         if (error && error.code !== 'PGRST116') { // PGRST116 = "No rows found"
             console.error('Erreur de connexion Supabase:', error);
             return false;
         }
-
+        
         return true;
     } catch (error) {
         console.error('Erreur lors du test de connexion Supabase:', error);
@@ -62,22 +119,28 @@ export async function initializeTables() {
         console.error('Client Supabase non initialisé');
         return false;
     }
-
+    
     try {
+        // Vérifie simplement que la table notes existe et est accessible
         console.log('Vérification de la connexion à Supabase...');
-        const { data, error } = await supabaseClient
+        const { data, error: notesCheckError } = await supabaseClient
             .from('notes')
             .select('id')
             .limit(1);
-
-        if (error) {
-            console.error('Erreur lors de la vérification de la table notes:', error);
-            return false;
+            
+        if (notesCheckError) {
+            if (notesCheckError.code === '42P01') { // Relation does not exist
+                console.error('La table notes n\'existe pas dans Supabase. Veuillez la créer manuellement.');
+                return false;
+            } else {
+                console.error('Erreur lors de la vérification de la table notes:', notesCheckError);
+                return false;
+            }
         }
-
+        
         console.log('Connexion à Supabase établie avec succès.');
         console.log('La table notes est accessible.');
-
+        
         return true;
     } catch (error) {
         console.error('Erreur lors de la vérification de la connexion à Supabase:', error);
@@ -95,9 +158,9 @@ async function createNotesTableDirectly() {
         console.log('Tentative de création de la table notes via insert...');
         const { error: insertError } = await supabaseClient
             .from('notes')
-            .insert({
-                id: 'init_note',
-                title: 'Initialisation',
+            .insert({ 
+                id: 'init_note', 
+                title: 'Initialisation', 
                 content: 'Table initialisée',
                 categories: [],
                 hashtags: [],
@@ -105,7 +168,7 @@ async function createNotesTableDirectly() {
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
-
+            
         if (insertError) {
             if (insertError.code === '23505') { // Erreur de clé dupliquée = la table existe déjà
                 console.log('La table notes existe déjà');
@@ -130,11 +193,11 @@ async function createSettingsTableDirectly() {
         console.log('Tentative de création de la table settings via insert...');
         const { error: insertError } = await supabaseClient
             .from('settings')
-            .insert({
+            .insert({ 
                 key: 'revisitSettings',
                 value: { section1: 7, section2: 14 }
             });
-
+            
         if (insertError) {
             if (insertError.code === '23505') { // Erreur de clé dupliquée = la table existe déjà
                 console.log('La table settings existe déjà');

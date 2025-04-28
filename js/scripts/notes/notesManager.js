@@ -137,24 +137,16 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
  */
 export async function saveNote(noteData, notes = [], callback = null) {
     try {
-        // Initialiser les tableaux vides si non définis
+        // S'assurer que les propriétés sont des tableaux
         const processedNoteData = {
             ...noteData,
-            categories: noteData.categories || [],
-            hashtags: noteData.hashtags || [],
-            videoUrls: noteData.videoUrls || []
+            categories: Array.isArray(noteData.categories) ? noteData.categories : 
+                       typeof noteData.categories === 'string' ? [noteData.categories] : [],
+            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : 
+                     typeof noteData.hashtags === 'string' ? [noteData.hashtags] : [],
+            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : 
+                      typeof noteData.videoUrls === 'string' ? [noteData.videoUrls] : []
         };
-
-        // S'assurer que ce sont des tableaux
-        if (!Array.isArray(processedNoteData.categories)) {
-            processedNoteData.categories = [];
-        }
-        if (!Array.isArray(processedNoteData.hashtags)) {
-            processedNoteData.hashtags = [];
-        }
-        if (!Array.isArray(processedNoteData.videoUrls)) {
-            processedNoteData.videoUrls = [];
-        }
 
         const { id, title, content } = processedNoteData;
         let noteToSave;
@@ -203,30 +195,7 @@ export async function saveNote(noteData, notes = [], callback = null) {
         // Sauvegarder la note dans Supabase
         const savedNote = await saveSupabaseNote(noteToSave);
 
-        // Vérifier et convertir les catégories si nécessaire
-        if (savedNote) {
-            if (typeof savedNote.categories === 'string') {
-                savedNote.categories = savedNote.categories.split(',').filter(Boolean).map(s => s.trim());
-            }
-            if (!Array.isArray(savedNote.categories)) {
-                savedNote.categories = [];
-            }
-
-            if (typeof savedNote.hashtags === 'string') {
-                savedNote.hashtags = savedNote.hashtags.split(',').filter(Boolean).map(s => s.trim());
-            }
-            if (!Array.isArray(savedNote.hashtags)) {
-                savedNote.hashtags = [];
-            }
-
-            if (typeof savedNote.videoUrls === 'string') {
-                savedNote.videoUrls = savedNote.videoUrls.split(',').filter(Boolean).map(s => s.trim());
-            }
-            if (!Array.isArray(savedNote.videoUrls)) {
-                savedNote.videoUrls = [];
-            }
-        }
-
+        // Si l'opération a échoué, la fonction saveSupabaseNote aurait déjà lancé une exception
 
         // Mettre à jour les sections de révision si la fonction est disponible
         if (renderRevisitSectionsFn) {
