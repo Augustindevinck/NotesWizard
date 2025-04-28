@@ -142,8 +142,18 @@ export async function updateNote(noteId, noteData) {
  */
 export async function deleteNote(noteId) {
     try {
-        // Supprimer la note du stockage local pour une réponse rapide
+        // Supprimer d'abord de Supabase
+        if (isSupabaseConfigured()) {
+            await supabaseStorage.deleteNote(noteId);
+        }
+        
+        // Ensuite supprimer du localStorage et forcer un rechargement des données
         localStorage.deleteNote(noteId);
+        localStorage.clearAllData(); // Vider le cache local
+        
+        // Recharger depuis Supabase
+        const freshNotes = await fetchAllNotes();
+        localStorage.saveAllNotes(freshNotes);
 
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
