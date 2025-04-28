@@ -324,3 +324,60 @@ export async function getSettings(key, defaultValue = null) {
         return defaultValue;
     }
 }
+
+/**
+ * Sauvegarde un tableau de notes dans Supabase
+ * @param {Array} notes - Tableau de notes à sauvegarder
+ * @returns {Promise<boolean>} - Vrai si la sauvegarde a réussi
+ */
+export async function saveNotes(notes) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour sauvegarder les notes');
+        return false;
+    }
+    
+    try {
+        // Préparer toutes les notes pour l'insertion/mise à jour (upsert)
+        const notesWithTimestamps = notes.map(note => ({
+            ...note,
+            categories: Array.isArray(note.categories) ? note.categories : [],
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : [],
+            updatedAt: new Date().toISOString(),
+            createdAt: note.createdAt || new Date().toISOString()
+        }));
+        
+        // Suppression de toutes les notes existantes
+        const { error: deleteError } = await client
+            .from('notes')
+            .delete()
+            .neq('id', 'placeholder'); // Supprime toutes les notes
+        
+        if (deleteError) {
+            console.error('Erreur lors de la suppression des notes existantes:', deleteError);
+            return false;
+        }
+        
+        // Si aucune note à sauvegarder, on retourne true (opération réussie)
+        if (notesWithTimestamps.length === 0) {
+            return true;
+        }
+        
+        // Insertion des nouvelles notes
+        const { error: insertError } = await client
+            .from('notes')
+            .insert(notesWithTimestamps);
+        
+        if (insertError) {
+            console.error('Erreur lors de l\'insertion des notes:', insertError);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des notes:', error);
+        return false;
+    }
+}
