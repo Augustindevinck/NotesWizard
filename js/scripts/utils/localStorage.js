@@ -228,3 +228,35 @@ export function clearAllData() {
         return false;
     }
 }
+
+/**
+ * Alias de saveAllNotes pour la compatibilité avec d'autres modules
+ * @param {Array} notes - Tableau de notes à sauvegarder
+ * @returns {boolean} - Vrai si la sauvegarde a réussi
+ */
+export function saveNotes(notes) {
+    return saveAllNotes(notes);
+}
+
+/**
+ * Charge les paramètres de révision depuis le stockage local
+ * @returns {Object} - Les paramètres de révision
+ */
+export function loadRevisitSettings() {
+    return getSettings('revisitSettings', {
+        today: 0,
+        yesterday: 1,
+        week: 7,
+        month: 30,
+        threeMonths: 90
+    });
+}
+
+/**
+ * Sauvegarde les paramètres de révision dans le stockage local
+ * @param {Object} settings - Les paramètres de révision à sauvegarder
+ * @returns {boolean} - Vrai si la sauvegarde a réussi
+ */
+export function saveRevisitSettings(settings) {
+    return saveSettings('revisitSettings', settings);
+}

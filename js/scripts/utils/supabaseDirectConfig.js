@@ -3,7 +3,7 @@
  */
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-import { initSupabase, getClient, testConnection } from './supabaseClient.js';
+import { initSupabase, getClient, testConnection, initializeTables } from './supabaseClient.js';
 
 /**
  * Vérifie si Supabase est configuré en vérifiant les informations de connexion dans le localStorage
