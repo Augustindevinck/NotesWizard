@@ -187,46 +187,61 @@ document.addEventListener('DOMContentLoaded', async () => {
             extractYoutubeUrls: extractYoutubeUrls,
             addCategoryTag: addCategoryTag,
             addHashtagTag: addHashtagTag,
-            saveNote: async (noteData) => {
-                try {
-                    let savedNote;
-                    
-                    if (noteData.id) {
-                        // Mise à jour d'une note existante
-                        savedNote = await updateNote(noteData.id, noteData);
-                    } else {
-                        // Création d'une nouvelle note
-                        savedNote = await createNote(noteData);
-                    }
-                    
-                    // Mettre à jour la liste des notes
-                    if (savedNote) {
-                        // Trouver l'index de la note si elle existe déjà
-                        const noteIndex = appState.notes.findIndex(note => note.id === savedNote.id);
-                        
-                        if (noteIndex !== -1) {
-                            // Mettre à jour la note existante
-                            appState.notes[noteIndex] = savedNote;
+            saveNote: (noteData) => {
+                // Utiliser des Promises au lieu de async/await pour la compatibilité
+                return new Promise((resolve, reject) => {
+                    try {
+                        // Déterminer quelle opération effectuer (mise à jour ou création)
+                        let notePromise;
+                        if (noteData.id) {
+                            // Mise à jour d'une note existante
+                            notePromise = updateNote(noteData.id, noteData);
                         } else {
-                            // Ajouter la nouvelle note
-                            appState.notes.push(savedNote);
+                            // Création d'une nouvelle note
+                            notePromise = createNote(noteData);
                         }
                         
-                        // Mettre à jour les catégories
-                        if (savedNote.categories) {
-                            savedNote.categories.forEach(category => appState.allCategories.add(category));
-                        }
-                        
-                        // Actualiser l'affichage
-                        await renderRevisitSections(appState.notes);
+                        // Gérer la mise à jour de l'interface après la sauvegarde
+                        notePromise.then(savedNote => {
+                            // Mettre à jour la liste des notes
+                            if (savedNote) {
+                                // Trouver l'index de la note si elle existe déjà
+                                const noteIndex = appState.notes.findIndex(note => note.id === savedNote.id);
+                                
+                                if (noteIndex !== -1) {
+                                    // Mettre à jour la note existante
+                                    appState.notes[noteIndex] = savedNote;
+                                } else {
+                                    // Ajouter la nouvelle note
+                                    appState.notes.push(savedNote);
+                                }
+                                
+                                // Mettre à jour les catégories
+                                if (savedNote.categories) {
+                                    savedNote.categories.forEach(category => appState.allCategories.add(category));
+                                }
+                                
+                                // Actualiser l'affichage
+                                renderRevisitSections(appState.notes).then(() => {
+                                    resolve(savedNote);
+                                }).catch(error => {
+                                    console.error('Erreur lors du rendu des sections:', error);
+                                    resolve(savedNote); // Continuer malgré l'erreur
+                                });
+                            } else {
+                                resolve(null);
+                            }
+                        }).catch(error => {
+                            console.error('Erreur lors de la sauvegarde de la note:', error);
+                            alert('Erreur lors de la sauvegarde de la note. Veuillez vérifier votre connexion.');
+                            resolve(null);
+                        });
+                    } catch (error) {
+                        console.error('Erreur lors de la sauvegarde de la note:', error);
+                        alert('Erreur lors de la sauvegarde de la note. Veuillez vérifier votre connexion.');
+                        resolve(null);
                     }
-                    
-                    return savedNote;
-                } catch (error) {
-                    console.error('Erreur lors de la sauvegarde de la note:', error);
-                    alert('Erreur lors de la sauvegarde de la note. Veuillez vérifier votre connexion.');
-                    return null;
-                }
+                });
             }
         });
         
@@ -300,7 +315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         // Bouton de sauvegarde de note
-        saveNoteBtn.addEventListener('click', async () => {
+        saveNoteBtn.addEventListener('click', () => {
             // Récupérer les données du formulaire
             const id = appState.currentNote ? appState.currentNote.id : null;
             const title = noteTitle.value.trim();
@@ -327,17 +342,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 videoUrls
             };
             
-            try {
-                let savedNote;
-                
-                if (id) {
-                    // Mise à jour d'une note existante
-                    savedNote = await updateNote(id, noteData);
-                } else {
-                    // Création d'une nouvelle note
-                    savedNote = await createNote(noteData);
-                }
-                
+            // Utiliser des Promises au lieu de async/await
+            let notePromise;
+            if (id) {
+                // Mise à jour d'une note existante
+                notePromise = updateNote(id, noteData);
+            } else {
+                // Création d'une nouvelle note
+                notePromise = createNote(noteData);
+            }
+            
+            notePromise.then(savedNote => {
                 if (savedNote) {
                     // Mettre à jour la liste des notes
                     const noteIndex = appState.notes.findIndex(note => note.id === savedNote.id);
@@ -357,12 +372,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     noteModal.style.display = 'none';
                     
                     // Actualiser l'affichage
-                    await renderRevisitSections(appState.notes);
+                    renderRevisitSections(appState.notes);
                 }
-            } catch (error) {
+            }).catch(error => {
                 console.error('Erreur lors de la sauvegarde de la note:', error);
                 alert('Erreur lors de la sauvegarde de la note. Veuillez vérifier votre connexion.');
-            }
+            });
         });
 
         // Bouton de suppression de note dans le modal
