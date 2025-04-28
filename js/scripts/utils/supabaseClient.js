@@ -13,7 +13,7 @@ let supabaseClient = null;
  * @param {string} key - Clé API publique/anon
  * @returns {Object} - Client Supabase
  */
-export function initSupabase(url, key) {
+export async function initSupabase(url, key) {
     if (!url || !key) {
         console.warn('Paramètres Supabase manquants');
         return null;
@@ -21,6 +21,16 @@ export function initSupabase(url, key) {
     
     try {
         supabaseClient = createClient(url, key);
+        
+        // Connecter en tant qu'utilisateur anonyme pour que RLS fonctionne
+        const { data, error } = await supabaseClient.auth.signInAnonymously();
+        if (error) {
+            console.error('Erreur lors de la connexion anonyme:', error);
+            // Continuer quand même car certaines opérations pourraient fonctionner
+        } else {
+            console.log('Connecté en tant qu\'utilisateur anonyme avec ID:', data.user?.id);
+        }
+        
         return supabaseClient;
     } catch (error) {
         console.error('Erreur lors de l\'initialisation de Supabase:', error);

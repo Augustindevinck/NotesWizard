@@ -1,0 +1,29 @@
+La situation décrite indique que la note a été insérée dans l'interface utilisateur locale mais n'a pas été effectivement persistée dans la base de données Supabase. Puisqu'après un rafraîchissement de page ou une navigation la note disparaît totalement et qu'elle n'apparaît pas non plus dans Supabase, cela suggère que l'enregistrement distant n'a jamais eu lieu ou a échoué silencieusement.
+
+Hypothèses principales :
+
+L'application effectue uniquement une insertion locale (en mémoire ou dans une variable JavaScript) sans envoyer de requête HTTP POST vers Supabase pour sauvegarder réellement la note.
+
+L'insertion vers Supabase est bien tentée mais échoue sans générer d'erreur visible, par exemple à cause d'un problème silencieux dans la syntaxe de la requête, un oubli des bons headers Authorization/apikey, ou une mauvaise construction du body JSON.
+
+La requête POST est bien envoyée mais elle cible un mauvais endpoint (exemple : mauvaise URL, faute dans le nom de la table) et ne touche donc pas la table attendue.
+
+La réponse HTTP à l'insertion est ignorée par le code, ce qui fait que l'application ne remarque pas que la sauvegarde a échoué et continue localement comme si elle avait réussi.
+
+Un éventuel système de cache ou de synchronisation locale empêche l'affichage de la vraie base de données après rafraîchissement et recharge uniquement les notes sauvegardées localement.
+
+Supabase reçoit la requête mais la rejette silencieusement pour une raison secondaire non évidente (exemple : champ obligatoire manquant, mauvaise structure du JSON inséré, mauvaise déclaration de colonnes côté Supabase).
+
+Vérifications à effectuer en priorité :
+
+Vérifier que lors de la création de note, une requête POST est bien envoyée vers l'endpoint REST https://[project-id].supabase.co/rest/v1/notes.
+
+Vérifier que les headers Authorization et apikey sont correctement attachés à cette requête.
+
+Inspecter le payload envoyé pour s'assurer qu'il contient bien tous les champs attendus (id, title, content, categories au minimum).
+
+Inspecter la réponse HTTP (status code) pour s'assurer que Supabase retourne bien un code 201 Created ou 200 OK. Toute réponse 400, 401, 403 ou 500 indiquerait un problème.
+
+Vérifier que la table notes n'a pas des triggers, des contraintes ou des erreurs silencieuses qui annuleraient une insertion invalide.
+
+Résumé : l'application pense avoir créé la note parce qu'elle l'ajoute dans son interface utilisateur locale, mais sans avoir effectivement écrit dans la base Supabase. Cela est probablement dû à une absence d'envoi ou un échec d'insertion silencieux non capté par le frontend. Il faut impérativement tracer la requête réseau réelle pour confirmer où l'opération échoue exactement.

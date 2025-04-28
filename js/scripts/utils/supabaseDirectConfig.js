@@ -17,9 +17,9 @@ export function isSupabaseConfigured() {
 
 /**
  * Initialise et retourne le client Supabase
- * @returns {Object|null} - Le client Supabase ou null si les paramètres ne sont pas configurés
+ * @returns {Promise<Object|null>} - Le client Supabase ou null si les paramètres ne sont pas configurés
  */
-export function getSupabaseClient() {
+export async function getSupabaseClient() {
     // Vérifier si le client existe déjà
     const existingClient = getClient();
     if (existingClient) {
@@ -27,34 +27,34 @@ export function getSupabaseClient() {
     }
     
     // Sinon, essayer de l'initialiser avec les paramètres du localStorage
-    return loadSupabaseFromLocalStorage();
+    return await loadSupabaseFromLocalStorage();
 }
 
 /**
  * Configure le client Supabase avec les paramètres fournis
  * @param {string} url - URL du projet Supabase
  * @param {string} key - Clé API Supabase (anon/public)
- * @returns {Object} - Le client Supabase
+ * @returns {Promise<Object>} - Le client Supabase
  */
-export function configureSupabase(url, key) {
+export async function configureSupabase(url, key) {
     // Mettre à jour la configuration dans le localStorage
     localStorage.setItem('supabase_url', url);
     localStorage.setItem('supabase_key', key);
     
     // Initialiser le client
-    return initSupabase(url, key);
+    return await initSupabase(url, key);
 }
 
 /**
  * Charge la configuration Supabase depuis le localStorage
- * @returns {Object|null} - Le client Supabase ou null si aucune configuration n'est trouvée
+ * @returns {Promise<Object|null>} - Le client Supabase ou null si aucune configuration n'est trouvée
  */
-export function loadSupabaseFromLocalStorage() {
+export async function loadSupabaseFromLocalStorage() {
     const url = localStorage.getItem('supabase_url');
     const key = localStorage.getItem('supabase_key');
     
     if (url && key) {
-        return initSupabase(url, key);
+        return await initSupabase(url, key);
     }
     
     return null;
@@ -153,6 +153,9 @@ export function showSupabaseConfigForm(onConfigCallback) {
                     // Créer un client temporaire pour le test
                     const tempClient = createClient(url, key);
                     
+                    // D'abord tenter une connexion anonyme pour contourner RLS
+                    await tempClient.auth.signInAnonymously();
+                    
                     // Tester la connexion en récupérant une note
                     const { data, error } = await tempClient
                         .from('notes')
@@ -193,7 +196,7 @@ export function showSupabaseConfigForm(onConfigCallback) {
                 
                 try {
                     // Configurer Supabase avec les nouveaux paramètres
-                    const client = configureSupabase(url, key);
+                    const client = await configureSupabase(url, key);
                     
                     if (!client) {
                         statusDiv.innerHTML = '<p class="error">Erreur: Impossible d\'initialiser le client Supabase</p>';
