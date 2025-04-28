@@ -50,9 +50,46 @@ export function computeRelevanceScore(note, query) {
     if (!note || !query) return 0;
     
     const cleanedQuery = cleanText(query);
-    const searchTerms = cleanedQuery.split(/\s+/).filter(term => term.length > 0);
     
+    // Si la requête est vide, le score est 0
+    if (!cleanedQuery) return 0;
+    
+    // Diviser la requête en termes individuels pour la recherche
+    const searchTerms = cleanedQuery.split(/\s+/).filter(term => term.length > 0);
     if (searchTerms.length === 0) return 0;
+    
+    // Vérification préliminaire: si aucun terme de la requête n'est trouvé, 
+    // renvoyer immédiatement un score de 0
+    let hasAnyMatch = false;
+    const noteTextFields = [
+        cleanText(note.title || ''), 
+        cleanText(note.content || '')
+    ];
+    
+    // Ajouter les champs de catégories et hashtags
+    if (note.categories && Array.isArray(note.categories)) {
+        note.categories.forEach(cat => noteTextFields.push(cleanText(cat)));
+    }
+    
+    if (note.hashtags && Array.isArray(note.hashtags)) {
+        note.hashtags.forEach(tag => noteTextFields.push(cleanText(tag)));
+    }
+    
+    // Vérifier si au moins un des termes recherchés est présent dans la note
+    for (const term of searchTerms) {
+        for (const field of noteTextFields) {
+            if (field.includes(term)) {
+                hasAnyMatch = true;
+                break;
+            }
+        }
+        if (hasAnyMatch) break;
+    }
+    
+    // Si aucune correspondance n'est trouvée, retourner 0
+    if (!hasAnyMatch) {
+        return 0;
+    }
     
     let score = 0;
     let scoreDetails = {
@@ -74,7 +111,8 @@ export function computeRelevanceScore(note, query) {
         
         // Vérifier chaque terme individuellement dans le titre
         for (const term of searchTerms) {
-            if (cleanedTitle.includes(term)) {
+            // Ne considérer que les termes ayant au moins 2 caractères
+            if (term.length >= 2 && cleanedTitle.includes(term)) {
                 scoreDetails.title += 3;
             }
         }
@@ -86,8 +124,11 @@ export function computeRelevanceScore(note, query) {
         
         // Vérifier chaque terme individuellement dans le contenu
         for (const term of searchTerms) {
-            const matches = cleanedContent.split(term).length - 1;
-            scoreDetails.content += matches * 1; // 1 point par occurrence
+            // Ne considérer que les termes ayant au moins 2 caractères
+            if (term.length >= 2) {
+                const matches = cleanedContent.split(term).length - 1;
+                scoreDetails.content += matches * 1; // 1 point par occurrence
+            }
         }
     }
     
@@ -98,7 +139,8 @@ export function computeRelevanceScore(note, query) {
             
             // Vérifier chaque terme individuellement dans les catégories
             for (const term of searchTerms) {
-                if (cleanedCategory.includes(term)) {
+                // Ne considérer que les termes ayant au moins 2 caractères
+                if (term.length >= 2 && cleanedCategory.includes(term)) {
                     scoreDetails.categories += 10;
                 }
             }
@@ -112,7 +154,8 @@ export function computeRelevanceScore(note, query) {
             
             // Vérifier chaque terme individuellement dans les hashtags
             for (const term of searchTerms) {
-                if (cleanedHashtag.includes(term)) {
+                // Ne considérer que les termes ayant au moins 2 caractères
+                if (term.length >= 2 && cleanedHashtag.includes(term)) {
                     scoreDetails.hashtags += 10;
                 }
             }
@@ -133,6 +176,11 @@ export function computeRelevanceScore(note, query) {
     
     // Calculer le score total
     score = scoreDetails.title + scoreDetails.content + scoreDetails.categories + scoreDetails.hashtags + scoreDetails.recency;
+    
+    // Si le score est nul, pas la peine d'enregistrer les détails
+    if (score === 0) {
+        return 0;
+    }
     
     // Ajouter les détails du score à la note pour le débogage si nécessaire
     note._scoreDetails = scoreDetails;

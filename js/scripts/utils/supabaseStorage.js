@@ -305,10 +305,13 @@ export async function searchNotes(query) {
         console.log(`Recherche des notes contenant "${cleanQuery}" dans Supabase...`);
         
         // Format de requête pour une recherche avancée (correspondance partielle dans plusieurs champs)
+        // Note: Pour les tableaux comme categories et hashtags, nous devons utiliser une logique différente
         const { data, error } = await client
             .from('notes')
             .select('*')
-            .or(`title.ilike.%${cleanQuery}%,content.ilike.%${cleanQuery}%`);
+            .or(`title.ilike.%${cleanQuery}%,content.ilike.%${cleanQuery}%`)
+            // Nous ne pouvons pas directement rechercher dans les tableaux avec .ilike
+            // Les requêtes avancées sur ces champs seront traitées côté client
         
         if (error) {
             console.error('Erreur lors de la recherche des notes:', error);

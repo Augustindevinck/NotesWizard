@@ -466,7 +466,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const noteElement = createNoteElement(note, searchTerms);
             
             // Ajouter l'information de score si disponible (pour le débogage)
-            if (note.searchScore !== undefined || note.relevanceScore !== undefined) {
+            if ((note.searchScore !== undefined || note.relevanceScore !== undefined) && 
+                (note.searchScore > 0 || note.relevanceScore > 0)) {
                 const scoreInfo = document.createElement('div');
                 scoreInfo.className = 'search-score';
                 
@@ -474,19 +475,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 const score = note.searchScore !== undefined ? note.searchScore : note.relevanceScore;
                 const roundedScore = Math.round(score);
                 
+                // Ne pas afficher le score s'il est trop faible ou nul
+                if (roundedScore <= 0) {
+                    // On n'affiche pas de score pour les résultats non pertinents
+                    continue;
+                }
+                
                 // Afficher le score arrondi
                 scoreInfo.textContent = `${roundedScore}`;
                 
                 // Construire le message détaillé pour le survol
-                let detailsMessage = `Score de pertinence: ${score.toFixed(2)}`;
+                let detailsMessage = `Score: ${score.toFixed(1)} points`;
                 
                 // Ajouter les détails des scores si disponibles
                 if (note._scoreDetails) {
-                    detailsMessage += `\nTitre: ${note._scoreDetails.title} pts`;
-                    detailsMessage += `\nContenu: ${note._scoreDetails.content} pts`;
-                    detailsMessage += `\nCatégories: ${note._scoreDetails.categories} pts`;
-                    detailsMessage += `\nHashtags: ${note._scoreDetails.hashtags} pts`;
-                    detailsMessage += `\nRécence: ${note._scoreDetails.recency} pts`;
+                    const details = [];
+                    
+                    if (note._scoreDetails.title > 0) {
+                        details.push(`Titre: ${note._scoreDetails.title} pts`);
+                    }
+                    
+                    if (note._scoreDetails.content > 0) {
+                        details.push(`Contenu: ${note._scoreDetails.content} pts`);
+                    }
+                    
+                    if (note._scoreDetails.categories > 0) {
+                        details.push(`Catégories: ${note._scoreDetails.categories} pts`);
+                    }
+                    
+                    if (note._scoreDetails.hashtags > 0) {
+                        details.push(`Hashtags: ${note._scoreDetails.hashtags} pts`);
+                    }
+                    
+                    if (note._scoreDetails.recency > 0) {
+                        details.push(`Récence: ${note._scoreDetails.recency} pts`);
+                    }
+                    
+                    if (details.length > 0) {
+                        detailsMessage += '\n' + details.join('\n');
+                    }
                 }
                 
                 scoreInfo.title = detailsMessage;
