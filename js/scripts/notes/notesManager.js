@@ -2,7 +2,7 @@
  * Gestionnaire des notes (création, édition, suppression)
  */
 
-import { saveNotes } from '../utils/localStorage.js';
+import { saveNotes, saveNote as saveSupabaseNote, deleteNote as deleteSupabaseNote } from '../utils/supabaseStorage.js';
 import { generateUniqueId, formatDate } from '../utils/domHelpers.js';
 
 // Variable pour stocker la fonction openNoteModal (à initialiser)
@@ -93,33 +93,36 @@ export function createNoteElement(note, currentSearchTerms) {
  * @param {string} noteId - L'identifiant de la note à supprimer
  * @param {Array} notes - Le tableau des notes
  * @param {Function} renderEmptyState - Fonction pour afficher l'état vide
- * @returns {boolean} - True si la note a été supprimée, false sinon
+ * @returns {Promise<boolean>} - True si la note a été supprimée, false sinon
  */
-export function deleteNote(noteId) {
+export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
     // Ask for confirmation before deleting
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
-        // Récupérer les notes du localStorage
-        let notes = JSON.parse(localStorage.getItem('notes') || '[]');
-        
-        // Find the note index by id
-        const noteIndex = notes.findIndex(note => note.id === noteId);
-
-        if (noteIndex !== -1) {
-            // Remove the note from the array
-            notes.splice(noteIndex, 1);
-
-            // Save to localStorage
-            saveNotes(notes);
-
-            // Mettre à jour les sections de révision
-            if (renderRevisitSectionsFn) {
-                renderRevisitSectionsFn(notes);
+        try {
+            // Supprimer la note via Supabase
+            const success = await deleteSupabaseNote(noteId);
+            
+            if (success) {
+                // Si des notes sont fournies, mettre à jour l'état local aussi
+                if (notes && notes.length > 0) {
+                    const noteIndex = notes.findIndex(note => note.id === noteId);
+                    if (noteIndex !== -1) {
+                        notes.splice(noteIndex, 1);
+                    }
+                }
+                
+                // Mettre à jour les sections de révision si la fonction est disponible
+                if (renderRevisitSectionsFn) {
+                    await renderRevisitSectionsFn(notes);
+                }
+                
+                // Recharger la page pour actualiser l'affichage
+                location.reload();
+                
+                return true;
             }
-            
-            // Recharger la page pour actualiser l'affichage
-            location.reload();
-            
-            return true;
+        } catch (error) {
+            console.error('Erreur lors de la suppression de la note:', error);
         }
     }
     return false;
@@ -130,53 +133,74 @@ export function deleteNote(noteId) {
  * @param {Object} noteData - Données de la note à sauvegarder
  * @param {Array} notes - Le tableau des notes
  * @param {Function} callback - Fonction à appeler après la sauvegarde
- * @returns {string} - L'identifiant de la note sauvegardée
+ * @returns {Promise<string|null>} - L'identifiant de la note sauvegardée ou null en cas d'erreur
  */
-export function saveNote(noteData, notes, callback) {
-    const { id, title, content, categories, hashtags, videoUrls } = noteData;
-    
-    if (id) {
-        // Mise à jour d'une note existante
-        const existingNote = notes.find(note => note.id === id);
-        if (existingNote) {
-            existingNote.title = title;
-            existingNote.content = content;
-            existingNote.categories = categories || [];
-            existingNote.hashtags = hashtags || [];
-            existingNote.videoUrls = videoUrls || [];
-            existingNote.updatedAt = new Date().toISOString();
+export async function saveNote(noteData, notes = [], callback = null) {
+    try {
+        const { id, title, content, categories, hashtags, videoUrls } = noteData;
+        let noteToSave;
+        
+        if (id) {
+            // Mise à jour d'une note existante
+            const existingNote = notes.find(note => note.id === id);
+            if (existingNote) {
+                existingNote.title = title;
+                existingNote.content = content;
+                existingNote.categories = categories || [];
+                existingNote.hashtags = hashtags || [];
+                existingNote.videoUrls = videoUrls || [];
+                existingNote.updatedAt = new Date().toISOString();
+                
+                noteToSave = existingNote;
+            } else {
+                // La note n'existe pas dans l'état local, créer une nouvelle note avec l'ID fourni
+                noteToSave = {
+                    id,
+                    title,
+                    content,
+                    categories: categories || [],
+                    hashtags: hashtags || [],
+                    videoUrls: videoUrls || [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                notes.push(noteToSave);
+            }
+        } else {
+            // Création d'une nouvelle note
+            noteToSave = {
+                id: generateUniqueId(),
+                title,
+                content,
+                categories: categories || [],
+                hashtags: hashtags || [],
+                videoUrls: videoUrls || [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            notes.push(noteToSave);
         }
-    } else {
-        // Création d'une nouvelle note
-        const newNote = {
-            id: generateUniqueId(),
-            title,
-            content,
-            categories: categories || [],
-            hashtags: hashtags || [],
-            videoUrls: videoUrls || [],
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        };
-        notes.push(newNote);
+
+        // Sauvegarder la note dans Supabase
+        const savedNote = await saveSupabaseNote(noteToSave);
+        
+        // Si l'opération a échoué, la fonction saveSupabaseNote aurait déjà lancé une exception
+        
+        // Mettre à jour les sections de révision si la fonction est disponible
+        if (renderRevisitSectionsFn) {
+            await renderRevisitSectionsFn(notes);
+        }
+
+        // Exécuter le callback si fourni
+        if (callback) {
+            callback();
+        }
+
+        return savedNote.id || notes[notes.length - 1].id;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la note:', error);
+        return null;
     }
-
-    // Sauvegarder les notes dans le localStorage
-    saveNotes(notes);
-
-    // Mettre à jour les sections de révision
-    if (renderRevisitSectionsFn) {
-        renderRevisitSectionsFn(notes);
-    } else {
-        console.error('renderRevisitSections n\'est pas initialisé');
-    }
-
-    // Exécuter le callback si fourni
-    if (callback) {
-        callback();
-    }
-
-    return id || notes[notes.length - 1].id;
 }
 
 /**

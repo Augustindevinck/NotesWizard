@@ -1,24 +1,30 @@
 /**
- * Fonctions pour l'exportation et l'importation des notes
+ * Fonctions pour l'exportation et l'importation des notes avec Supabase
  */
 
-import { saveNotes } from './localStorage.js';
+import { loadNotes, importNotesFromJson } from './supabaseStorage.js';
+import { areNotesContentIdentical } from './exportImport.js';
 
 /**
  * Exporte les notes au format JSON dans un fichier téléchargeable
- * @param {Array} notes - Tableau des notes à exporter
+ * @param {Array} notes - Tableau des notes à exporter (peut être null)
  * @param {HTMLElement} statusElement - Élément pour afficher le statut de l'opération
  */
-export function exportNotes(notes, statusElement) {
-    if (!notes || notes.length === 0) {
-        if (statusElement) {
-            statusElement.textContent = 'Aucune note à exporter';
-            statusElement.className = 'status-error';
-        }
-        return;
-    }
-    
+export async function exportNotes(notes, statusElement) {
     try {
+        // Si les notes ne sont pas fournies, les charger depuis Supabase
+        if (!notes) {
+            notes = await loadNotes();
+        }
+        
+        if (!notes || notes.length === 0) {
+            if (statusElement) {
+                statusElement.textContent = 'Aucune note à exporter';
+                statusElement.className = 'status-error';
+            }
+            return;
+        }
+        
         // Créer un objet Blob avec les notes
         const notesJSON = JSON.stringify(notes, null, 2);
         const blob = new Blob([notesJSON], { type: 'application/json' });
@@ -57,60 +63,13 @@ export function exportNotes(notes, statusElement) {
 }
 
 /**
- * Vérifie si deux notes ont un contenu identique
- * @param {Object} note1 - Première note à comparer
- * @param {Object} note2 - Deuxième note à comparer
- * @returns {boolean} - True si le contenu est identique, false sinon
- */
-export function areNotesContentIdentical(note1, note2) {
-    // Vérification sécurisée (certains champs peuvent ne pas exister)
-    const title1 = note1.title || '';
-    const title2 = note2.title || '';
-    const content1 = note1.content || '';
-    const content2 = note2.content || '';
-    
-    // Comparaison des champs essentiels
-    if (title1 !== title2 || content1 !== content2) {
-        return false;
-    }
-    
-    // Comparaison des catégories (indépendamment de l'ordre)
-    const categories1 = new Set(note1.categories || []);
-    const categories2 = new Set(note2.categories || []);
-    if (categories1.size !== categories2.size) {
-        return false;
-    }
-    for (const category of categories1) {
-        if (!categories2.has(category)) {
-            return false;
-        }
-    }
-    
-    // Comparaison des hashtags (indépendamment de l'ordre)
-    const hashtags1 = new Set(note1.hashtags || []);
-    const hashtags2 = new Set(note2.hashtags || []);
-    if (hashtags1.size !== hashtags2.size) {
-        return false;
-    }
-    for (const hashtag of hashtags1) {
-        if (!hashtags2.has(hashtag)) {
-            return false;
-        }
-    }
-    
-    // Ignorer les différences de dates (createdAt, updatedAt) et autres champs non essentiels
-    
-    return true;
-}
-
-/**
  * Importe des notes depuis un fichier JSON avec gestion améliorée des doublons
  * @param {Event} event - Événement de sélection de fichier
- * @param {Array} notes - Tableau des notes actuel
+ * @param {Array} notes - Tableau des notes actuel (peut être null)
  * @param {Function} callback - Fonction à appeler après l'importation
  * @param {HTMLElement} statusElement - Élément pour afficher le statut de l'opération
  */
-export function importNotes(event, notes, callback, statusElement) {
+export async function importNotes(event, notes, callback, statusElement) {
     const file = event.target.files[0];
     if (!file) {
         return;
@@ -126,7 +85,7 @@ export function importNotes(event, notes, callback, statusElement) {
     }
     
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             let importedNotes;
             try {
@@ -208,6 +167,11 @@ export function importNotes(event, notes, callback, statusElement) {
                 }
             });
             
+            // Si les notes actuelles ne sont pas fournies, les charger
+            if (!notes) {
+                notes = await loadNotes();
+            }
+            
             // Créer un Map des notes existantes pour comparaison rapide
             const existingNotesMap = new Map();
             notes.forEach(note => existingNotesMap.set(note.id, note));
@@ -233,9 +197,11 @@ export function importNotes(event, notes, callback, statusElement) {
                 }
             });
             
-            // Ajouter immédiatement les nouvelles notes
-            notes.push(...newNotes);
             let updatedNotes = 0;
+            let finalNotes = [...notes];
+
+            // Ajouter immédiatement les nouvelles notes
+            finalNotes = [...finalNotes, ...newNotes];
             
             // Gérer les notes avec contenu différent
             if (differentContentNotes.length > 0) {
@@ -249,17 +215,17 @@ export function importNotes(event, notes, callback, statusElement) {
                 if (replaceExisting) {
                     // Remplacer les notes existantes par les versions importées
                     differentContentNotes.forEach(pair => {
-                        const noteIndex = notes.findIndex(note => note.id === pair.existing.id);
+                        const noteIndex = finalNotes.findIndex(note => note.id === pair.existing.id);
                         if (noteIndex !== -1) {
-                            notes[noteIndex] = pair.imported;
+                            finalNotes[noteIndex] = pair.imported;
                             updatedNotes++;
                         }
                     });
                 }
             }
             
-            // Sauvegarder dans localStorage
-            saveNotes(notes);
+            // Importer les notes dans Supabase
+            const success = await importNotesFromJson(finalNotes);
             
             // Générer le message de statut
             const totalProcessed = newNotes.length + identicalNotes.length + differentContentNotes.length;
