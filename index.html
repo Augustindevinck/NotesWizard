@@ -27,16 +27,10 @@
                 <div id="search-results" class="search-results"></div>
             </div>
             <div class="header-actions">
-                <button id="import-export-btn" class="icon-button" title="Importer/Exporter">
+                <button id="supabase-config-btn" class="icon-button" title="Configurer Supabase">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
-                </button>
-                <button id="migration-btn" class="icon-button" title="Migrer les données locales vers Supabase">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2v20M2 12h20M7 17l5 5 5-5M17 7l-5-5-5 5"/>
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                     </svg>
                 </button>
             </div>
@@ -93,18 +87,7 @@
             </div>
         </div>
 
-        <div id="import-export-modal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2>Importer/Exporter</h2>
-                <div class="modal-buttons">
-                    <button id="export-btn">Exporter les notes</button>
-                    <button id="import-btn">Importer des notes</button>
-                </div>
-                <input type="file" id="import-file" accept=".json" style="display: none;">
-                <div id="import-status"></div>
-            </div>
-        </div>
+
 
         <div id="note-modal" class="modal">
             <div class="modal-content">
@@ -142,7 +125,7 @@
         <button id="add-note-btn" class="fab" aria-label="Ajouter une note"><span>+</span></button>
     </div>
 
-    <script type="module" src="js/index.supabase.js"></script>
+    <script type="module" src="js/index.direct.js"></script>
     
     <!-- Styles pour les éléments Supabase -->
     <style>

@@ -1,0 +1,70 @@
+Table Supabase : notes
+
+Colonnes :
+
+id : text, Primary Key, NOT NULL. Identifiant unique fourni par l'application (non généré par Supabase).
+
+title : text, NOT NULL. Titre de la note.
+
+content : text, NOT NULL. Contenu principal de la note.
+
+categories : text[], NOT NULL. Tableau de catégories associées à la note.
+
+hashtags : text[], NULLABLE. Tableau de hashtags optionnels.
+
+videoUrls : text[], NULLABLE. Tableau de liens vidéo optionnels.
+
+createdAt : timestamptz, NOT NULL, Default : now(). Date de création de la note, en temps UTC.
+
+updatedAt : timestamptz, NOT NULL, Default : now(). Date de dernière modification de la note, en temps UTC.
+
+isSearchResult : boolean, NULLABLE. Champ indiquant si la note est issue d'un résultat de recherche.
+
+Contraintes importantes :
+
+La colonne id doit être unique pour chaque note et fournie par l'application.
+
+title, content et categories sont obligatoires.
+
+hashtags, videoUrls et isSearchResult sont facultatifs.
+
+createdAt et updatedAt sont automatiquement définis sur la date actuelle à la création si aucune valeur n'est fournie, mais l'application peut explicitement envoyer ses propres dates pour préserver l'historique.
+
+Connexion Frontend :
+
+Utilisation de l'API REST native de Supabase via HTTPS.
+
+URL de l'API = https://[project-id].supabase.co/rest/v1/notes
+
+Headers requis :
+
+apikey : [clé publique anon]
+
+Authorization : Bearer [clé publique anon]
+
+Content-Type : application/json
+
+Exemples d'opérations API :
+
+Lecture (récupérer toutes les notes) : GET https://[project-id].supabase.co/rest/v1/notes
+
+Insertion (ajouter une nouvelle note) : POST https://[project-id].supabase.co/rest/v1/notes Body JSON exemple : { "id": "id_propre", "title": "Titre de la note", "content": "Contenu de la note", "categories": ["categorie1", "categorie2"], "hashtags": ["hashtag1", "hashtag2"], "videoUrls": ["https://urlvideo.com"], "createdAt": "2025-04-18T12:33:27.043Z", "updatedAt": "2025-04-18T12:33:27.043Z", "isSearchResult": true }
+
+Mise à jour d'une note existante : PATCH https://[project-id].supabase.co/rest/v1/notes?id=eq.[id_note] Body JSON : les champs à modifier.
+
+Suppression d'une note : DELETE https://[project-id].supabase.co/rest/v1/notes?id=eq.[id_note]
+
+Sécurité :
+
+Utilisation de la clé "anon" pour les opérations publiques simples (lecture, écriture).
+
+Aucune règle Row Level Security (RLS) activée au départ. Penser à sécuriser plus tard si ouverture publique non souhaitée.
+
+Particularités techniques :
+
+Les tableaux (categories, hashtags, videoUrls) sont transmis sous forme de tableaux JSON standards.
+
+Les dates doivent être envoyées au format ISO 8601 avec timezone (ex : "2025-04-18T12:33:27.043Z").
+
+L'id doit être généré par l'application (exemple : générateur de chaînes aléatoires) et inséré tel quel.
+
