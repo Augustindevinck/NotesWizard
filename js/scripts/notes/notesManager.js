@@ -101,7 +101,7 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
         try {
             // Supprimer la note via Supabase
             const success = await deleteSupabaseNote(noteId);
-            
+
             if (success) {
                 // Si des notes sont fournies, mettre à jour l'état local aussi
                 if (notes && notes.length > 0) {
@@ -110,15 +110,15 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
                         notes.splice(noteIndex, 1);
                     }
                 }
-                
+
                 // Mettre à jour les sections de révision si la fonction est disponible
                 if (renderRevisitSectionsFn) {
                     await renderRevisitSectionsFn(notes);
                 }
-                
+
                 // Recharger la page pour actualiser l'affichage
                 location.reload();
-                
+
                 return true;
             }
         } catch (error) {
@@ -137,9 +137,12 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
  */
 export async function saveNote(noteData, notes = [], callback = null) {
     try {
-        const { id, title, content, categories = [], hashtags = [], videoUrls = [] } = noteData;
+        const { id, title, content } = noteData;
+        const categories = Array.isArray(noteData.categories) ? noteData.categories : [];
+        const hashtags = Array.isArray(noteData.hashtags) ? noteData.hashtags : [];
+        const videoUrls = Array.isArray(noteData.videoUrls) ? noteData.videoUrls : [];
         let noteToSave;
-        
+
         if (id) {
             // Mise à jour d'une note existante
             const existingNote = notes.find(note => note.id === id);
@@ -150,7 +153,7 @@ export async function saveNote(noteData, notes = [], callback = null) {
                 existingNote.hashtags = hashtags || [];
                 existingNote.videoUrls = videoUrls || [];
                 existingNote.updatedAt = new Date().toISOString();
-                
+
                 noteToSave = existingNote;
             } else {
                 // La note n'existe pas dans l'état local, créer une nouvelle note avec l'ID fourni
@@ -183,9 +186,9 @@ export async function saveNote(noteData, notes = [], callback = null) {
 
         // Sauvegarder la note dans Supabase
         const savedNote = await saveSupabaseNote(noteToSave);
-        
+
         // Si l'opération a échoué, la fonction saveSupabaseNote aurait déjà lancé une exception
-        
+
         // Mettre à jour les sections de révision si la fonction est disponible
         if (renderRevisitSectionsFn) {
             await renderRevisitSectionsFn(notes);

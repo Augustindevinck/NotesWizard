@@ -19,7 +19,7 @@ export async function fetchAllNotes() {
             // Essayer d'utiliser Supabase d'abord
             try {
                 const notes = await supabaseStorage.getAllNotes();
-                
+
                 // Si on obtient des notes valides, mettre à jour le stockage local
                 if (Array.isArray(notes) && notes.length > 0) {
                     localStorage.saveAllNotes(notes);
@@ -29,7 +29,7 @@ export async function fetchAllNotes() {
                 console.error('Erreur Supabase, utilisation du stockage local:', supabaseError);
             }
         }
-        
+
         // Fallback sur le stockage local
         return localStorage.getAllNotes();
     } catch (error) {
@@ -47,7 +47,7 @@ export async function createNote(noteData) {
     try {
         // Créer la note dans le stockage local pour une réponse rapide
         const localNote = localStorage.createNote(noteData);
-        
+
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
@@ -60,10 +60,18 @@ export async function createNote(noteData) {
                         await client.auth.signInAnonymously();
                     }
                 }
-                
+
+                // S'assurer que categories est un tableau
+                const processedData = {
+                    ...noteData,
+                    categories: Array.isArray(noteData.categories) ? noteData.categories : [],
+                    hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
+                    videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : []
+                };
+
                 // Créer la note dans Supabase
-                const supabaseNote = await supabaseStorage.createNote(noteData);
-                
+                const supabaseNote = await supabaseStorage.createNote(processedData);
+
                 // Si la création dans Supabase a réussi, mettre à jour le stockage local
                 if (supabaseNote) {
                     // Mettre à jour toutes les notes locales pour s'assurer que tout est synchronisé
@@ -74,7 +82,7 @@ export async function createNote(noteData) {
                 console.error('Erreur lors de la création de la note dans Supabase:', supabaseError);
             }
         }
-        
+
         return localNote;
     } catch (error) {
         console.error('Erreur lors de la création de la note:', error);
@@ -92,7 +100,7 @@ export async function updateNote(noteId, noteData) {
     try {
         // Mettre à jour la note dans le stockage local pour une réponse rapide
         const localUpdatedNote = localStorage.updateNote(noteId, noteData);
-        
+
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
@@ -105,10 +113,10 @@ export async function updateNote(noteId, noteData) {
                         await client.auth.signInAnonymously();
                     }
                 }
-                
+
                 // Mettre à jour la note dans Supabase
                 const supabaseUpdatedNote = await supabaseStorage.updateNote(noteId, noteData);
-                
+
                 // Si la mise à jour dans Supabase a réussi, mettre à jour le stockage local
                 if (supabaseUpdatedNote) {
                     // Mettre à jour toutes les notes locales pour s'assurer que tout est synchronisé
@@ -119,7 +127,7 @@ export async function updateNote(noteId, noteData) {
                 console.error('Erreur lors de la mise à jour de la note dans Supabase:', supabaseError);
             }
         }
-        
+
         return localUpdatedNote;
     } catch (error) {
         console.error('Erreur lors de la mise à jour de la note:', error);
@@ -136,7 +144,7 @@ export async function deleteNote(noteId) {
     try {
         // Supprimer la note du stockage local pour une réponse rapide
         localStorage.deleteNote(noteId);
-        
+
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
@@ -149,22 +157,22 @@ export async function deleteNote(noteId) {
                         await client.auth.signInAnonymously();
                     }
                 }
-                
+
                 // Supprimer la note dans Supabase
                 const success = await supabaseStorage.deleteNote(noteId);
-                
+
                 // Si la suppression dans Supabase a réussi, mettre à jour le stockage local
                 if (success) {
                     // Mettre à jour toutes les notes locales pour s'assurer que tout est synchronisé
                     await syncWithSupabase();
                 }
-                
+
                 return success;
             } catch (supabaseError) {
                 console.error('Erreur lors de la suppression de la note dans Supabase:', supabaseError);
             }
         }
-        
+
         return true;
     } catch (error) {
         console.error('Erreur lors de la suppression de la note:', error);
@@ -182,7 +190,7 @@ export async function searchNotes(query) {
         if (!query.trim()) {
             return [];
         }
-        
+
         // Vérifier si Supabase est configuré
         if (isSupabaseConfigured()) {
             try {
@@ -195,10 +203,10 @@ export async function searchNotes(query) {
                         await client.auth.signInAnonymously();
                     }
                 }
-                
+
                 // Rechercher dans Supabase pour de meilleurs résultats
                 const supabaseResults = await supabaseStorage.searchNotes(query);
-                
+
                 // Si la recherche dans Supabase a réussi, retourner les résultats
                 if (Array.isArray(supabaseResults) && supabaseResults.length > 0) {
                     return supabaseResults;
@@ -207,7 +215,7 @@ export async function searchNotes(query) {
                 console.error('Erreur lors de la recherche dans Supabase:', supabaseError);
             }
         }
-        
+
         // Fallback sur le stockage local
         return localStorage.searchNotes(query);
     } catch (error) {
@@ -226,7 +234,7 @@ export async function syncWithSupabase() {
         if (!isSupabaseConfigured()) {
             return false;
         }
-        
+
         // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
         const client = getClient();
         if (client) {
@@ -236,21 +244,21 @@ export async function syncWithSupabase() {
                 await client.auth.signInAnonymously();
             }
         }
-        
+
         // Récupérer les notes locales
         const localNotes = localStorage.getAllNotes();
-        
+
         // Récupérer les notes de Supabase
         const supabaseNotes = await supabaseStorage.getAllNotes();
-        
+
         // Créer un map des notes Supabase pour faciliter la recherche
         const supabaseNotesMap = new Map();
         supabaseNotes.forEach(note => supabaseNotesMap.set(note.id, note));
-        
+
         // Traiter les notes locales
         for (const localNote of localNotes) {
             const supabaseNote = supabaseNotesMap.get(localNote.id);
-            
+
             if (!supabaseNote) {
                 // La note locale n'existe pas dans Supabase, la créer
                 await supabaseStorage.createNote({
@@ -263,17 +271,17 @@ export async function syncWithSupabase() {
                 // Comparer les dates de mise à jour pour déterminer quelle version est la plus récente
                 const localUpdatedAt = new Date(localNote.updatedAt).getTime();
                 const supabaseUpdatedAt = new Date(supabaseNote.updatedAt).getTime();
-                
+
                 if (localUpdatedAt > supabaseUpdatedAt) {
                     // La version locale est plus récente, mettre à jour Supabase
                     await supabaseStorage.updateNote(localNote.id, localNote);
                 }
             }
-            
+
             // Supprimer de la map pour garder trace des notes qui n'existent que dans Supabase
             supabaseNotesMap.delete(localNote.id);
         }
-        
+
         // Les notes restantes dans supabaseNotesMap existent uniquement dans Supabase
         // Les ajouter au stockage local
         for (const [id, note] of supabaseNotesMap.entries()) {
@@ -282,13 +290,13 @@ export async function syncWithSupabase() {
             allNotes.push(note);
             localStorage.saveAllNotes(allNotes);
         }
-        
+
         // Récupérer les notes mises à jour de Supabase
         const updatedSupabaseNotes = await supabaseStorage.getAllNotes();
-        
+
         // Mettre à jour le stockage local avec les notes mises à jour
         localStorage.saveAllNotes(updatedSupabaseNotes);
-        
+
         return true;
     } catch (error) {
         console.error('Erreur lors de la synchronisation avec Supabase:', error);
@@ -306,7 +314,7 @@ export async function saveRevisitSettings(settings) {
         // Sauvegarder uniquement dans le stockage local
         console.log('Sauvegarde des paramètres de révision dans le stockage local');
         localStorage.saveSettings('revisitSettings', settings);
-        
+
         return true;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde des paramètres:', error);
@@ -322,11 +330,11 @@ export async function loadRevisitSettings() {
     try {
         // Paramètres par défaut
         const defaultSettings = { section1: 7, section2: 14 };
-        
+
         // Utiliser seulement le stockage local, car Supabase n'a pas de table settings
         console.log('Chargement des paramètres de révision depuis le stockage local');
         const localSettings = localStorage.getSettings('revisitSettings', defaultSettings);
-        
+
         return localSettings;
     } catch (error) {
         console.error('Erreur lors du chargement des paramètres:', error);
