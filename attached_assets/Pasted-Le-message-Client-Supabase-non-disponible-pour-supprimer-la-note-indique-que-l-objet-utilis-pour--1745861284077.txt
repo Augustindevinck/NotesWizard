@@ -1,0 +1,35 @@
+Le message "Client Supabase non disponible pour supprimer la note" indique que l'objet utilisé pour interagir avec Supabase (supabase) n'est pas correctement initialisé ou pas accessible au moment où l'opération de suppression est déclenchée. Cela peut être dû à un problème d'initialisation globale de la connexion Supabase ou à un contexte incorrect lors de l'appel de la méthode.
+
+Concernant l'erreur lors de la sauvegarde de la note, le message TypeError: savedNote.categories.forEach is not a function indique que savedNote.categories n'est pas un tableau (Array) au moment où la fonction .forEach() est appelée dessus. savedNote.categories est probablement de type string ou null, ce qui provoque l'erreur.
+
+Conséquences immédiates de ces erreurs :
+
+Impossible de supprimer une note car l'objet Supabase client n'est pas disponible.
+
+Impossible de modifier ou créer une note car l'application attend un tableau pour categories, mais reçoit autre chose.
+
+Toute opération qui tente de manipuler categories comme un tableau échoue.
+
+Causes probables :
+
+Lors de la récupération d'une note depuis Supabase, la colonne categories est stockée en base comme un simple text et non un text[], donc Supabase retourne une chaîne de caractères (string) au lieu d'un tableau (Array).
+
+Lors de l'insertion d'une note, si categories est un text simple au lieu d'un text[], Supabase traite la donnée comme une chaîne, ce qui cause une incohérence avec l'attente du code frontend.
+
+L'initialisation du client Supabase dans l'application ne se fait pas au bon endroit ou n'est pas conservée correctement après certaines actions (navigation, reload partiel de la page).
+
+Le projet dépend d'une structure stricte côté JavaScript (catégories en tableau), mais la base Supabase a été conçue pour stocker des chaînes de texte simples, créant un décalage fonctionnel entre backend et frontend.
+
+Vérifications nécessaires :
+
+Vérifier que supabase = createClient(URL, anonKey) est bien exécuté au chargement de la page et accessible dans tout le code.
+
+Vérifier que la colonne categories dans Supabase est bien de type text[] (tableau de textes) et non text.
+
+Lors des insertions, s'assurer que le champ categories est bien transmis en tant que tableau dans le JSON envoyé à Supabase.
+
+Lors de la lecture des notes, s'assurer que categories est testé pour être un tableau avant d'appeler .forEach() dessus, ou convertir au besoin.
+
+Ajouter des vérifications défensives pour éviter de supposer que toutes les données reçues ont la bonne forme avant de manipuler leurs propriétés.
+
+Résumé opérationnel : le problème vient d'une incohérence entre les attentes du code client (catégories comme tableau) et la réalité des données stockées (catégories comme chaîne). Le client Supabase doit être initialisé de manière fiable à chaque exécution. Les insertions et récupérations doivent respecter strictement la structure de données attendue par le frontend. Sans cela, toute tentative de lecture, modification ou suppression provoque des erreurs bloquantes.
