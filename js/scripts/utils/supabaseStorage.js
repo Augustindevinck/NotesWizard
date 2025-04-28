@@ -443,3 +443,46 @@ export async function saveNote(note) {
         return null;
     }
 }
+
+/**
+ * Charge les paramètres de révision depuis Supabase
+ * @returns {Promise<Object|null>} - Les paramètres de révision ou un objet par défaut
+ */
+export async function loadRevisitSettings() {
+    try {
+        const revisitSettings = await getSettings('revisitSettings', {
+            today: 0,
+            yesterday: 1,
+            week: 7,
+            month: 30,
+            threeMonths: 90
+        });
+        
+        return revisitSettings;
+    } catch (error) {
+        console.error('Erreur lors du chargement des paramètres de révision:', error);
+        // Retourne des valeurs par défaut en cas d'erreur
+        return {
+            today: 0,
+            yesterday: 1,
+            week: 7,
+            month: 30,
+            threeMonths: 90
+        };
+    }
+}
+
+/**
+ * Sauvegarde les paramètres de révision dans Supabase
+ * @param {Object} settings - Les paramètres de révision à sauvegarder
+ * @returns {Promise<boolean>} - Vrai si la sauvegarde a réussi
+ */
+export async function saveRevisitSettings(settings) {
+    try {
+        const success = await saveSettings('revisitSettings', settings);
+        return success;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des paramètres de révision:', error);
+        return false;
+    }
+}
