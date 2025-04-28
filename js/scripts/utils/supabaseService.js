@@ -168,9 +168,10 @@ export async function deleteNote(noteId) {
         await syncWithSupabase();
         
         return true;
-            try {
-                // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
-                const client = getClient();
+    } catch (error) {
+        console.error('Erreur lors de la suppression de la note:', error);
+        return false;
+    }
                 if (client) {
                     const { data: { session } } = await client.auth.getSession();
                     if (!session) {
