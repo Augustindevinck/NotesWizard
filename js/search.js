@@ -469,11 +469,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (note.searchScore !== undefined) {
                 const scoreInfo = document.createElement('div');
                 scoreInfo.className = 'search-score';
-                scoreInfo.textContent = `Score: ${note.searchScore.toFixed(2)}`;
-                scoreInfo.style.fontSize = '0.75rem';
-                scoreInfo.style.color = '#777';
-                scoreInfo.style.textAlign = 'right';
-                scoreInfo.style.padding = '0.25rem';
+                scoreInfo.textContent = `${note.searchScore.toFixed(0)}`;
+                scoreInfo.title = `Score de pertinence: ${note.searchScore.toFixed(2)}`;
                 
                 // Ajouter l'info de score au début de l'élément
                 noteElement.insertBefore(scoreInfo, noteElement.firstChild);

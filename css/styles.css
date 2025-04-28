@@ -29,6 +29,24 @@ body {
     margin: 0;
     min-height: 100vh;
     display: flex;
+
+.search-score {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.note-card {
+    position: relative;
+    /* autres styles existants... */
+}
+
     flex-direction: column;
 }
 
