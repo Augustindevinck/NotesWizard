@@ -144,7 +144,7 @@ export async function saveNote(noteData, notes = [], callback = null) {
             hashtags: noteData.hashtags || [],
             videoUrls: noteData.videoUrls || []
         };
-        
+
         // S'assurer que ce sont des tableaux
         if (!Array.isArray(processedNoteData.categories)) {
             processedNoteData.categories = [];
