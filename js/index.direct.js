@@ -421,18 +421,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 
                 // Effectuer la recherche
-                let searchResults;
+                let resultsData;
                 
                 // Essayer d'abord la recherche via Supabase
                 const supabaseResults = await searchNotes(query);
                 
-                if (supabaseResults) {
-                    searchResults = supabaseResults;
+                if (supabaseResults && supabaseResults.length > 0) {
+                    resultsData = supabaseResults;
                 } else {
                     // Recherche locale (fallback)
                     const cleanedQuery = cleanText(query);
                     
-                    searchResults = appState.notes.filter(note => {
+                    resultsData = appState.notes.filter(note => {
                         const cleanTitle = cleanText(note.title || '');
                         const cleanContent = cleanText(note.content || '');
                         
@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 appState.currentSearchTerms = query.trim().toLowerCase().split(/\s+/);
                 
                 // Limiter à 5 suggestions
-                const topResults = searchResults.slice(0, 5);
+                const topResults = resultsData.slice(0, 5);
                 
                 // Afficher les suggestions
                 if (topResults.length > 0) {
