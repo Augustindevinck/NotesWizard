@@ -233,12 +233,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             }
                         }).catch(error => {
                             console.error('Erreur lors de la sauvegarde de la note:', error);
-                            alert('Erreur lors de la sauvegarde de la note. Veuillez vérifier votre connexion.');
                             resolve(null);
                         });
                     } catch (error) {
                         console.error('Erreur lors de la sauvegarde de la note:', error);
-                        alert('Erreur lors de la sauvegarde de la note. Veuillez vérifier votre connexion.');
                         resolve(null);
                     }
                 });
