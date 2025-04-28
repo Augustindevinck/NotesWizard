@@ -1,0 +1,23 @@
+Voici les logs "Création de la table settings...
+Erreur lors de la création de la table settings:
+Object {code: "PGRST202", details: "Searched for the function public.create_settings_table without parameters or with a single unnamed…", hint: null, message: "Could not find the function public.create_settings_table without parameters in the schema cache"}
+
+at t.value (https://436d30c4-a537-4afd-90fe-927f625bb300-00-1eemfd6z2bxts.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://436d30c4-a537-4afd-90fe-927f625bb300-00-1eemfd6z2bxts.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://436d30c4-a537-4afd-90fe-927f625bb300-00-1eemfd6z2bxts.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://436d30c4-a537-4afd-90fe-927f625bb300-00-1eemfd6z2bxts.kirk.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Erreur lors de la création directe de la table settings:
+Object {code: "PGRST202", details: "Searched for the function public.execute_sql with parameter sql_query or with a single unnamed…", hint: null, message: "Could not find the function public.execute_sql(sql_query) in the schema cache"}
+
+Erreur lors de la tentative simple de création de la table settings:
+Object {}
+
+Erreur lors de la configuration de la sécurité:
+Object {code: "PGRST202", details: "Searched for the function public.execute_sql with parameter sql_query or with a single unnamed…", hint: null, message: "Could not find the function public.execute_sql(sql_query) in the schema cache"}
+
+Tables Supabase initialisées
+Erreur lors de la récupération du paramètre revisitSettings:
+Object {code: "42P01", details: null, hint: null, message: "relation "public.settings" does not exist"}
+
+Erreur lors de la vérification du paramètre revisitSettings:
+Object {code: "42P01", details: null, hint: null, message: "relation "public.settings" does not exist"}" pour rappel nous sommes en pleine transition

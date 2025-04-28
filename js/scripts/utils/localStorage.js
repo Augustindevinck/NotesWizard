@@ -239,6 +239,14 @@ export function saveNotes(notes) {
 }
 
 /**
+ * Alias de getAllNotes pour la compatibilité avec d'autres modules
+ * @returns {Array} - Tableau de notes
+ */
+export function loadNotes() {
+    return getAllNotes();
+}
+
+/**
  * Charge les paramètres de révision depuis le stockage local
  * @returns {Object} - Les paramètres de révision
  */

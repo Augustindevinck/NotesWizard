@@ -1,0 +1,24 @@
+Ton application essaie d'utiliser des éléments qui n'existent pas par défaut dans Supabase.
+Plus précisément, elle tente d'utiliser une table settings et des fonctions SQL comme create_settings_table ou execute_sql qui ne sont pas disponibles dans une instance Supabase fraîche. Supabase expose uniquement les tables et les fonctions que tu crées toi-même. Il n'existe aucune fonction native nommée create_settings_table ou execute_sql. Ces erreurs sont donc normales et prévisibles si aucune installation préalable de tables ou de procédures stockées n’a été faite.
+
+Dans la configuration actuelle, seule la table notes a été créée manuellement, avec les colonnes suivantes : id (text, clé primaire), title (text), content (text), categories (text ou text[]), hashtags (text ou text[]), videoUrls (text ou text[]), createdAt (timestamptz), updatedAt (timestamptz), isSearchResult (boolean). Aucun schéma supplémentaire, aucune fonction supplémentaire, aucun trigger ou procédure stockée n'ont été mis en place.
+
+Ce que Replit doit corriger est simple :
+
+Ne pas supposer que la table settings existe automatiquement. Supabase ne la crée pas.
+
+Ne pas appeler la fonction create_settings_table car elle n'existe pas. Si nécessaire, il faut écrire soi-même une requête SQL CREATE TABLE pour la table settings.
+
+Ne pas tenter d'utiliser execute_sql. Supabase n'expose pas de fonction d'exécution SQL arbitraire côté API REST pour des raisons de sécurité. Les requêtes doivent cibler directement les tables existantes via les endpoints REST ou RPC correctement créés.
+
+Lors de l'initialisation de l'application, vérifier la présence des tables par une requête normale (GET sur /rest/v1/nom_table) ou prévoir une étape manuelle pour préparer la base (migration ou script d'installation).
+
+Pour continuer proprement avec Supabase :
+
+Ne travailler que sur les tables réellement existantes (par exemple, ici uniquement notes).
+
+Ajouter manuellement d'autres tables si nécessaire via l'interface Supabase ou via un script SQL.
+
+Supprimer ou désactiver toute tentative automatique de création dynamique de tables ou d'exécution arbitraire de SQL sans préparation préalable.
+
+Résumé précis : Supabase expose une base PostgreSQL classique, mais uniquement avec ce qui a été explicitement défini par l'utilisateur. Aucune table ou fonction de gestion automatique (settings, execute_sql) n'est présente par défaut. Toute tentative de créer dynamiquement des structures doit être anticipée par une vraie migration ou un script de création spécifique. Pour corriger définitivement, Replit doit désactiver toute création automatique de la table settings ou fournir un SQL précis pour créer cette table.
