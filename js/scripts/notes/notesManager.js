@@ -137,7 +137,7 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
  */
 export async function saveNote(noteData, notes = [], callback = null) {
     try {
-        const { id, title, content, categories, hashtags, videoUrls } = noteData;
+        const { id, title, content, categories = [], hashtags = [], videoUrls = [] } = noteData;
         let noteToSave;
         
         if (id) {

@@ -22,11 +22,39 @@ export async function initSupabase(url, key) {
     try {
         supabaseClient = createClient(url, key);
         
+        // S'assurer que categories est toujours un tableau
+        const transformCategories = (payload) => {
+            if (payload.categories && typeof payload.categories === 'string') {
+                try {
+                    payload.categories = JSON.parse(payload.categories);
+                } catch {
+                    payload.categories = [];
+                }
+            }
+            if (!Array.isArray(payload.categories)) {
+                payload.categories = [];
+            }
+            return payload;
+        };
+
+        // Intercepter les réponses pour transformer les categories
+        const { fetch: originalFetch } = supabaseClient;
+        supabaseClient.fetch = async (...args) => {
+            const response = await originalFetch.apply(supabaseClient, args);
+            if (response.data) {
+                if (Array.isArray(response.data)) {
+                    response.data = response.data.map(transformCategories);
+                } else {
+                    response.data = transformCategories(response.data);
+                }
+            }
+            return response;
+        };
+        
         // Connecter en tant qu'utilisateur anonyme pour que RLS fonctionne
         const { data, error } = await supabaseClient.auth.signInAnonymously();
         if (error) {
             console.error('Erreur lors de la connexion anonyme:', error);
-            // Continuer quand même car certaines opérations pourraient fonctionner
         } else {
             console.log('Connecté en tant qu\'utilisateur anonyme avec ID:', data.user?.id);
         }
