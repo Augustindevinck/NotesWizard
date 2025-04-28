@@ -1,0 +1,47 @@
+problème racine  
+savedNote.categories arrive souvent comme string alors que le code front-end le traite comme tableau et appelle forEach, ce qui déclenche TypeError puis toast erreur fantôme. le write côté Supabase est pourtant réussi (status 200/201).
+
+points à corriger côté application  
+1. garantir qu’il n’existe qu’une seule instance Supabase exportée par supabaseClient.js, importée partout. toute fonction de CRUD doit utiliser cette instance, sinon on retombe sur “Client Supabase non disponible”.  
+2. activer anonymous sign-ins dans Authentication > Sign In / Up ; laisser “manual linking” désactivé. anonymous error 422 disparaît.  
+3. avant d’appeler forEach ou map sur categories, hashtags, videoUrls :  
+   - si c’est déjà Array, ok.  
+   - si c’est string, le convertir en tableau avec split(‘,’).trim().  
+   - si c’est null ou undefined, le remplacer par tableau vide. exemple utilitaire :  
+   ```
+   function normalizeArray(field) {
+     if (Array.isArray(field)) return field;
+     if (typeof field === 'string' && field.length > 0) {
+       return field.split(',').map(s => s.trim());
+     }
+     return [];
+   }
+   ```  
+   à appeler immédiatement après chaque récupération ou insertion :  
+   ```
+   note.categories = normalizeArray(note.categories);
+   note.hashtags   = normalizeArray(note.hashtags);
+   note.videoUrls  = normalizeArray(note.videoUrls);
+   ```  
+4. logique d’erreur : n’afficher le toast que si error n’est pas null.  
+   ```
+   const { data, error } = await supabase.from('notes').insert(payload).select().single();
+   if (error) { showErrorToast(error.message); return; }
+   normalizeArrays(data);
+   updateUILocal(data);
+   ```  
+   même principe pour update et delete.  
+5. mettre à jour la liste locale après succès afin que les notes restent visibles après refresh.  
+6. option backend conseillé : convertir la colonne categories (et autres) du type text vers text[] dans Supabase pour éliminer la conversion côté client :  
+   ```
+   ALTER TABLE notes
+     ALTER COLUMN categories TYPE text[] USING string_to_array(categories, ',');
+   ```  
+   faire idem pour hashtags et videoUrls. ensuite envoyer un vrai tableau JSON dans le payload.  
+7. si sécurité utilisateur voulue : ajouter colonne user_id uuid references auth.users(id), activer RLS, écrire policies basées sur auth.uid() pour restreindre lecture et écriture à l’auteur. sinon garder RLS désactivé pour simplicité.
+
+résultat attendu  
+- plus d’exception TypeError, donc plus de message “Erreur lors de la sauvegarde”.  
+- création, modification, suppression et recherche fonctionnent sans avertissement.  
+- instance Supabase toujours définie, plus de “Client non disponible”.  
+- si conversion SQL appliquée, plus besoin de normalisation côté JS.
