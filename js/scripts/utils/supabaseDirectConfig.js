@@ -19,15 +19,15 @@ export function isSupabaseConfigured() {
  * Initialise et retourne le client Supabase
  * @returns {Promise<Object|null>} - Le client Supabase ou null si les paramètres ne sont pas configurés
  */
-export async function getSupabaseClient() {
+export function getSupabaseClient() {
     // Vérifier si le client existe déjà
     const existingClient = getClient();
     if (existingClient) {
-        return existingClient;
+        return Promise.resolve(existingClient);
     }
     
     // Sinon, essayer de l'initialiser avec les paramètres du localStorage
-    return await loadSupabaseFromLocalStorage();
+    return loadSupabaseFromLocalStorage();
 }
 
 /**
@@ -36,28 +36,28 @@ export async function getSupabaseClient() {
  * @param {string} key - Clé API Supabase (anon/public)
  * @returns {Promise<Object>} - Le client Supabase
  */
-export async function configureSupabase(url, key) {
+export function configureSupabase(url, key) {
     // Mettre à jour la configuration dans le localStorage
     localStorage.setItem('supabase_url', url);
     localStorage.setItem('supabase_key', key);
     
     // Initialiser le client
-    return await initSupabase(url, key);
+    return initSupabase(url, key);
 }
 
 /**
  * Charge la configuration Supabase depuis le localStorage
  * @returns {Promise<Object|null>} - Le client Supabase ou null si aucune configuration n'est trouvée
  */
-export async function loadSupabaseFromLocalStorage() {
+export function loadSupabaseFromLocalStorage() {
     const url = localStorage.getItem('supabase_url');
     const key = localStorage.getItem('supabase_key');
     
     if (url && key) {
-        return await initSupabase(url, key);
+        return initSupabase(url, key);
     }
     
-    return null;
+    return Promise.resolve(null);
 }
 
 /**

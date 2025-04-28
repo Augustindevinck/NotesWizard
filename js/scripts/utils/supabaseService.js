@@ -142,36 +142,14 @@ export async function updateNote(noteId, noteData) {
  */
 export async function deleteNote(noteId) {
     try {
-        // Supprimer de Supabase si configuré
-        if (isSupabaseConfigured()) {
-            // Vérifier la connexion anonyme
-            const client = getClient();
-            if (client) {
-                const { data: { session } } = await client.auth.getSession();
-                if (!session) {
-                    console.log('Connexion anonyme pour la suppression...');
-                    await client.auth.signInAnonymously();
-                }
-            }
-            
-            // Supprimer de Supabase
-            const success = await supabaseStorage.deleteNote(noteId);
-            if (!success) {
-                throw new Error('Échec de la suppression dans Supabase');
-            }
-        }
-        
-        // Supprimer du localStorage
+        // Supprimer la note du stockage local pour une réponse rapide
         localStorage.deleteNote(noteId);
         
-        // Forcer une synchronisation
-        await syncWithSupabase();
-        
-        return true;
-    } catch (error) {
-        console.error('Erreur lors de la suppression de la note:', error);
-        return false;
-    }
+        // Vérifier si Supabase est configuré
+        if (isSupabaseConfigured()) {
+            try {
+                // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+                const client = getClient();
                 if (client) {
                     const { data: { session } } = await client.auth.getSession();
                     if (!session) {
@@ -179,22 +157,22 @@ export async function deleteNote(noteId) {
                         await client.auth.signInAnonymously();
                     }
                 }
-
+                
                 // Supprimer la note dans Supabase
                 const success = await supabaseStorage.deleteNote(noteId);
-
+                
                 // Si la suppression dans Supabase a réussi, mettre à jour le stockage local
                 if (success) {
                     // Mettre à jour toutes les notes locales pour s'assurer que tout est synchronisé
                     await syncWithSupabase();
                 }
-
+                
                 return success;
             } catch (supabaseError) {
                 console.error('Erreur lors de la suppression de la note dans Supabase:', supabaseError);
             }
         }
-
+        
         return true;
     } catch (error) {
         console.error('Erreur lors de la suppression de la note:', error);
