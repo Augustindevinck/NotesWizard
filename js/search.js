@@ -469,11 +469,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (note.searchScore !== undefined) {
                 const scoreInfo = document.createElement('div');
                 scoreInfo.className = 'search-score';
-                scoreInfo.textContent = `${note.searchScore.toFixed(0)}`;
+                const roundedScore = Math.round(note.searchScore);
+                scoreInfo.textContent = `${roundedScore}`;
                 scoreInfo.title = `Score de pertinence: ${note.searchScore.toFixed(2)}`;
                 
-                // Ajouter l'info de score au début de l'élément
-                noteElement.insertBefore(scoreInfo, noteElement.firstChild);
+                // Ajouter l'info de score
+                noteElement.appendChild(scoreInfo);
             }
             
             // Ajouter l'élément à la grille
