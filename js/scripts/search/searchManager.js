@@ -211,30 +211,21 @@ export function strictSearch(cleanedQuery, notes) {
         queryTerms.forEach(term => {
             if (term.length < 2) return; // Ignorer les termes trop courts
             
-            // Points pour le titre (titre a plus de poids)
-            if (cleanTitle.includes(term)) {
-                score += 10;
-            }
-            
-            // Points pour le contenu
+            // Points pour le contenu (1 point)
             if (cleanContent.includes(term)) {
-                score += 5;
+                score += 1;
             }
             
-            // Points pour les catégories
-            if (note.categories && note.categories.length > 0) {
-                note.categories.forEach(category => {
-                    if (cleanText(category).includes(term)) {
-                        score += 8;
-                    }
-                });
+            // Points pour le titre (2 points)
+            if (cleanTitle.includes(term)) {
+                score += 2;
             }
             
-            // Points pour les hashtags
+            // Points pour les hashtags (10 points)
             if (note.hashtags && note.hashtags.length > 0) {
                 note.hashtags.forEach(tag => {
                     if (cleanText(tag).includes(term)) {
-                        score += 8;
+                        score += 10;
                     }
                 });
             }
