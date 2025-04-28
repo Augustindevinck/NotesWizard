@@ -137,16 +137,24 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
  */
 export async function saveNote(noteData, notes = [], callback = null) {
     try {
-        // S'assurer que les propriétés sont des tableaux
+        // Initialiser les tableaux vides si non définis
         const processedNoteData = {
             ...noteData,
-            categories: Array.isArray(noteData.categories) ? noteData.categories : 
-                       typeof noteData.categories === 'string' ? [noteData.categories] : [],
-            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : 
-                     typeof noteData.hashtags === 'string' ? [noteData.hashtags] : [],
-            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : 
-                      typeof noteData.videoUrls === 'string' ? [noteData.videoUrls] : []
+            categories: noteData.categories || [],
+            hashtags: noteData.hashtags || [],
+            videoUrls: noteData.videoUrls || []
         };
+        
+        // S'assurer que ce sont des tableaux
+        if (!Array.isArray(processedNoteData.categories)) {
+            processedNoteData.categories = [];
+        }
+        if (!Array.isArray(processedNoteData.hashtags)) {
+            processedNoteData.hashtags = [];
+        }
+        if (!Array.isArray(processedNoteData.videoUrls)) {
+            processedNoteData.videoUrls = [];
+        }
 
         const { id, title, content } = processedNoteData;
         let noteToSave;
