@@ -444,45 +444,30 @@ export async function saveNote(note) {
     }
 }
 
+// Paramètres de révision stockés en mémoire puisque la table settings n'existe pas
+const revisitSettingsMemory = {
+    section1: 7,  // valeur par défaut: 7 jours
+    section2: 14  // valeur par défaut: 14 jours
+};
+
 /**
- * Charge les paramètres de révision depuis Supabase
- * @returns {Promise<Object|null>} - Les paramètres de révision ou un objet par défaut
+ * Charge les paramètres de révision 
+ * @returns {Promise<Object>} - Les paramètres de révision (toujours depuis la mémoire)
  */
 export async function loadRevisitSettings() {
-    try {
-        const revisitSettings = await getSettings('revisitSettings', {
-            today: 0,
-            yesterday: 1,
-            week: 7,
-            month: 30,
-            threeMonths: 90
-        });
-        
-        return revisitSettings;
-    } catch (error) {
-        console.error('Erreur lors du chargement des paramètres de révision:', error);
-        // Retourne des valeurs par défaut en cas d'erreur
-        return {
-            today: 0,
-            yesterday: 1,
-            week: 7,
-            month: 30,
-            threeMonths: 90
-        };
-    }
+    // Puisque la table settings n'existe pas, on utilise les valeurs en mémoire
+    console.log('Chargement des paramètres de révision (depuis la mémoire)');
+    return Promise.resolve(revisitSettingsMemory);
 }
 
 /**
- * Sauvegarde les paramètres de révision dans Supabase
+ * Sauvegarde les paramètres de révision en mémoire
  * @param {Object} settings - Les paramètres de révision à sauvegarder
- * @returns {Promise<boolean>} - Vrai si la sauvegarde a réussi
+ * @returns {Promise<boolean>} - Toujours vrai
  */
 export async function saveRevisitSettings(settings) {
-    try {
-        const success = await saveSettings('revisitSettings', settings);
-        return success;
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde des paramètres de révision:', error);
-        return false;
-    }
+    // Stocker les valeurs en mémoire
+    console.log('Sauvegarde des paramètres de révision (en mémoire uniquement)');
+    Object.assign(revisitSettingsMemory, settings);
+    return Promise.resolve(true);
 }
