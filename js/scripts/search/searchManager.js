@@ -35,6 +35,13 @@ export function containsSearchTerm(text, searchTerm) {
 /**
  * Calcule un score de pertinence pour une note par rapport à une requête
  * Plus le score est élevé, plus la note est pertinente
+ * 
+ * Barème des points:
+ * - Catégories: 10 points par correspondance
+ * - Hashtags: 10 points par correspondance
+ * - Titre: 3 points par correspondance
+ * - Contenu: 1 point par correspondance
+ * 
  * @param {Object} note - La note à évaluer
  * @param {string} query - La requête de recherche
  * @returns {number} - Score de pertinence
@@ -48,81 +55,65 @@ export function computeRelevanceScore(note, query) {
     if (searchTerms.length === 0) return 0;
     
     let score = 0;
+    let scoreDetails = {
+        title: 0,
+        content: 0,
+        categories: 0,
+        hashtags: 0,
+        recency: 0
+    };
     
-    // Vérifier le titre (poids plus important)
+    // Vérifier le titre (3 points par correspondance)
     if (note.title) {
         const cleanedTitle = cleanText(note.title);
         
-        // Correspondance exacte du titre (très forte pertinence)
+        // Correspondance exacte du titre (bonus de pertinence)
         if (cleanedTitle === cleanedQuery) {
-            score += 50;
+            scoreDetails.title += 10;
         } 
-        // Le titre commence par la requête
-        else if (cleanedTitle.startsWith(cleanedQuery)) {
-            score += 30;
-        }
-        // Le titre contient la requête
-        else if (cleanedTitle.includes(cleanedQuery)) {
-            score += 20;
-        }
         
         // Vérifier chaque terme individuellement dans le titre
         for (const term of searchTerms) {
             if (cleanedTitle.includes(term)) {
-                score += 5;
+                scoreDetails.title += 3;
             }
         }
     }
     
-    // Vérifier le contenu
+    // Vérifier le contenu (1 point par correspondance)
     if (note.content) {
         const cleanedContent = cleanText(note.content);
-        
-        // Correspondance exacte du contenu
-        if (cleanedContent.includes(cleanedQuery)) {
-            score += 10;
-        }
         
         // Vérifier chaque terme individuellement dans le contenu
         for (const term of searchTerms) {
             const matches = cleanedContent.split(term).length - 1;
-            score += matches * 2; // Plus il y a d'occurrences, plus le score est élevé
+            scoreDetails.content += matches * 1; // 1 point par occurrence
         }
     }
     
-    // Vérifier les catégories (poids important)
+    // Vérifier les catégories (10 points par correspondance)
     if (note.categories && Array.isArray(note.categories)) {
         for (const category of note.categories) {
             const cleanedCategory = cleanText(category);
             
-            // Correspondance exacte avec une catégorie
-            if (cleanedCategory === cleanedQuery) {
-                score += 30;
-            }
-            
             // Vérifier chaque terme individuellement dans les catégories
             for (const term of searchTerms) {
                 if (cleanedCategory.includes(term)) {
-                    score += 10;
+                    scoreDetails.categories += 10;
                 }
             }
         }
     }
     
-    // Vérifier les hashtags
+    // Vérifier les hashtags (10 points par correspondance)
     if (note.hashtags && Array.isArray(note.hashtags)) {
         for (const hashtag of note.hashtags) {
             const cleanedHashtag = cleanText(hashtag);
             
-            // Correspondance exacte avec un hashtag
-            if (cleanedHashtag === cleanedQuery) {
-                score += 20;
-            }
-            
             // Vérifier chaque terme individuellement dans les hashtags
             for (const term of searchTerms) {
                 if (cleanedHashtag.includes(term)) {
-                    score += 8;
+                    scoreDetails.hashtags += 10;
                 }
             }
         }
@@ -134,11 +125,17 @@ export function computeRelevanceScore(note, query) {
         const now = new Date();
         const daysDifference = Math.floor((now - updatedDate) / (1000 * 60 * 60 * 24));
         
-        // Les notes plus récentes ont un bonus (max 5 points pour les notes de moins d'une semaine)
+        // Les notes plus récentes ont un petit bonus (max 2 points pour les notes de moins d'une semaine)
         if (daysDifference < 7) {
-            score += 5 - Math.floor(daysDifference / 2);
+            scoreDetails.recency = 2 - Math.floor(daysDifference / 4);
         }
     }
+    
+    // Calculer le score total
+    score = scoreDetails.title + scoreDetails.content + scoreDetails.categories + scoreDetails.hashtags + scoreDetails.recency;
+    
+    // Ajouter les détails du score à la note pour le débogage si nécessaire
+    note._scoreDetails = scoreDetails;
     
     return score;
 }

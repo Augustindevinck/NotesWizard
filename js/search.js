@@ -466,12 +466,40 @@ document.addEventListener('DOMContentLoaded', () => {
             const noteElement = createNoteElement(note, searchTerms);
             
             // Ajouter l'information de score si disponible (pour le débogage)
-            if (note.searchScore !== undefined) {
+            if (note.searchScore !== undefined || note.relevanceScore !== undefined) {
                 const scoreInfo = document.createElement('div');
                 scoreInfo.className = 'search-score';
-                const roundedScore = Math.round(note.searchScore);
+                
+                // Déterminer le score à afficher (selon la source)
+                const score = note.searchScore !== undefined ? note.searchScore : note.relevanceScore;
+                const roundedScore = Math.round(score);
+                
+                // Afficher le score arrondi
                 scoreInfo.textContent = `${roundedScore}`;
-                scoreInfo.title = `Score de pertinence: ${note.searchScore.toFixed(2)}`;
+                
+                // Construire le message détaillé pour le survol
+                let detailsMessage = `Score de pertinence: ${score.toFixed(2)}`;
+                
+                // Ajouter les détails des scores si disponibles
+                if (note._scoreDetails) {
+                    detailsMessage += `\nTitre: ${note._scoreDetails.title} pts`;
+                    detailsMessage += `\nContenu: ${note._scoreDetails.content} pts`;
+                    detailsMessage += `\nCatégories: ${note._scoreDetails.categories} pts`;
+                    detailsMessage += `\nHashtags: ${note._scoreDetails.hashtags} pts`;
+                    detailsMessage += `\nRécence: ${note._scoreDetails.recency} pts`;
+                }
+                
+                scoreInfo.title = detailsMessage;
+                
+                // Ajouter un style CSS pour indiquer la source des points
+                if (note._scoreDetails) {
+                    if (note._scoreDetails.categories > 0) {
+                        scoreInfo.classList.add('has-category-score');
+                    }
+                    if (note._scoreDetails.hashtags > 0) {
+                        scoreInfo.classList.add('has-hashtag-score');
+                    }
+                }
                 
                 // Ajouter l'info de score
                 noteElement.appendChild(scoreInfo);
