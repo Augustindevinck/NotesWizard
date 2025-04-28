@@ -476,63 +476,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Ajouter chaque résultat à la grille
         results.forEach(note => {
-            // Créer l'élément de note
+            // Marquer explicitement comme résultat de recherche
+            note.isSearchResult = true;
+            
+            // Créer l'élément de note (qui inclut maintenant le score grâce à notre modification)
             const noteElement = createNoteElement(note, searchTerms);
-            
-            // Ajouter l'information de score si disponible
-            const score = note.searchScore !== undefined ? note.searchScore : 
-                          (note.relevanceScore !== undefined ? note.relevanceScore : 0);
-            
-            if (score > 0) {
-                const scoreInfo = document.createElement('div');
-                scoreInfo.className = 'search-score';
-                
-                const roundedScore = Math.round(score);
-                scoreInfo.textContent = `${roundedScore}`;
-                
-                // Construire le message détaillé pour le survol
-                let detailsMessage = `Score: ${score.toFixed(1)} points`;
-                
-                // Ajouter les détails des scores si disponibles
-                if (note._scoreDetails) {
-                    const details = [];
-                    
-                    if (note._scoreDetails.title > 0) {
-                        details.push(`Titre: ${note._scoreDetails.title} pts`);
-                    }
-                    
-                    if (note._scoreDetails.content > 0) {
-                        details.push(`Contenu: ${note._scoreDetails.content} pts`);
-                    }
-                    
-                    if (note._scoreDetails.categories > 0) {
-                        details.push(`Catégories: ${note._scoreDetails.categories} pts`);
-                    }
-                    
-                    if (note._scoreDetails.hashtags > 0) {
-                        details.push(`Hashtags: ${note._scoreDetails.hashtags} pts`);
-                    }
-                    
-                    if (note._scoreDetails.recency > 0) {
-                        details.push(`Récence: ${note._scoreDetails.recency} pts`);
-                    }
-                    
-                    if (details.length > 0) {
-                        detailsMessage += '\n' + details.join('\n');
-                    }
-                    
-                    // Ajouter un style CSS pour indiquer la source des points
-                    if (note._scoreDetails.categories > 0) {
-                        scoreInfo.classList.add('has-category-score');
-                    }
-                    if (note._scoreDetails.hashtags > 0) {
-                        scoreInfo.classList.add('has-hashtag-score');
-                    }
-                }
-                
-                scoreInfo.title = detailsMessage;
-                noteElement.appendChild(scoreInfo);
-            }
             
             // Ajouter l'élément à la grille
             resultsGrid.appendChild(noteElement);

@@ -52,10 +52,59 @@ export function createNoteElement(note, currentSearchTerms) {
     const hashtagsHTML = note.hashtags && note.hashtags.length > 0
         ? note.hashtags.map(tag => `<span class="note-hashtag">#${tag}</span>`).join('')
         : '';
+        
+    // Générer le score pour les résultats de recherche
+    let scoreHTML = '';
+    if ((note.searchScore !== undefined || note.relevanceScore !== undefined) && 
+        (note.searchScore > 0 || note.relevanceScore > 0)) {
+        
+        const score = note.searchScore !== undefined ? note.searchScore : note.relevanceScore;
+        const roundedScore = Math.round(score);
+        
+        // Classes CSS pour le score
+        let scoreClasses = "search-score";
+        if (note._scoreDetails) {
+            if (note._scoreDetails.categories > 0) {
+                scoreClasses += " has-category-score";
+            }
+            if (note._scoreDetails.hashtags > 0) {
+                scoreClasses += " has-hashtag-score";
+            }
+        }
+        
+        // Titre détaillé pour l'infobulle
+        let detailsTitle = `Score: ${score.toFixed(1)} points`;
+        
+        if (note._scoreDetails) {
+            const details = [];
+            if (note._scoreDetails.title > 0) {
+                details.push(`Titre: ${note._scoreDetails.title} pts`);
+            }
+            if (note._scoreDetails.content > 0) {
+                details.push(`Contenu: ${note._scoreDetails.content} pts`);
+            }
+            if (note._scoreDetails.categories > 0) {
+                details.push(`Catégories: ${note._scoreDetails.categories} pts`);
+            }
+            if (note._scoreDetails.hashtags > 0) {
+                details.push(`Hashtags: ${note._scoreDetails.hashtags} pts`);
+            }
+            if (note._scoreDetails.recency > 0) {
+                details.push(`Récence: ${note._scoreDetails.recency} pts`);
+            }
+            
+            if (details.length > 0) {
+                detailsTitle += '\n' + details.join('\n');
+            }
+        }
+        
+        scoreHTML = `<div class="${scoreClasses}" title="${detailsTitle}">${roundedScore}</div>`;
+    }
 
-    // Add delete button and only the title (no content, categories or hashtags)
+    // Add delete button, score indicator, and only the title (no content, categories or hashtags)
     noteDiv.innerHTML = `
         <div class="delete-note" title="Supprimer cette note">&times;</div>
+        ${scoreHTML}
         <h3 class="note-title">${note.title || 'Sans titre'}</h3>
         <div class="note-date">Créée le ${formattedDate}</div>
     `;
