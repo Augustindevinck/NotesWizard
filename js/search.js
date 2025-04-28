@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * Exécute une recherche et affiche les résultats
      * @param {string} query - La requête de recherche
      */
-    function executeSearch(query) {
+    async function executeSearch(query) {
         if (!query.trim()) {
             searchResultsList.innerHTML = `
                 <div class="empty-search-results">
@@ -238,24 +238,124 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // Afficher un indicateur de chargement
+        searchResultsList.innerHTML = '<div class="loading">Recherche en cours...</div>';
+        
         // Enregistrer la dernière requête
         appState.lastQuery = query;
         
-        // Options de recherche
-        const options = {
-            searchInTitles: searchTitles.checked,
-            searchInContent: searchContent.checked,
-            searchInCategories: searchCategories.checked,
-            searchInTags: searchTags.checked,
-            categoryFilter: categoryFilter.value
-        };
-        
-        // Effectuer la recherche
-        const results = advancedSearch(query, options);
-        appState.searchResults = results;
-        
-        // Afficher les résultats
-        displaySearchResults(results, query);
+        try {
+            // Options de recherche
+            const options = {
+                searchInTitle: searchTitles.checked,
+                searchInContent: searchContent.checked,
+                searchInCategories: searchCategories.checked,
+                searchInHashtags: searchTags.checked,
+                filterByCategory: categoryFilter.value !== 'all' ? categoryFilter.value : null
+            };
+            
+            // Essayer d'abord avec Supabase
+            let results = [];
+            try {
+                // Recherche via Supabase
+                results = await searchNotes(query);
+                
+                // Appliquer un filtrage local supplémentaire si nécessaire selon les options
+                if (results && Array.isArray(results) && results.length > 0) {
+                    // Filtrage par catégorie
+                    if (options.filterByCategory) {
+                        results = results.filter(note => 
+                            note.categories && note.categories.includes(options.filterByCategory)
+                        );
+                    }
+                    
+                    // Si des options spécifiques sont désactivées, filtrer davantage
+                    if (!options.searchInTitle || !options.searchInContent || 
+                        !options.searchInCategories || !options.searchInHashtags) {
+                        
+                        const searchTerms = getCurrentSearchTerms(query);
+                        results = results.filter(note => {
+                            // Par défaut, aucune correspondance
+                            let matchesSearchCriteria = false;
+                            
+                            // Vérifier le titre si l'option est activée
+                            if (options.searchInTitle && note.title) {
+                                const cleanTitle = cleanText(note.title);
+                                for (const term of searchTerms) {
+                                    if (cleanTitle.includes(cleanText(term))) {
+                                        matchesSearchCriteria = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Vérifier le contenu si l'option est activée
+                            if (!matchesSearchCriteria && options.searchInContent && note.content) {
+                                const cleanContent = cleanText(note.content);
+                                for (const term of searchTerms) {
+                                    if (cleanContent.includes(cleanText(term))) {
+                                        matchesSearchCriteria = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Vérifier les catégories si l'option est activée
+                            if (!matchesSearchCriteria && options.searchInCategories && note.categories) {
+                                for (const category of note.categories) {
+                                    const cleanCategory = cleanText(category);
+                                    for (const term of searchTerms) {
+                                        if (cleanCategory.includes(cleanText(term))) {
+                                            matchesSearchCriteria = true;
+                                            break;
+                                        }
+                                    }
+                                    if (matchesSearchCriteria) break;
+                                }
+                            }
+                            
+                            // Vérifier les hashtags si l'option est activée
+                            if (!matchesSearchCriteria && options.searchInHashtags && note.hashtags) {
+                                for (const hashtag of note.hashtags) {
+                                    const cleanHashtag = cleanText(hashtag);
+                                    for (const term of searchTerms) {
+                                        if (cleanHashtag.includes(cleanText(term))) {
+                                            matchesSearchCriteria = true;
+                                            break;
+                                        }
+                                    }
+                                    if (matchesSearchCriteria) break;
+                                }
+                            }
+                            
+                            return matchesSearchCriteria;
+                        });
+                    }
+                }
+            } catch (supabaseError) {
+                console.error('Erreur lors de la recherche via Supabase:', supabaseError);
+                
+                // En cas d'erreur, utiliser la recherche locale
+                results = advancedSearch(query, options);
+            }
+            
+            // Si Supabase ne retourne rien ou une erreur s'est produite, utiliser la recherche locale
+            if (!results || results.length === 0) {
+                console.log('Pas de résultats via Supabase, utilisation de la recherche locale');
+                results = advancedSearch(query, options);
+            }
+            
+            // Afficher les résultats
+            appState.searchResults = results;
+            displaySearchResults(results, query);
+        } catch (error) {
+            console.error('Erreur lors de la recherche:', error);
+            searchResultsList.innerHTML = `
+                <div class="error-message">
+                    <p>Une erreur s'est produite lors de la recherche. Veuillez réessayer.</p>
+                </div>
+            `;
+        }
     }
 
     /**
@@ -530,14 +630,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const importExportHeaderBtn = document.querySelector('.header-button[title="Import/Export"]');
         if (importExportHeaderBtn) {
             importExportHeaderBtn.style.display = 'none';
-        }
-                    setTimeout(() => {
-                        importExportModal.style.display = 'none';
-                        if (importStatus) importStatus.textContent = '';
-                        importFile.value = '';
-                    }, 3000);
-                }, importStatus);
-            });
         }
     }
 });
