@@ -229,10 +229,24 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} query - La requête de recherche
      */
     async function executeSearch(query) {
-        if (!query.trim()) {
+        const trimmedQuery = query.trim();
+        
+        if (!trimmedQuery) {
             searchResultsList.innerHTML = `
                 <div class="empty-search-results">
                     <p>Veuillez entrer un terme de recherche</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Vérifier que la requête est suffisamment significative
+        // Ne pas rechercher si la requête est trop courte (moins de 2 caractères)
+        // sauf si elle contient un caractère spécial
+        if (trimmedQuery.length < 2 && !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(trimmedQuery)) {
+            searchResultsList.innerHTML = `
+                <div class="empty-search-results">
+                    <p>Veuillez entrer au moins 2 caractères pour la recherche</p>
                 </div>
             `;
             return;
@@ -242,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         searchResultsList.innerHTML = '<div class="loading">Recherche en cours...</div>';
         
         // Enregistrer la dernière requête
-        appState.lastQuery = query;
+        appState.lastQuery = trimmedQuery;
         
         try {
             // Options de recherche
@@ -465,23 +479,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Créer l'élément de note
             const noteElement = createNoteElement(note, searchTerms);
             
-            // Ajouter l'information de score si disponible (pour le débogage)
-            if ((note.searchScore !== undefined || note.relevanceScore !== undefined) && 
-                (note.searchScore > 0 || note.relevanceScore > 0)) {
+            // Ajouter l'information de score si disponible
+            const score = note.searchScore !== undefined ? note.searchScore : 
+                          (note.relevanceScore !== undefined ? note.relevanceScore : 0);
+            
+            if (score > 0) {
                 const scoreInfo = document.createElement('div');
                 scoreInfo.className = 'search-score';
                 
-                // Déterminer le score à afficher (selon la source)
-                const score = note.searchScore !== undefined ? note.searchScore : note.relevanceScore;
                 const roundedScore = Math.round(score);
-                
-                // Ne pas afficher le score s'il est trop faible ou nul
-                if (roundedScore <= 0) {
-                    // On n'affiche pas de score pour les résultats non pertinents
-                    continue;
-                }
-                
-                // Afficher le score arrondi
                 scoreInfo.textContent = `${roundedScore}`;
                 
                 // Construire le message détaillé pour le survol
@@ -514,12 +520,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (details.length > 0) {
                         detailsMessage += '\n' + details.join('\n');
                     }
-                }
-                
-                scoreInfo.title = detailsMessage;
-                
-                // Ajouter un style CSS pour indiquer la source des points
-                if (note._scoreDetails) {
+                    
+                    // Ajouter un style CSS pour indiquer la source des points
                     if (note._scoreDetails.categories > 0) {
                         scoreInfo.classList.add('has-category-score');
                     }
@@ -528,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
                 
-                // Ajouter l'info de score
+                scoreInfo.title = detailsMessage;
                 noteElement.appendChild(scoreInfo);
             }
             
