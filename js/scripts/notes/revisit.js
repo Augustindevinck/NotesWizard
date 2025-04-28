@@ -1,9 +1,9 @@
 /**
- * Gestion des sections de révision
+ * Gestion des sections de révision avec support Supabase
  */
 
 import { formatDate } from '../utils/domHelpers.js';
-import { saveRevisitSettings } from '../utils/localStorage.js';
+import { saveRevisitSettings } from '../utils/supabaseStorage.js';
 
 // Fonction pour créer un élément de note (sera injectée)
 let createNoteElementFn = null;
@@ -43,8 +43,9 @@ export function initRevisit(elements, settings) {
 /**
  * Affiche les sections de révision avec les notes correspondantes
  * @param {Array} notes - Le tableau des notes
+ * @returns {Promise<void>} - Promise qui se résout une fois les sections affichées
  */
-export function renderRevisitSections(notes) {
+export async function renderRevisitSections(notes) {
     if (!revisitContainers || !notes) {
         return;
     }
@@ -96,9 +97,17 @@ function updateRevisitTitles() {
  */
 function getNotesForDate(notes, targetDate) {
     return notes.filter(note => {
-        const noteDate = new Date(note.createdAt);
-        noteDate.setHours(0, 0, 0, 0);
-        return noteDate.getTime() === targetDate.getTime();
+        // S'assurer que la date est correctement formatée
+        if (!note.createdAt) return false;
+        
+        try {
+            const noteDate = new Date(note.createdAt);
+            noteDate.setHours(0, 0, 0, 0);
+            return noteDate.getTime() === targetDate.getTime();
+        } catch (error) {
+            console.error('Erreur lors de la conversion de la date:', error, note.createdAt);
+            return false;
+        }
     });
 }
 
@@ -119,7 +128,7 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
     container.dataset.allNotes = JSON.stringify(allNoteIds);
     
     if (notesToRender.length === 0) {
-        container.innerHTML = '';
+        container.innerHTML = '<div class="empty-section">Aucune note pour cette période</div>';
         if (showMoreBtn) {
             showMoreBtn.style.display = 'none';
         }
@@ -136,7 +145,12 @@ function renderRevisitNotesForSection(notesToRender, container, showMoreBtn, sec
     
     // Afficher ou masquer le bouton "Voir plus"
     if (showMoreBtn) {
-        showMoreBtn.style.display = notesToRender.length > 3 ? 'block' : 'none';
+        if (notesToRender.length > 3) {
+            showMoreBtn.style.display = 'block';
+            showMoreBtn.textContent = `Voir plus (${notesToRender.length - 3} restantes)`;
+        } else {
+            showMoreBtn.style.display = 'none';
+        }
     }
 }
 
@@ -164,23 +178,54 @@ function createRevisitNoteElement(note) {
 /**
  * Affiche plus de notes dans une section
  * @param {string} sectionId - Identifiant de la section
- * @param {Array} notesToShow - Notes à afficher
  */
-export function showMoreNotes(sectionId, notesToShow) {
+export function showMoreNotes(sectionId) {
     const container = revisitContainers[sectionId];
     const showMoreBtn = showMoreBtns[sectionId];
     
     if (!container || !showMoreBtn) return;
     
-    // Afficher toutes les notes
-    container.innerHTML = '';
-    notesToShow.forEach(note => {
-        const noteElement = createRevisitNoteElement(note);
-        container.appendChild(noteElement);
-    });
-    
-    // Masquer le bouton après avoir affiché toutes les notes
-    showMoreBtn.style.display = 'none';
+    // Récupérer les IDs de toutes les notes à afficher
+    try {
+        const allNoteIds = JSON.parse(container.dataset.allNotes || '[]');
+        if (!allNoteIds.length) return;
+        
+        // Récupérer toutes les notes depuis le DOM
+        const notesInDOM = container.querySelectorAll('.note-card');
+        
+        // Récupérer les IDs des notes déjà affichées
+        const visibleNoteIds = Array.from(notesInDOM).map(noteEl => noteEl.dataset.id);
+        
+        // Trouver les IDs des notes à afficher
+        const noteIdsToShow = allNoteIds.filter(id => !visibleNoteIds.includes(id));
+        
+        if (noteIdsToShow.length === 0) {
+            showMoreBtn.style.display = 'none';
+            return;
+        }
+        
+        // Récupérer les notes correspondantes
+        const notes = window.appState?.notes || [];
+        
+        if (!notes.length) {
+            showMoreBtn.style.display = 'none';
+            return;
+        }
+        
+        const notesToShow = notes.filter(note => noteIdsToShow.includes(note.id));
+        
+        // Ajouter les notes au conteneur
+        notesToShow.forEach(note => {
+            const noteElement = createRevisitNoteElement(note);
+            container.appendChild(noteElement);
+        });
+        
+        // Masquer le bouton après avoir affiché toutes les notes
+        showMoreBtn.style.display = 'none';
+    } catch (error) {
+        console.error('Erreur lors de l\'affichage de plus de notes:', error);
+        showMoreBtn.style.display = 'none';
+    }
 }
 
 /**
@@ -206,30 +251,38 @@ export function openDaysEditModal(sectionId) {
 /**
  * Sauvegarde les paramètres de révision
  * @param {Array} notes - Le tableau des notes pour mettre à jour les sections
+ * @returns {Promise<boolean>} - True si la sauvegarde a réussi
  */
-export function saveDaysSettings(notes) {
-    const daysEditModal = document.getElementById('days-edit-modal');
-    const daysInput = document.getElementById('days-input');
-    
-    if (!daysEditModal || !daysInput) return;
-    
-    const sectionId = daysEditModal.dataset.editingSection;
-    const newDaysValue = parseInt(daysInput.value);
-    
-    if (!sectionId || isNaN(newDaysValue) || newDaysValue < 1) {
-        alert('Valeur invalide');
-        return;
+export async function saveDaysSettings(notes) {
+    try {
+        const daysEditModal = document.getElementById('days-edit-modal');
+        const daysInput = document.getElementById('days-input');
+        
+        if (!daysEditModal || !daysInput) return false;
+        
+        const sectionId = daysEditModal.dataset.editingSection;
+        const newDaysValue = parseInt(daysInput.value);
+        
+        if (!sectionId || isNaN(newDaysValue) || newDaysValue < 1) {
+            alert('Valeur invalide');
+            return false;
+        }
+        
+        // Mettre à jour le paramètre
+        revisitSettings[sectionId] = newDaysValue;
+        
+        // Sauvegarder dans Supabase (ou localStorage en fallback)
+        await saveRevisitSettings(revisitSettings);
+        
+        // Mettre à jour les sections
+        await renderRevisitSections(notes);
+        
+        // Fermer le modal
+        daysEditModal.style.display = 'none';
+        
+        return true;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des paramètres de révision:', error);
+        return false;
     }
-    
-    // Mettre à jour le paramètre
-    revisitSettings[sectionId] = newDaysValue;
-    
-    // Sauvegarder dans localStorage
-    saveRevisitSettings(revisitSettings);
-    
-    // Mettre à jour les sections
-    renderRevisitSections(notes);
-    
-    // Fermer le modal
-    daysEditModal.style.display = 'none';
 }

@@ -14,6 +14,7 @@ import { initSupabaseSearchManager, performSearch, getCurrentSearchTerms, setCur
 import { navigateToPage } from './scripts/utils/navigation.js';
 import { loadNotes, saveNotes, loadRevisitSettings, saveRevisitSettings, syncNotes, deleteNote as deleteSupabaseNote } from './scripts/utils/supabaseStorage.js';
 import { initSupabaseFromConfig, showSupabaseConfigModal } from './scripts/utils/supabaseConfig.js';
+import { showMigrationModal } from './scripts/utils/migrationHelper.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', async () => {
@@ -80,6 +81,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         notes: [],
         allCategories: new Set()
     };
+    
+    // Exposer l'état de l'application pour les autres modules
+    window.appState = appState;
 
     // Initialisation de l'application
     await init();
@@ -453,6 +457,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 importStatus.className = 'status-error';
             }
         });
+        
+        // Bouton de migration des données
+        const migrationBtn = document.getElementById('migration-btn');
+        if (migrationBtn) {
+            migrationBtn.addEventListener('click', () => {
+                showMigrationModal(async (result) => {
+                    if (result.success) {
+                        // Recharger les notes après la migration
+                        appState.notes = await loadNotes();
+                        
+                        // Mettre à jour les catégories
+                        appState.allCategories.clear();
+                        appState.notes.forEach(note => {
+                            if (note.categories) {
+                                note.categories.forEach(category => appState.allCategories.add(category));
+                            }
+                        });
+                        
+                        // Actualiser l'affichage
+                        await renderRevisitSections(appState.notes);
+                    }
+                });
+            });
+        }
 
         // Édition du nombre de jours pour les sections de révision
         editDaysBtns.forEach((btn, index) => {

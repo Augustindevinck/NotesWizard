@@ -27,11 +27,16 @@
                 <div id="search-results" class="search-results"></div>
             </div>
             <div class="header-actions">
-                <button id="import-export-btn" class="icon-button">
+                <button id="import-export-btn" class="icon-button" title="Importer/Exporter">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="7 10 12 15 17 10"></polyline>
                         <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+                <button id="migration-btn" class="icon-button" title="Migrer les données locales vers Supabase">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M2 12h20M7 17l5 5 5-5M17 7l-5-5-5 5"/>
                     </svg>
                 </button>
             </div>
@@ -192,8 +197,33 @@
         }
         
         /* Styles pour le bouton de configuration Supabase */
-        #supabase-config-btn {
+        #supabase-config-btn, #migration-btn {
             margin-right: 10px;
+        }
+        
+        /* Styles pour le modal de migration */
+        #migration-modal .modal-content {
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        #migration-status {
+            margin: 15px 0;
+            min-height: 24px;
+        }
+        
+        #migration-status .success {
+            color: #2ecc71;
+            padding: 8px;
+            background-color: rgba(46, 204, 113, 0.1);
+            border-radius: 4px;
+        }
+        
+        #migration-status .error {
+            color: #e74c3c;
+            padding: 8px;
+            background-color: rgba(231, 76, 60, 0.1);
+            border-radius: 4px;
         }
     </style>
 </body>
