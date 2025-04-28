@@ -21,7 +21,8 @@ import {
     loadRevisitSettings, 
     saveRevisitSettings 
 } from './scripts/utils/supabaseService.js';
-import { showSupabaseConfigForm, loadSupabaseFromLocalStorage } from './scripts/utils/supabaseDirectConfig.js';
+import { showSupabaseConfigForm, loadSupabaseFromLocalStorage, isSupabaseConfigured } from './scripts/utils/supabaseDirectConfig.js';
+import { initializeTables } from './scripts/utils/supabaseClient.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', async () => {
@@ -108,14 +109,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!client) {
                 // Si Supabase n'est pas configuré, afficher le formulaire de configuration
                 showSupabaseConfigForm(async () => {
-                    // Une fois configuré, charger les notes
+                    // Une fois configuré, initialiser les tables dans Supabase
+                    await initializeTables();
+                    
+                    // Puis charger les notes
                     appState.notes = await fetchAllNotes();
                     
                     // Mise à jour de l'affichage
                     initializeUI();
                 });
             } else {
-                // Si Supabase est configuré, charger les notes
+                // Si Supabase est configuré, initialiser les tables si nécessaire
+                if (isSupabaseConfigured()) {
+                    try {
+                        await initializeTables();
+                        console.log('Tables Supabase initialisées');
+                    } catch (initError) {
+                        console.error('Erreur lors de l\'initialisation des tables:', initError);
+                    }
+                }
+                
+                // Charger les notes
                 appState.notes = await fetchAllNotes();
                 
                 // Initialiser l'interface
@@ -268,6 +282,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (supabaseConfigBtn) {
             supabaseConfigBtn.addEventListener('click', () => {
                 showSupabaseConfigForm(async () => {
+                    // Initialiser les tables dans Supabase
+                    try {
+                        await initializeTables();
+                        console.log('Tables Supabase initialisées');
+                    } catch (initError) {
+                        console.error('Erreur lors de l\'initialisation des tables:', initError);
+                    }
+                    
                     // Recharger les notes après la configuration
                     appState.notes = await fetchAllNotes();
                     
