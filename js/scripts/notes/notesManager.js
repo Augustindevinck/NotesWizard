@@ -2,7 +2,7 @@
  * Gestionnaire des notes (création, édition, suppression)
  */
 
-import { saveAllNotes, updateNote as saveSupabaseNote, deleteNote as deleteSupabaseNote } from '../utils/supabaseStorage.js';
+import { saveNotes, saveNote as saveSupabaseNote, deleteNote as deleteSupabaseNote } from '../utils/supabaseStorage.js';
 import { generateUniqueId, formatDate } from '../utils/domHelpers.js';
 
 // Variable pour stocker la fonction openNoteModal (à initialiser)

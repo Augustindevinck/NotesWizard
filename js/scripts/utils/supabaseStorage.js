@@ -381,3 +381,65 @@ export async function saveNotes(notes) {
         return false;
     }
 }
+
+/**
+ * Sauvegarde une seule note dans Supabase (création ou mise à jour)
+ * @param {Object} note - La note à sauvegarder
+ * @returns {Promise<Object|null>} - La note sauvegardée ou null en cas d'erreur
+ */
+export async function saveNote(note) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour sauvegarder la note');
+        return null;
+    }
+    
+    try {
+        // Préparer la note avec les données correctes
+        const noteToSave = {
+            ...note,
+            categories: Array.isArray(note.categories) ? note.categories : [],
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : [],
+            updatedAt: new Date().toISOString(),
+            createdAt: note.createdAt || new Date().toISOString()
+        };
+        
+        if (note.id) {
+            // C'est une mise à jour
+            const { data, error } = await client
+                .from('notes')
+                .update(noteToSave)
+                .eq('id', note.id)
+                .select()
+                .single();
+            
+            if (error) {
+                console.error(`Erreur lors de la mise à jour de la note ${note.id}:`, error);
+                return null;
+            }
+            
+            return data;
+        } else {
+            // C'est une création
+            noteToSave.id = generateUniqueId();
+            
+            const { data, error } = await client
+                .from('notes')
+                .insert(noteToSave)
+                .select()
+                .single();
+            
+            if (error) {
+                console.error('Erreur lors de la création de la note:', error);
+                return null;
+            }
+            
+            return data;
+        }
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la note:', error);
+        return null;
+    }
+}
