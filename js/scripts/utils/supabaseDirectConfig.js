@@ -3,28 +3,31 @@
  */
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { initSupabase, getClient, testConnection } from './supabaseClient.js';
 
-// Paramètres Supabase - À configurer selon votre projet
-const SUPABASE_URL = ''; // Exemple: 'https://your-project-id.supabase.co'
-const SUPABASE_KEY = ''; // Votre clé anon/public
-
-// Si les paramètres n'ont pas été configurés, permettre leur configuration
+/**
+ * Vérifie si Supabase est configuré en vérifiant les informations de connexion dans le localStorage
+ * @returns {boolean} - Vrai si Supabase est configuré
+ */
 export function isSupabaseConfigured() {
-    return SUPABASE_URL && SUPABASE_KEY;
+    const url = localStorage.getItem('supabase_url');
+    const key = localStorage.getItem('supabase_key');
+    return !!(url && key);
 }
-
-// Création du client Supabase
-let supabaseClient = null;
 
 /**
  * Initialise et retourne le client Supabase
  * @returns {Object|null} - Le client Supabase ou null si les paramètres ne sont pas configurés
  */
 export function getSupabaseClient() {
-    if (!supabaseClient && isSupabaseConfigured()) {
-        supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Vérifier si le client existe déjà
+    const existingClient = getClient();
+    if (existingClient) {
+        return existingClient;
     }
-    return supabaseClient;
+    
+    // Sinon, essayer de l'initialiser avec les paramètres du localStorage
+    return loadSupabaseFromLocalStorage();
 }
 
 /**
@@ -34,14 +37,12 @@ export function getSupabaseClient() {
  * @returns {Object} - Le client Supabase
  */
 export function configureSupabase(url, key) {
-    // Mettre à jour la configuration
+    // Mettre à jour la configuration dans le localStorage
     localStorage.setItem('supabase_url', url);
     localStorage.setItem('supabase_key', key);
     
-    // Créer un nouveau client
-    supabaseClient = createClient(url, key);
-    
-    return supabaseClient;
+    // Initialiser le client
+    return initSupabase(url, key);
 }
 
 /**
@@ -53,8 +54,7 @@ export function loadSupabaseFromLocalStorage() {
     const key = localStorage.getItem('supabase_key');
     
     if (url && key) {
-        supabaseClient = createClient(url, key);
-        return supabaseClient;
+        return initSupabase(url, key);
     }
     
     return null;
@@ -180,7 +180,7 @@ export function showSupabaseConfigForm(onConfigCallback) {
         
         // Sauvegarder la configuration
         if (saveBtn) {
-            saveBtn.addEventListener('click', () => {
+            saveBtn.addEventListener('click', async () => {
                 if (!urlInput || !keyInput || !statusDiv) return;
                 
                 const url = urlInput.value.trim();
@@ -193,7 +193,20 @@ export function showSupabaseConfigForm(onConfigCallback) {
                 
                 try {
                     // Configurer Supabase avec les nouveaux paramètres
-                    configureSupabase(url, key);
+                    const client = configureSupabase(url, key);
+                    
+                    if (!client) {
+                        statusDiv.innerHTML = '<p class="error">Erreur: Impossible d\'initialiser le client Supabase</p>';
+                        return;
+                    }
+                    
+                    // Tester la connexion pour s'assurer que tout fonctionne
+                    const isConnected = await testConnection();
+                    
+                    if (!isConnected) {
+                        statusDiv.innerHTML = '<p class="error">Erreur: Connexion échouée après configuration</p>';
+                        return;
+                    }
                     
                     statusDiv.innerHTML = '<p class="success">Configuration enregistrée avec succès</p>';
                     

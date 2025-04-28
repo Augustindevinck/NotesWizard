@@ -1,478 +1,326 @@
 /**
- * Fonctions utilitaires pour l'interaction avec Supabase
+ * Gestion du stockage avec Supabase
  */
 
-import { getSupabaseClient, isSupabaseInitialized } from './supabaseClient.js';
-import { loadNotes as loadLocalNotes, saveNotes as saveLocalNotes } from './localStorage.js';
+import { getClient } from './supabaseClient.js';
+import { generateUniqueId } from './domHelpers.js';
 
 /**
- * Charge les notes depuis Supabase
- * @returns {Promise<Array>} Tableau de notes
+ * Récupère toutes les notes depuis Supabase
+ * @returns {Promise<Array>} - Tableau de notes
  */
-export async function loadNotes() {
+export async function getAllNotes() {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour récupérer les notes');
+        return [];
+    }
+    
     try {
-        // Si Supabase n'est pas initialisé, utiliser le stockage local
-        if (!isSupabaseInitialized()) {
-            console.warn('Supabase non initialisé, utilisation du stockage local');
-            return loadLocalNotes();
-        }
-
-        const supabase = getSupabaseClient();
-        const { data, error } = await supabase
+        const { data, error } = await client
             .from('notes')
             .select('*')
             .order('createdAt', { ascending: false });
-
+        
         if (error) {
-            console.error('Erreur lors du chargement des notes de Supabase:', error);
-            // Fallback vers le stockage local
-            return loadLocalNotes();
+            console.error('Erreur lors de la récupération des notes:', error);
+            return [];
         }
-
-        // Transformation des données si nécessaire (par exemple, conversion des champs JSON stockés en tant que texte)
+        
+        // S'assurer que les tableaux sont correctement formatés
         return data.map(note => ({
             ...note,
-            categories: typeof note.categories === 'string' ? JSON.parse(note.categories) : (note.categories || []),
-            hashtags: typeof note.hashtags === 'string' ? JSON.parse(note.hashtags) : (note.hashtags || []),
-            videoUrls: typeof note.videoUrls === 'string' ? JSON.parse(note.videoUrls) : (note.videoUrls || []),
+            categories: Array.isArray(note.categories) ? note.categories : [],
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : []
         }));
     } catch (error) {
-        console.error('Erreur lors du chargement des notes:', error);
-        // En cas d'erreur, essayer de récupérer les notes depuis le stockage local
-        return loadLocalNotes();
+        console.error('Erreur lors de la récupération des notes:', error);
+        return [];
     }
 }
 
 /**
- * Sauvegarde une note dans Supabase
- * @param {Object} note - Note à sauvegarder
- * @returns {Promise<Object>} La note sauvegardée
+ * Récupère une note spécifique par son ID
+ * @param {string} id - ID de la note
+ * @returns {Promise<Object|null>} - Note trouvée ou null
  */
-export async function saveNote(note) {
+export async function getNote(id) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour récupérer la note');
+        return null;
+    }
+    
     try {
-        // Si Supabase n'est pas initialisé, sauvegarder localement
-        if (!isSupabaseInitialized()) {
-            console.warn('Supabase non initialisé, sauvegarde locale uniquement');
-            const notes = loadLocalNotes();
-            const existingIndex = notes.findIndex(n => n.id === note.id);
-            
-            if (existingIndex >= 0) {
-                notes[existingIndex] = note;
-            } else {
-                notes.push(note);
-            }
-            
-            saveLocalNotes(notes);
-            return note;
-        }
-
-        const supabase = getSupabaseClient();
+        const { data, error } = await client
+            .from('notes')
+            .select('*')
+            .eq('id', id)
+            .single();
         
-        // Préparer la note pour la sauvegarde
-        const noteToSave = {
-            ...note,
-            // Convertir les tableaux en JSON si ce n'est pas déjà fait
-            categories: Array.isArray(note.categories) ? JSON.stringify(note.categories) : note.categories,
-            hashtags: Array.isArray(note.hashtags) ? JSON.stringify(note.hashtags) : note.hashtags,
-            videoUrls: Array.isArray(note.videoUrls) ? JSON.stringify(note.videoUrls) : note.videoUrls,
+        if (error) {
+            console.error(`Erreur lors de la récupération de la note ${id}:`, error);
+            return null;
+        }
+        
+        // S'assurer que les tableaux sont correctement formatés
+        return {
+            ...data,
+            categories: Array.isArray(data.categories) ? data.categories : [],
+            hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
+            videoUrls: Array.isArray(data.videoUrls) ? data.videoUrls : []
         };
-
-        // Upsert: insertion ou mise à jour si existe déjà
-        const { data, error } = await supabase
-            .from('notes')
-            .upsert(noteToSave)
-            .select();
-
-        if (error) {
-            console.error('Erreur lors de la sauvegarde de la note dans Supabase:', error);
-            throw error;
-        }
-
-        // Sauvegarder aussi localement pour la résilience
-        const localNotes = loadLocalNotes();
-        const existingIndex = localNotes.findIndex(n => n.id === note.id);
-        
-        if (existingIndex >= 0) {
-            localNotes[existingIndex] = note;
-        } else {
-            localNotes.push(note);
-        }
-        
-        saveLocalNotes(localNotes);
-
-        return data[0] || note;
     } catch (error) {
-        console.error('Erreur lors de la sauvegarde de la note:', error);
-        
-        // En cas d'erreur, sauvegarder uniquement dans le stockage local
-        const notes = loadLocalNotes();
-        const existingIndex = notes.findIndex(n => n.id === note.id);
-        
-        if (existingIndex >= 0) {
-            notes[existingIndex] = note;
-        } else {
-            notes.push(note);
-        }
-        
-        saveLocalNotes(notes);
-        return note;
+        console.error(`Erreur lors de la récupération de la note ${id}:`, error);
+        return null;
     }
 }
 
 /**
- * Sauvegarde plusieurs notes dans Supabase
- * @param {Array} notes - Tableau de notes à sauvegarder
+ * Crée une nouvelle note dans Supabase
+ * @param {Object} noteData - Données de la note
+ * @returns {Promise<Object|null>} - Note créée ou null
  */
-export async function saveNotes(notes) {
+export async function createNote(noteData) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour créer la note');
+        return null;
+    }
+    
     try {
-        // Toujours sauvegarder localement pour la résilience
-        saveLocalNotes(notes);
+        // Préparer les données de la note
+        const newNote = {
+            id: generateUniqueId(),
+            title: noteData.title || '',
+            content: noteData.content || '',
+            categories: Array.isArray(noteData.categories) ? noteData.categories : [],
+            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
+            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
         
-        // Si Supabase n'est pas initialisé, s'arrêter ici
-        if (!isSupabaseInitialized()) {
-            console.warn('Supabase non initialisé, sauvegarde locale uniquement');
-            return;
-        }
-
-        const supabase = getSupabaseClient();
-        
-        // Préparer les notes pour la sauvegarde
-        const notesToSave = notes.map(note => ({
-            ...note,
-            // Convertir les tableaux en JSON si ce n'est pas déjà fait
-            categories: Array.isArray(note.categories) ? JSON.stringify(note.categories) : note.categories,
-            hashtags: Array.isArray(note.hashtags) ? JSON.stringify(note.hashtags) : note.hashtags,
-            videoUrls: Array.isArray(note.videoUrls) ? JSON.stringify(note.videoUrls) : note.videoUrls,
-        }));
-
-        // Utiliser upsert pour la sauvegarde en masse
-        const { error } = await supabase
+        const { data, error } = await client
             .from('notes')
-            .upsert(notesToSave);
-
+            .insert(newNote)
+            .select()
+            .single();
+        
         if (error) {
-            console.error('Erreur lors de la sauvegarde des notes dans Supabase:', error);
-            throw error;
+            console.error('Erreur lors de la création de la note:', error);
+            return null;
         }
+        
+        return data;
     } catch (error) {
-        console.error('Erreur lors de la sauvegarde des notes:', error);
-        // En cas d'erreur, les notes sont déjà sauvegardées localement
+        console.error('Erreur lors de la création de la note:', error);
+        return null;
     }
 }
 
 /**
- * Supprime une note de Supabase
- * @param {string} noteId - ID de la note à supprimer
- * @returns {Promise<boolean>} True si la suppression a réussi
+ * Met à jour une note existante dans Supabase
+ * @param {string} id - ID de la note à mettre à jour
+ * @param {Object} noteData - Nouvelles données de la note
+ * @returns {Promise<Object|null>} - Note mise à jour ou null
  */
-export async function deleteNote(noteId) {
+export async function updateNote(id, noteData) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour mettre à jour la note');
+        return null;
+    }
+    
     try {
-        // Supprimer localement d'abord pour la résilience
-        const localNotes = loadLocalNotes();
-        const updatedNotes = localNotes.filter(note => note.id !== noteId);
-        saveLocalNotes(updatedNotes);
+        // Préparer les données de mise à jour
+        const updates = {
+            ...noteData,
+            updatedAt: new Date().toISOString(),
+            categories: Array.isArray(noteData.categories) ? noteData.categories : [],
+            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
+            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : []
+        };
         
-        // Si Supabase n'est pas initialisé, s'arrêter ici
-        if (!isSupabaseInitialized()) {
-            console.warn('Supabase non initialisé, suppression locale uniquement');
-            return true;
+        const { data, error } = await client
+            .from('notes')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+        
+        if (error) {
+            console.error(`Erreur lors de la mise à jour de la note ${id}:`, error);
+            return null;
         }
+        
+        return data;
+    } catch (error) {
+        console.error(`Erreur lors de la mise à jour de la note ${id}:`, error);
+        return null;
+    }
+}
 
-        const supabase = getSupabaseClient();
-        const { error } = await supabase
+/**
+ * Supprime une note dans Supabase
+ * @param {string} id - ID de la note à supprimer
+ * @returns {Promise<boolean>} - Vrai si la suppression a réussi
+ */
+export async function deleteNote(id) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour supprimer la note');
+        return false;
+    }
+    
+    try {
+        const { error } = await client
             .from('notes')
             .delete()
-            .eq('id', noteId);
-
+            .eq('id', id);
+        
         if (error) {
-            console.error('Erreur lors de la suppression de la note dans Supabase:', error);
+            console.error(`Erreur lors de la suppression de la note ${id}:`, error);
             return false;
         }
-
+        
         return true;
     } catch (error) {
-        console.error('Erreur lors de la suppression de la note:', error);
+        console.error(`Erreur lors de la suppression de la note ${id}:`, error);
         return false;
     }
 }
 
 /**
  * Recherche des notes dans Supabase
- * @param {string} query - Requête de recherche
- * @returns {Promise<Array>} Tableau de notes correspondant à la recherche
+ * @param {string} query - Terme de recherche
+ * @returns {Promise<Array>} - Notes correspondant à la recherche
  */
 export async function searchNotes(query) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour la recherche');
+        return [];
+    }
+    
     try {
-        // Si Supabase n'est pas initialisé, rechercher localement
-        if (!isSupabaseInitialized()) {
-            console.warn('Supabase non initialisé, recherche locale uniquement');
-            // La recherche locale sera effectuée par le gestionnaire de recherche
-            return null;
-        }
-
-        const supabase = getSupabaseClient();
-        
-        // Utiliser la fonction de recherche full-text de Postgres si disponible
-        const { data, error } = await supabase
+        // Format de requête pour une recherche simple (correspondance partielle)
+        const { data, error } = await client
             .from('notes')
             .select('*')
-            .textSearch('content', query, {
-                config: 'french',  // Utiliser la configuration française pour la recherche
-                type: 'plain'      // Utiliser la recherche en texte brut
-            });
-
+            .or(`title.ilike.%${query}%,content.ilike.%${query}%`);
+        
         if (error) {
-            console.error('Erreur lors de la recherche des notes dans Supabase:', error);
-            return null;  // La recherche locale sera utilisée comme fallback
+            console.error('Erreur lors de la recherche des notes:', error);
+            return [];
         }
-
-        // Transformation des données si nécessaire
+        
+        // S'assurer que les tableaux sont correctement formatés
         return data.map(note => ({
             ...note,
-            categories: typeof note.categories === 'string' ? JSON.parse(note.categories) : (note.categories || []),
-            hashtags: typeof note.hashtags === 'string' ? JSON.parse(note.hashtags) : (note.hashtags || []),
-            videoUrls: typeof note.videoUrls === 'string' ? JSON.parse(note.videoUrls) : (note.videoUrls || []),
+            categories: Array.isArray(note.categories) ? note.categories : [],
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : []
         }));
     } catch (error) {
         console.error('Erreur lors de la recherche des notes:', error);
-        return null;  // La recherche locale sera utilisée comme fallback
+        return [];
     }
 }
 
 /**
- * Synchronise les notes locales avec Supabase
- * Utile lors de la connexion initiale ou après une période hors ligne
- * @returns {Promise<boolean>} True si la synchronisation a réussi
+ * Sauvegarde un paramètre dans Supabase
+ * @param {string} key - Clé du paramètre
+ * @param {any} value - Valeur du paramètre
+ * @returns {Promise<boolean>} - Vrai si la sauvegarde a réussi
  */
-export async function syncNotes() {
+export async function saveSettings(key, value) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour sauvegarder les paramètres');
+        return false;
+    }
+    
     try {
-        // Si Supabase n'est pas initialisé, impossible de synchroniser
-        if (!isSupabaseInitialized()) {
-            console.warn('Supabase non initialisé, impossible de synchroniser');
+        // Vérifier si le paramètre existe déjà
+        const { data, error } = await client
+            .from('settings')
+            .select('*')
+            .eq('key', key)
+            .single();
+        
+        if (error && error.code !== 'PGRST116') { // PGRST116 = "No rows found"
+            console.error(`Erreur lors de la vérification du paramètre ${key}:`, error);
             return false;
         }
-
-        // Charger les notes locales
-        const localNotes = loadLocalNotes();
         
-        // Charger les notes de Supabase
-        const supabase = getSupabaseClient();
-        const { data: remoteNotes, error } = await supabase
-            .from('notes')
-            .select('*');
-
-        if (error) {
-            console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
-            return false;
-        }
-
-        // Mapper les notes distantes pour faciliter la comparaison
-        const remoteNotesMap = new Map();
-        remoteNotes.forEach(note => {
-            // Transformer les données si nécessaire
-            const transformedNote = {
-                ...note,
-                categories: typeof note.categories === 'string' ? JSON.parse(note.categories) : (note.categories || []),
-                hashtags: typeof note.hashtags === 'string' ? JSON.parse(note.hashtags) : (note.hashtags || []),
-                videoUrls: typeof note.videoUrls === 'string' ? JSON.parse(note.videoUrls) : (note.videoUrls || []),
-            };
-            remoteNotesMap.set(note.id, transformedNote);
-        });
-
-        // Notes à ajouter ou mettre à jour dans Supabase
-        const notesToUpsert = [];
-        
-        // Comparer les notes locales avec les notes distantes
-        localNotes.forEach(localNote => {
-            const remoteNote = remoteNotesMap.get(localNote.id);
+        if (!data) {
+            // Le paramètre n'existe pas, le créer
+            const { error: insertError } = await client
+                .from('settings')
+                .insert({ key, value });
             
-            // Si la note n'existe pas à distance ou si la version locale est plus récente
-            if (!remoteNote || new Date(localNote.updatedAt) > new Date(remoteNote.updatedAt)) {
-                notesToUpsert.push({
-                    ...localNote,
-                    // Convertir les tableaux en JSON
-                    categories: JSON.stringify(localNote.categories || []),
-                    hashtags: JSON.stringify(localNote.hashtags || []),
-                    videoUrls: JSON.stringify(localNote.videoUrls || []),
-                });
+            if (insertError) {
+                console.error(`Erreur lors de la création du paramètre ${key}:`, insertError);
+                return false;
             }
-        });
-
-        // Notes à ajouter localement
-        const notesToAddLocally = [];
+        } else {
+            // Le paramètre existe, le mettre à jour
+            const { error: updateError } = await client
+                .from('settings')
+                .update({ value })
+                .eq('key', key);
+            
+            if (updateError) {
+                console.error(`Erreur lors de la mise à jour du paramètre ${key}:`, updateError);
+                return false;
+            }
+        }
         
-        // Identifier les notes distantes qui n'existent pas localement
-        remoteNotesMap.forEach((remoteNote, id) => {
-            const exists = localNotes.some(note => note.id === id);
-            if (!exists) {
-                notesToAddLocally.push(remoteNote);
-            }
-        });
-
-        // Effectuer la synchronisation
-
-        // 1. Mettre à jour Supabase avec les nouvelles notes locales
-        if (notesToUpsert.length > 0) {
-            const { error: upsertError } = await supabase
-                .from('notes')
-                .upsert(notesToUpsert);
-
-            if (upsertError) {
-                console.error('Erreur lors de la mise à jour des notes dans Supabase:', upsertError);
-            }
-        }
-
-        // 2. Ajouter les notes distantes manquantes au stockage local
-        if (notesToAddLocally.length > 0) {
-            const updatedLocalNotes = [...localNotes, ...notesToAddLocally];
-            saveLocalNotes(updatedLocalNotes);
-        }
-
         return true;
     } catch (error) {
-        console.error('Erreur lors de la synchronisation des notes:', error);
+        console.error(`Erreur lors de la sauvegarde du paramètre ${key}:`, error);
         return false;
     }
 }
 
 /**
- * Charge les paramètres de révision depuis Supabase ou localStorage
- * @returns {Promise<Object>} Paramètres de révision
+ * Récupère un paramètre depuis Supabase
+ * @param {string} key - Clé du paramètre
+ * @param {any} defaultValue - Valeur par défaut si le paramètre n'existe pas
+ * @returns {Promise<any>} - Valeur du paramètre
  */
-export async function loadRevisitSettings() {
+export async function getSettings(key, defaultValue = null) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour récupérer les paramètres');
+        return defaultValue;
+    }
+    
     try {
-        // Si Supabase n'est pas initialisé, utiliser le stockage local
-        if (!isSupabaseInitialized()) {
-            return JSON.parse(localStorage.getItem('revisitSettings') || '{"section1": 7, "section2": 14}');
-        }
-
-        const supabase = getSupabaseClient();
-        const { data, error } = await supabase
+        const { data, error } = await client
             .from('settings')
-            .select('*')
-            .eq('key', 'revisitSettings')
+            .select('value')
+            .eq('key', key)
             .single();
-
+        
         if (error) {
-            // Si la configuration n'existe pas encore dans Supabase, utiliser la configuration locale
-            if (error.code === 'PGRST116') { // "No rows found" error
-                const localSettings = JSON.parse(localStorage.getItem('revisitSettings') || '{"section1": 7, "section2": 14}');
-                // Créer la configuration dans Supabase pour la prochaine fois
-                await supabase
-                    .from('settings')
-                    .insert({
-                        key: 'revisitSettings',
-                        value: localSettings
-                    });
-                return localSettings;
-            }
-            
-            console.error('Erreur lors du chargement des paramètres de révision:', error);
-            return JSON.parse(localStorage.getItem('revisitSettings') || '{"section1": 7, "section2": 14}');
+            console.error(`Erreur lors de la récupération du paramètre ${key}:`, error);
+            return defaultValue;
         }
-
+        
         return data.value;
     } catch (error) {
-        console.error('Erreur lors du chargement des paramètres de révision:', error);
-        return JSON.parse(localStorage.getItem('revisitSettings') || '{"section1": 7, "section2": 14}');
-    }
-}
-
-/**
- * Sauvegarde les paramètres de révision dans Supabase et localStorage
- * @param {Object} settings - Paramètres de révision à sauvegarder
- */
-export async function saveRevisitSettings(settings) {
-    try {
-        // Sauvegarder localement en premier pour la résilience
-        localStorage.setItem('revisitSettings', JSON.stringify(settings));
-        
-        // Si Supabase n'est pas initialisé, s'arrêter ici
-        if (!isSupabaseInitialized()) {
-            return;
-        }
-
-        const supabase = getSupabaseClient();
-        
-        // Essayer de mettre à jour d'abord
-        const { error: updateError } = await supabase
-            .from('settings')
-            .update({ value: settings })
-            .eq('key', 'revisitSettings');
-
-        // Si la mise à jour échoue (probablement parce que la clé n'existe pas), insérer
-        if (updateError) {
-            const { error: insertError } = await supabase
-                .from('settings')
-                .insert({
-                    key: 'revisitSettings',
-                    value: settings
-                });
-
-            if (insertError) {
-                console.error('Erreur lors de l\'insertion des paramètres de révision:', insertError);
-            }
-        }
-    } catch (error) {
-        console.error('Erreur lors de la sauvegarde des paramètres de révision:', error);
-    }
-}
-
-/**
- * Importe des notes depuis un fichier JSON et les synchronise avec Supabase
- * @param {Array} importedNotes - Notes importées depuis un fichier JSON
- * @returns {Promise<boolean>} True si l'importation a réussi
- */
-export async function importNotesFromJson(importedNotes) {
-    try {
-        // Si Supabase n'est pas initialisé, utiliser uniquement le stockage local
-        if (!isSupabaseInitialized()) {
-            console.warn('Supabase non initialisé, importation locale uniquement');
-            // Importer localement
-            const localNotes = loadLocalNotes();
-            const combinedNotes = [...localNotes, ...importedNotes];
-            saveLocalNotes(combinedNotes);
-            return true;
-        }
-
-        // Préparer les notes pour la sauvegarde dans Supabase
-        const notesToSave = importedNotes.map(note => ({
-            ...note,
-            // Convertir les tableaux en JSON si ce n'est pas déjà fait
-            categories: Array.isArray(note.categories) ? JSON.stringify(note.categories) : note.categories,
-            hashtags: Array.isArray(note.hashtags) ? JSON.stringify(note.hashtags) : note.hashtags,
-            videoUrls: Array.isArray(note.videoUrls) ? JSON.stringify(note.videoUrls) : note.videoUrls,
-        }));
-
-        const supabase = getSupabaseClient();
-        const { error } = await supabase
-            .from('notes')
-            .upsert(notesToSave);
-
-        if (error) {
-            console.error('Erreur lors de l\'importation des notes dans Supabase:', error);
-            
-            // En cas d'erreur, sauvegarder uniquement en local
-            const localNotes = loadLocalNotes();
-            const combinedNotes = [...localNotes, ...importedNotes];
-            saveLocalNotes(combinedNotes);
-        }
-
-        // Synchroniser pour s'assurer que tout est cohérent
-        await syncNotes();
-        return true;
-    } catch (error) {
-        console.error('Erreur lors de l\'importation des notes:', error);
-        
-        // En cas d'erreur, essayer de sauvegarder localement
-        try {
-            const localNotes = loadLocalNotes();
-            const combinedNotes = [...localNotes, ...importedNotes];
-            saveLocalNotes(combinedNotes);
-            return true;
-        } catch (localError) {
-            console.error('Erreur lors de la sauvegarde locale des notes importées:', localError);
-            return false;
-        }
+        console.error(`Erreur lors de la récupération du paramètre ${key}:`, error);
+        return defaultValue;
     }
 }
