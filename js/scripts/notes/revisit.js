@@ -3,7 +3,7 @@
  */
 
 import { formatDate } from '../utils/domHelpers.js';
-import { saveRevisitSettings } from '../utils/supabaseStorage.js';
+import { saveRevisitSettings } from '../utils/supabaseService.js';
 
 // Fonction pour créer un élément de note (sera injectée)
 let createNoteElementFn = null;
