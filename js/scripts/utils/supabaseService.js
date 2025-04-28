@@ -142,21 +142,32 @@ export async function updateNote(noteId, noteData) {
  */
 export async function deleteNote(noteId) {
     try {
-        // Supprimer d'abord de Supabase
+        // Supprimer de Supabase si configuré
         if (isSupabaseConfigured()) {
-            await supabaseStorage.deleteNote(noteId);
+            // Vérifier la connexion anonyme
+            const client = getClient();
+            if (client) {
+                const { data: { session } } = await client.auth.getSession();
+                if (!session) {
+                    console.log('Connexion anonyme pour la suppression...');
+                    await client.auth.signInAnonymously();
+                }
+            }
+            
+            // Supprimer de Supabase
+            const success = await supabaseStorage.deleteNote(noteId);
+            if (!success) {
+                throw new Error('Échec de la suppression dans Supabase');
+            }
         }
         
-        // Ensuite supprimer du localStorage et forcer un rechargement des données
+        // Supprimer du localStorage
         localStorage.deleteNote(noteId);
-        localStorage.clearAllData(); // Vider le cache local
         
-        // Recharger depuis Supabase
-        const freshNotes = await fetchAllNotes();
-        localStorage.saveAllNotes(freshNotes);
-
-        // Vérifier si Supabase est configuré
-        if (isSupabaseConfigured()) {
+        // Forcer une synchronisation
+        await syncWithSupabase();
+        
+        return true;
             try {
                 // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
                 const client = getClient();
