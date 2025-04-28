@@ -137,15 +137,17 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
  */
 export async function saveNote(noteData, notes = [], callback = null) {
     try {
+        console.log('Début de la sauvegarde de la note...');
+        
+        // Normaliser toutes les propriétés pour s'assurer qu'elles sont correctement formatées
         // S'assurer que les propriétés sont des tableaux
         const processedNoteData = {
             ...noteData,
-            categories: Array.isArray(noteData.categories) ? noteData.categories : 
-                       typeof noteData.categories === 'string' ? [noteData.categories] : [],
-            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : 
-                     typeof noteData.hashtags === 'string' ? [noteData.hashtags] : [],
-            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : 
-                      typeof noteData.videoUrls === 'string' ? [noteData.videoUrls] : []
+            title: noteData.title || '',
+            content: noteData.content || '',
+            categories: normalizeArray(noteData.categories),
+            hashtags: normalizeArray(noteData.hashtags),
+            videoUrls: normalizeArray(noteData.videoUrls)
         };
 
         const { id, title, content } = processedNoteData;
@@ -153,65 +155,117 @@ export async function saveNote(noteData, notes = [], callback = null) {
 
         if (id) {
             // Mise à jour d'une note existante
+            console.log(`Mise à jour de la note existante avec ID: ${id}`);
             const existingNote = notes.find(note => note.id === id);
             if (existingNote) {
                 existingNote.title = title;
                 existingNote.content = content;
-                existingNote.categories = processedNoteData.categories || [];
-                existingNote.hashtags = processedNoteData.hashtags || [];
-                existingNote.videoUrls = processedNoteData.videoUrls || [];
+                existingNote.categories = processedNoteData.categories;
+                existingNote.hashtags = processedNoteData.hashtags;
+                existingNote.videoUrls = processedNoteData.videoUrls;
                 existingNote.updatedAt = new Date().toISOString();
 
                 noteToSave = existingNote;
+                console.log('Note existante mise à jour dans le tableau local');
             } else {
                 // La note n'existe pas dans l'état local, créer une nouvelle note avec l'ID fourni
+                console.log(`Création d'une nouvelle note avec ID fourni: ${id}`);
                 noteToSave = {
                     id,
                     title,
                     content,
-                    categories: processedNoteData.categories || [],
-                    hashtags: processedNoteData.hashtags || [],
-                    videoUrls: processedNoteData.videoUrls || [],
+                    categories: processedNoteData.categories,
+                    hashtags: processedNoteData.hashtags,
+                    videoUrls: processedNoteData.videoUrls,
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
                 notes.push(noteToSave);
+                console.log('Nouvelle note avec ID fourni ajoutée au tableau local');
             }
         } else {
             // Création d'une nouvelle note
+            const newId = generateUniqueId();
+            console.log(`Création d'une nouvelle note avec ID généré: ${newId}`);
             noteToSave = {
-                id: generateUniqueId(),
+                id: newId,
                 title,
                 content,
-                categories: processedNoteData.categories || [],
-                hashtags: processedNoteData.hashtags || [],
-                videoUrls: processedNoteData.videoUrls || [],
+                categories: processedNoteData.categories,
+                hashtags: processedNoteData.hashtags,
+                videoUrls: processedNoteData.videoUrls,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
             notes.push(noteToSave);
+            console.log('Nouvelle note ajoutée au tableau local');
         }
 
+        // Vérification et log des catégories avant sauvegarde
+        console.log('Catégories avant sauvegarde Supabase:', 
+            Array.isArray(noteToSave.categories) ? noteToSave.categories : 'Pas un tableau');
+
         // Sauvegarder la note dans Supabase
+        console.log('Sauvegarde de la note dans Supabase...');
         const savedNote = await saveSupabaseNote(noteToSave);
 
-        // Si l'opération a échoué, la fonction saveSupabaseNote aurait déjà lancé une exception
+        if (!savedNote) {
+            console.error('Échec de la sauvegarde dans Supabase, mais la note est sauvegardée localement');
+        } else {
+            console.log('Note sauvegardée avec succès dans Supabase avec ID:', savedNote.id);
+        }
 
         // Mettre à jour les sections de révision si la fonction est disponible
         if (renderRevisitSectionsFn) {
+            console.log('Mise à jour des sections de révision...');
             await renderRevisitSectionsFn(notes);
         }
 
         // Exécuter le callback si fourni
         if (callback) {
+            console.log('Exécution du callback après sauvegarde...');
             callback();
         }
 
-        return savedNote.id || notes[notes.length - 1].id;
+        console.log('Sauvegarde de la note terminée avec succès');
+        return savedNote?.id || noteToSave.id;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde de la note:', error);
         return null;
     }
+}
+
+/**
+ * Normalise un tableau ou une valeur en un tableau
+ * @param {any} value - Valeur à normaliser
+ * @returns {Array} - Tableau normalisé
+ */
+function normalizeArray(value) {
+    if (!value) return [];
+    
+    if (Array.isArray(value)) {
+        return value.filter(Boolean); // Filtrer les valeurs falsy
+    }
+    
+    if (typeof value === 'string') {
+        // Si c'est une chaîne qui ressemble à un tableau JSON, essayer de la parser
+        if (value.startsWith('[') && value.endsWith(']')) {
+            try {
+                const parsed = JSON.parse(value);
+                if (Array.isArray(parsed)) {
+                    return parsed.filter(Boolean);
+                }
+            } catch (e) {
+                // Si le parsing échoue, traiter comme une chaîne simple
+                console.warn('Erreur lors du parsing d\'une chaîne en tableau:', e);
+            }
+        }
+        // Retourner un tableau avec la chaîne comme élément unique
+        return [value];
+    }
+    
+    // Pour les autres types, essayer de les convertir en chaîne puis les mettre dans un tableau
+    return [String(value)];
 }
 
 /**

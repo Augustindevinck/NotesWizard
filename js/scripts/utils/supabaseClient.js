@@ -6,62 +6,124 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 // Variable pour stocker le client Supabase
 let supabaseClient = null;
+// Variable pour stocker l'état de connexion
+let isConnected = false;
 
 /**
  * Initialise le client Supabase avec les paramètres donnés
  * @param {string} url - URL du projet Supabase
  * @param {string} key - Clé API publique/anon
- * @returns {Object} - Client Supabase
+ * @returns {Promise<Object|null>} - Client Supabase
  */
 export async function initSupabase(url, key) {
     if (!url || !key) {
         console.warn('Paramètres Supabase manquants');
+        isConnected = false;
         return null;
     }
     
     try {
+        // Créer un nouveau client Supabase
         supabaseClient = createClient(url, key);
         
-        // S'assurer que categories est toujours un tableau
-        const transformCategories = (payload) => {
-            if (payload.categories && typeof payload.categories === 'string') {
-                try {
-                    payload.categories = JSON.parse(payload.categories);
-                } catch {
+        // S'assurer que les propriétés des notes sont correctement formatées
+        const transformNote = (payload) => {
+            if (!payload) return payload;
+            
+            // Traiter les catégories
+            if (payload.categories) {
+                if (typeof payload.categories === 'string') {
+                    try {
+                        payload.categories = JSON.parse(payload.categories);
+                    } catch {
+                        payload.categories = [];
+                    }
+                }
+                if (!Array.isArray(payload.categories)) {
                     payload.categories = [];
                 }
-            }
-            if (!Array.isArray(payload.categories)) {
+            } else {
                 payload.categories = [];
             }
+            
+            // Traiter les hashtags
+            if (payload.hashtags) {
+                if (typeof payload.hashtags === 'string') {
+                    try {
+                        payload.hashtags = JSON.parse(payload.hashtags);
+                    } catch {
+                        payload.hashtags = [];
+                    }
+                }
+                if (!Array.isArray(payload.hashtags)) {
+                    payload.hashtags = [];
+                }
+            } else {
+                payload.hashtags = [];
+            }
+            
+            // Traiter les URLs vidéo
+            if (payload.videoUrls) {
+                if (typeof payload.videoUrls === 'string') {
+                    try {
+                        payload.videoUrls = JSON.parse(payload.videoUrls);
+                    } catch {
+                        payload.videoUrls = [];
+                    }
+                }
+                if (!Array.isArray(payload.videoUrls)) {
+                    payload.videoUrls = [];
+                }
+            } else {
+                payload.videoUrls = [];
+            }
+            
             return payload;
         };
 
-        // Intercepter les réponses pour transformer les categories
+        // Intercepter les réponses pour transformer les données
         const { fetch: originalFetch } = supabaseClient;
         supabaseClient.fetch = async (...args) => {
-            const response = await originalFetch.apply(supabaseClient, args);
-            if (response.data) {
-                if (Array.isArray(response.data)) {
-                    response.data = response.data.map(transformCategories);
-                } else {
-                    response.data = transformCategories(response.data);
+            try {
+                const response = await originalFetch.apply(supabaseClient, args);
+                if (response.data) {
+                    if (Array.isArray(response.data)) {
+                        response.data = response.data.map(transformNote);
+                    } else {
+                        response.data = transformNote(response.data);
+                    }
                 }
+                return response;
+            } catch (fetchError) {
+                console.error('Erreur lors du fetch Supabase:', fetchError);
+                throw fetchError;
             }
-            return response;
         };
         
-        // Connecter en tant qu'utilisateur anonyme pour que RLS fonctionne
-        const { data, error } = await supabaseClient.auth.signInAnonymously();
-        if (error) {
-            console.error('Erreur lors de la connexion anonyme:', error);
+        // Vérifier si l'utilisateur est déjà connecté
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        
+        if (!sessionData.session) {
+            // Connecter en tant qu'utilisateur anonyme pour que RLS fonctionne
+            const { data, error } = await supabaseClient.auth.signInAnonymously();
+            if (error) {
+                console.error('Erreur lors de la connexion anonyme:', error);
+                isConnected = false;
+                return null;
+            } else {
+                console.log('Connecté en tant qu\'utilisateur anonyme avec ID:', data.user?.id);
+                isConnected = true;
+            }
         } else {
-            console.log('Connecté en tant qu\'utilisateur anonyme avec ID:', data.user?.id);
+            console.log('Session existante trouvée, utilisateur déjà connecté');
+            isConnected = true;
         }
         
         return supabaseClient;
     } catch (error) {
         console.error('Erreur lors de l\'initialisation de Supabase:', error);
+        isConnected = false;
+        supabaseClient = null;
         return null;
     }
 }
@@ -79,7 +141,7 @@ export function getClient() {
  * @returns {boolean} - Vrai si le client est initialisé
  */
 export function isInitialized() {
-    return !!supabaseClient;
+    return !!supabaseClient && isConnected;
 }
 
 /**

@@ -22,9 +22,19 @@ export async function getAllNotes() {
         const { data: { session } } = await client.auth.getSession();
         if (!session) {
             console.log('Connexion anonyme pour récupérer les notes...');
-            await client.auth.signInAnonymously();
+            try {
+                const { error: authError } = await client.auth.signInAnonymously();
+                if (authError) {
+                    console.error('Erreur lors de la connexion anonyme:', authError);
+                    return [];
+                }
+            } catch (authError) {
+                console.error('Exception lors de la connexion anonyme:', authError);
+                return [];
+            }
         }
         
+        console.log('Récupération des notes depuis Supabase...');
         const { data, error } = await client
             .from('notes')
             .select('*')
@@ -32,16 +42,42 @@ export async function getAllNotes() {
         
         if (error) {
             console.error('Erreur lors de la récupération des notes:', error);
+            // Vérifier si l'erreur est liée à la structure de table
+            if (error.code === '42P01') {
+                console.error('Table notes inexistante. Veuillez vérifier votre configuration Supabase.');
+            }
             return [];
         }
         
+        if (!data || !Array.isArray(data)) {
+            console.warn('Données invalides reçues de Supabase:', data);
+            return [];
+        }
+        
+        console.log(`${data.length} notes récupérées depuis Supabase.`);
+        
         // S'assurer que les tableaux sont correctement formatés
-        return data.map(note => ({
-            ...note,
-            categories: Array.isArray(note.categories) ? note.categories : [],
-            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
-            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : []
-        }));
+        return data.map(note => {
+            if (!note) return null;
+            
+            return {
+                ...note,
+                id: note.id || generateUniqueId(),
+                title: note.title || '',
+                content: note.content || '',
+                categories: Array.isArray(note.categories) ? note.categories : 
+                          (typeof note.categories === 'string' ? 
+                           (note.categories ? [note.categories] : []) : []),
+                hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
+                         (typeof note.hashtags === 'string' ? 
+                          (note.hashtags ? [note.hashtags] : []) : []),
+                videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
+                          (typeof note.videoUrls === 'string' ? 
+                           (note.videoUrls ? [note.videoUrls] : []) : []),
+                createdAt: note.createdAt || new Date().toISOString(),
+                updatedAt: note.updatedAt || new Date().toISOString()
+            };
+        }).filter(note => note !== null); // Éliminer les notes nulles
     } catch (error) {
         console.error('Erreur lors de la récupération des notes:', error);
         return [];
@@ -186,7 +222,30 @@ export async function deleteNote(id) {
         return false;
     }
     
+    if (!id) {
+        console.error('ID de note invalide pour la suppression');
+        return false;
+    }
+    
     try {
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour supprimer la note...');
+            try {
+                const { error: authError } = await client.auth.signInAnonymously();
+                if (authError) {
+                    console.error('Erreur lors de la connexion anonyme pour la suppression:', authError);
+                    return false;
+                }
+            } catch (authError) {
+                console.error('Exception lors de la connexion anonyme pour la suppression:', authError);
+                return false;
+            }
+        }
+        
+        console.log(`Suppression de la note ${id} dans Supabase...`);
+        
         const { error } = await client
             .from('notes')
             .delete()
@@ -197,6 +256,7 @@ export async function deleteNote(id) {
             return false;
         }
         
+        console.log(`Note ${id} supprimée avec succès dans Supabase.`);
         return true;
     } catch (error) {
         console.error(`Erreur lors de la suppression de la note ${id}:`, error);
@@ -217,25 +277,75 @@ export async function searchNotes(query) {
         return [];
     }
     
+    // Si la requête est vide, retourner un tableau vide
+    if (!query || !query.trim()) {
+        return [];
+    }
+    
     try {
-        // Format de requête pour une recherche simple (correspondance partielle)
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour la recherche...');
+            try {
+                const { error: authError } = await client.auth.signInAnonymously();
+                if (authError) {
+                    console.error('Erreur lors de la connexion anonyme pour la recherche:', authError);
+                    return [];
+                }
+            } catch (authError) {
+                console.error('Exception lors de la connexion anonyme pour la recherche:', authError);
+                return [];
+            }
+        }
+        
+        // Nettoyer la requête pour éviter les problèmes d'injection SQL
+        const cleanQuery = query.trim().replace(/'/g, "''");
+        
+        console.log(`Recherche des notes contenant "${cleanQuery}" dans Supabase...`);
+        
+        // Format de requête pour une recherche avancée (correspondance partielle dans plusieurs champs)
         const { data, error } = await client
             .from('notes')
             .select('*')
-            .or(`title.ilike.%${query}%,content.ilike.%${query}%`);
+            .or(`title.ilike.%${cleanQuery}%,content.ilike.%${cleanQuery}%`);
         
         if (error) {
             console.error('Erreur lors de la recherche des notes:', error);
+            // Vérifier si l'erreur est liée à la structure de table
+            if (error.code === '42P01') {
+                console.error('Table notes inexistante. Veuillez vérifier votre configuration Supabase.');
+            }
             return [];
         }
         
+        if (!data || !Array.isArray(data)) {
+            console.warn('Données invalides reçues de Supabase lors de la recherche:', data);
+            return [];
+        }
+        
+        console.log(`${data.length} notes trouvées dans Supabase pour la recherche "${cleanQuery}".`);
+        
         // S'assurer que les tableaux sont correctement formatés
-        return data.map(note => ({
-            ...note,
-            categories: Array.isArray(note.categories) ? note.categories : [],
-            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
-            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : []
-        }));
+        return data.map(note => {
+            if (!note) return null;
+            
+            return {
+                ...note,
+                id: note.id || generateUniqueId(),
+                title: note.title || '',
+                content: note.content || '',
+                categories: Array.isArray(note.categories) ? note.categories : 
+                          (typeof note.categories === 'string' ? 
+                           (note.categories ? [note.categories] : []) : []),
+                hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
+                         (typeof note.hashtags === 'string' ? 
+                          (note.hashtags ? [note.hashtags] : []) : []),
+                videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
+                          (typeof note.videoUrls === 'string' ? 
+                           (note.videoUrls ? [note.videoUrls] : []) : [])
+            };
+        }).filter(note => note !== null); // Éliminer les notes nulles
     } catch (error) {
         console.error('Erreur lors de la recherche des notes:', error);
         return [];
@@ -403,18 +513,30 @@ export async function saveNote(note) {
     }
     
     try {
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour sauvegarder la note...');
+            await client.auth.signInAnonymously();
+        }
+
         // Préparer la note avec les données correctes
         const noteToSave = {
             ...note,
-            categories: Array.isArray(note.categories) ? note.categories : [],
-            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
-            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : [],
+            // S'assurer que toutes les propriétés sont correctement formatées
+            categories: Array.isArray(note.categories) ? note.categories : 
+                       (note.categories ? [note.categories] : []),
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
+                     (note.hashtags ? [note.hashtags] : []),
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
+                      (note.videoUrls ? [note.videoUrls] : []),
             updatedAt: new Date().toISOString(),
             createdAt: note.createdAt || new Date().toISOString()
         };
         
         if (note.id) {
             // C'est une mise à jour
+            console.log(`Mise à jour de la note ${note.id} dans Supabase...`);
             const { data, error } = await client
                 .from('notes')
                 .update(noteToSave)
@@ -427,10 +549,12 @@ export async function saveNote(note) {
                 return null;
             }
             
+            console.log(`Note ${note.id} mise à jour avec succès dans Supabase.`);
             return data;
         } else {
             // C'est une création
             noteToSave.id = generateUniqueId();
+            console.log(`Création d'une nouvelle note dans Supabase avec ID ${noteToSave.id}...`);
             
             const { data, error } = await client
                 .from('notes')
@@ -440,9 +564,16 @@ export async function saveNote(note) {
             
             if (error) {
                 console.error('Erreur lors de la création de la note:', error);
+                // Vérifier si l'erreur est liée à la structure de table
+                if (error.code === '42P01') {
+                    console.error('Table notes inexistante. Veuillez vérifier votre configuration Supabase.');
+                } else if (error.code === '42703') {
+                    console.error('Colonne inexistante. Vérifiez que votre table a toutes les colonnes nécessaires: id, title, content, categories, hashtags, videoUrls, createdAt, updatedAt');
+                }
                 return null;
             }
             
+            console.log(`Note créée avec succès dans Supabase avec ID ${data?.id || noteToSave.id}.`);
             return data;
         }
     } catch (error) {

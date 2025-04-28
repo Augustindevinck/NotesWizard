@@ -262,52 +262,79 @@ export function searchNotes(query) {
 export function syncWithSupabase() {
     return new Promise((resolve, reject) => {
         try {
+            console.log('Démarrage de la synchronisation avec Supabase...');
+            
             // Vérifier si Supabase est configuré
             if (!isSupabaseConfigured()) {
+                console.warn('Supabase n\'est pas configuré - Synchronisation impossible');
                 resolve(false);
                 return;
             }
             
             // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
             const client = getClient();
-            if (client) {
-                client.auth.getSession().then(({ data: { session } }) => {
+            if (!client) {
+                console.error('Client Supabase non disponible - Synchronisation impossible');
+                resolve(false);
+                return;
+            }
+            
+            // Utiliser async/await dans une fonction immédiatement invoquée
+            (async function synchronize() {
+                try {
+                    // Vérifier la session
+                    const { data: { session } } = await client.auth.getSession();
                     if (!session) {
                         console.log('Connexion anonyme pour la synchronisation...');
-                        return client.auth.signInAnonymously();
+                        const { error: authError } = await client.auth.signInAnonymously();
+                        if (authError) {
+                            console.error('Erreur lors de la connexion anonyme:', authError);
+                            resolve(false);
+                            return;
+                        }
                     }
-                    return { data: { session } };
-                }).then(() => {
+                    
                     // Récupérer les notes locales et de Supabase
+                    console.log('Récupération des notes locales et Supabase...');
                     const localNotes = localStorage.getAllNotes();
-                    return supabaseStorage.getAllNotes().then(supabaseNotes => {
-                        return { localNotes, supabaseNotes };
-                    });
-                }).then(({ localNotes, supabaseNotes }) => {
+                    console.log(`${localNotes.length} notes trouvées dans le stockage local.`);
+                    
+                    const supabaseNotes = await supabaseStorage.getAllNotes();
+                    console.log(`${supabaseNotes.length} notes trouvées dans Supabase.`);
+                    
                     // Créer un map des notes Supabase pour faciliter la recherche
                     const supabaseNotesMap = new Map();
-                    supabaseNotes.forEach(note => supabaseNotesMap.set(note.id, note));
+                    supabaseNotes.forEach(note => {
+                        if (note && note.id) {
+                            supabaseNotesMap.set(note.id, note);
+                        }
+                    });
                     
                     // Traiter les notes locales
+                    console.log('Synchronisation des notes locales vers Supabase...');
                     const promises = [];
                     for (const localNote of localNotes) {
+                        if (!localNote || !localNote.id) continue;
+                        
                         const supabaseNote = supabaseNotesMap.get(localNote.id);
                         
                         if (!supabaseNote) {
                             // La note locale n'existe pas dans Supabase, la créer
+                            console.log(`Création de la note locale "${localNote.title}" (ID: ${localNote.id}) dans Supabase...`);
                             promises.push(supabaseStorage.createNote({
                                 ...localNote,
                                 // Préserver les dates originales
-                                createdAt: localNote.createdAt,
-                                updatedAt: localNote.updatedAt
+                                createdAt: localNote.createdAt || new Date().toISOString(),
+                                updatedAt: localNote.updatedAt || new Date().toISOString()
                             }));
                         } else {
                             // Comparer les dates de mise à jour pour déterminer quelle version est la plus récente
-                            const localUpdatedAt = new Date(localNote.updatedAt).getTime();
-                            const supabaseUpdatedAt = new Date(supabaseNote.updatedAt).getTime();
+                            const localUpdatedAt = new Date(localNote.updatedAt || 0).getTime();
+                            const supabaseUpdatedAt = new Date(supabaseNote.updatedAt || 0).getTime();
                             
                             if (localUpdatedAt > supabaseUpdatedAt) {
                                 // La version locale est plus récente, mettre à jour Supabase
+                                console.log(`Mise à jour de la note "${localNote.title}" (ID: ${localNote.id}) dans Supabase...`);
                                 promises.push(supabaseStorage.updateNote(localNote.id, localNote));
                             }
                         }
@@ -316,32 +343,55 @@ export function syncWithSupabase() {
                         supabaseNotesMap.delete(localNote.id);
                     }
                     
+                    // Traitement des promesses de création/mise à jour
+                    if (promises.length > 0) {
+                        console.log(`${promises.length} notes à synchroniser vers Supabase...`);
+                        await Promise.all(promises);
+                        console.log('Notes synchronisées avec succès vers Supabase.');
+                    } else {
+                        console.log('Aucune note locale à synchroniser vers Supabase.');
+                    }
+                    
                     // Les notes restantes dans supabaseNotesMap existent uniquement dans Supabase
                     // Les ajouter au stockage local
+                    console.log('Synchronisation des notes Supabase vers le stockage local...');
                     const allNotes = localStorage.getAllNotes();
-                    for (const [id, note] of supabaseNotesMap.entries()) {
-                        allNotes.push(note);
-                    }
-                    localStorage.saveAllNotes(allNotes);
+                    let newLocalNotesCount = 0;
                     
-                    // Attendre que toutes les opérations soient terminées
-                    return Promise.all(promises).then(() => {
-                        // Récupérer les notes mises à jour de Supabase
-                        return supabaseStorage.getAllNotes();
-                    }).then(updatedSupabaseNotes => {
+                    for (const [id, note] of supabaseNotesMap.entries()) {
+                        if (note && id) {
+                            console.log(`Ajout de la note Supabase "${note.title}" (ID: ${id}) au stockage local...`);
+                            allNotes.push(note);
+                            newLocalNotesCount++;
+                        }
+                    }
+                    
+                    if (newLocalNotesCount > 0) {
+                        console.log(`${newLocalNotesCount} nouvelles notes ajoutées au stockage local.`);
+                        localStorage.saveAllNotes(allNotes);
+                    } else {
+                        console.log('Aucune nouvelle note Supabase à ajouter au stockage local.');
+                    }
+                    
+                    // Récupérer les notes mises à jour de Supabase pour un état final cohérent
+                    console.log('Finalisation de la synchronisation...');
+                    const updatedSupabaseNotes = await supabaseStorage.getAllNotes();
+                    
+                    if (updatedSupabaseNotes.length > 0) {
                         // Mettre à jour le stockage local avec les notes mises à jour
                         localStorage.saveAllNotes(updatedSupabaseNotes);
-                        resolve(true);
-                    });
-                }).catch(error => {
+                        console.log(`Stockage local mis à jour avec ${updatedSupabaseNotes.length} notes de Supabase.`);
+                    }
+                    
+                    console.log('Synchronisation avec Supabase terminée avec succès.');
+                    resolve(true);
+                } catch (error) {
                     console.error('Erreur lors de la synchronisation avec Supabase:', error);
                     resolve(false);
-                });
-            } else {
-                resolve(false);
-            }
+                }
+            })();
         } catch (error) {
-            console.error('Erreur lors de la synchronisation avec Supabase:', error);
+            console.error('Erreur globale lors de la synchronisation avec Supabase:', error);
             resolve(false);
         }
     });
