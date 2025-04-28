@@ -303,3 +303,68 @@ export function highlightSearchTerms(text, searchTerms) {
     
     return highlightedText;
 }
+
+/**
+ * Obtient les termes de recherche actuels à partir d'une requête
+ * @param {string} query - Requête de recherche
+ * @returns {Array} - Tableau de termes de recherche nettoyés
+ */
+export function getCurrentSearchTerms(query) {
+    if (!query) return [];
+    
+    const cleanedQuery = cleanText(query);
+    if (!cleanedQuery) return [];
+    
+    // Diviser la requête en termes individuels
+    return cleanedQuery.split(/\s+/).filter(term => term.length > 0);
+}
+
+// Stockage interne pour l'état de la recherche
+const searchState = {
+    currentSearchTerms: []
+};
+
+/**
+ * Initialise le gestionnaire de recherche avec les termes de recherche
+ * @param {Array|string} searchTerms - Termes de recherche (tableau ou chaîne)
+ */
+export function initSearchManager(searchTerms = []) {
+    if (typeof searchTerms === 'string') {
+        searchState.currentSearchTerms = getCurrentSearchTerms(searchTerms);
+    } else if (Array.isArray(searchTerms)) {
+        searchState.currentSearchTerms = searchTerms.filter(Boolean);
+    } else {
+        searchState.currentSearchTerms = [];
+    }
+}
+
+/**
+ * Effectue une recherche dans un tableau de notes
+ * @param {string} query - Requête de recherche
+ * @param {Array} notes - Notes à rechercher
+ * @returns {Array} - Notes trouvées avec leur score
+ */
+export function performSearch(query, notes) {
+    if (!query || !notes || !Array.isArray(notes)) {
+        return [];
+    }
+    
+    const searchTerms = getCurrentSearchTerms(query);
+    if (searchTerms.length === 0) {
+        return [];
+    }
+    
+    // Mettre à jour les termes de recherche actuels
+    searchState.currentSearchTerms = searchTerms;
+    
+    // Calculer les scores et filtrer les résultats
+    const scoredNotes = notes.map(note => {
+        const score = computeRelevanceScore(note, query);
+        return { note, score };
+    }).filter(result => result.score > 0);
+    
+    // Trier par score décroissant
+    scoredNotes.sort((a, b) => b.score - a.score);
+    
+    return scoredNotes;
+}

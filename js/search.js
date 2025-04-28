@@ -1,18 +1,22 @@
 /**
- * Script principal pour la page de recherche
+ * Script principal pour la page de recherche avec intégration Supabase
  */
 
 // Imports des modules
-import { loadNotes, saveNotes } from './scripts/utils/localStorage.js';
-import { exportNotes, importNotes } from './scripts/utils/exportImport.js';
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
-import { createNoteElement, deleteNote, saveNote, initNotesManager } from './scripts/notes/notesManager.js';
-import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
+import { createNoteElement, initNotesManager } from './scripts/notes/notesManager.js';
+import { initNoteModal, openNoteModal, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { initSearchManager, performSearch, getCurrentSearchTerms, cleanText } from './scripts/search/searchManager.js';
-import { levenshteinDistance } from './scripts/search/searchUtils.js';
+import { getCurrentSearchTerms, cleanText } from './scripts/search/searchManager.js';
 import { navigateToPage, getUrlParams } from './scripts/utils/navigation.js';
+import { 
+    fetchAllNotes, 
+    createNote, 
+    updateNote, 
+    deleteNote, 
+    searchNotes 
+} from './scripts/utils/supabaseService.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', () => {
@@ -78,87 +82,127 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Initialise l'application
      */
-    function init() {
-        // Charger les notes depuis localStorage
-        appState.notes = loadNotes();
+    async function init() {
+        // Afficher un message de chargement
+        searchResultsList.innerHTML = '<div class="loading">Chargement des notes...</div>';
         
-        // Extraire toutes les catégories des notes
-        appState.notes.forEach(note => {
-            if (note.categories) {
-                note.categories.forEach(category => appState.allCategories.add(category));
-            }
-        });
-
-        // Initialisation des modules
-        initCategoryManager(appState.allCategories);
-        initSearchManager();
-        
-        // Initialiser les éléments du modal seulement s'ils existent
-        if (hasNoteModal) {
-            initNoteModal({
-                noteModal,
-                noteTitle,
-                noteContent,
-                selectedCategories,
-                detectedHashtags,
-                deleteNoteBtn,
-                viewMode,
-                editMode,
-                viewTitle,
-                viewContent,
-                editButton,
-                saveNoteBtn
-            });
+        try {
+            // Charger les notes depuis Supabase
+            appState.notes = await fetchAllNotes();
             
-            // Injecter les fonctions nécessaires au noteModal
-            initModalFunctions({
-                extractHashtags: extractHashtags,
-                extractYoutubeUrls: extractYoutubeUrls,
-                addCategoryTag: addCategoryTag,
-                addHashtagTag: addHashtagTag,
-                saveNote: (noteData) => saveNote(noteData, appState.notes, () => {
-                    // Rafraîchir les résultats de recherche si nécessaire
-                    if (appState.lastQuery) {
-                        executeSearch(appState.lastQuery);
-                    }
-                })
-            });
-        }
-        
-        // Initialiser les fonctions notesManager seulement si les éléments nécessaires existent
-        if (hasNoteModal) {
-            initNotesManager(openNoteModal, () => {
-                // Rafraîchir les résultats de recherche si nécessaire
-                if (appState.lastQuery) {
-                    executeSearch(appState.lastQuery);
+            // Extraire toutes les catégories des notes
+            appState.notes.forEach(note => {
+                if (note.categories) {
+                    note.categories.forEach(category => appState.allCategories.add(category));
                 }
             });
-        }
-
-        // Remplir le filtre de catégories
-        populateCategoryFilter();
-
-        // Vérifier s'il y a une requête de recherche dans l'URL
-        const params = getUrlParams();
-        if (params.query) {
-            const query = params.query;
+    
+            // Initialisation des modules
+            initCategoryManager(appState.allCategories);
             
-            // Remplir les deux champs de recherche si disponibles
-            if (hasSearchElements) {
-                searchInput.value = query;
+            // Initialiser les éléments du modal seulement s'ils existent
+            if (hasNoteModal) {
+                initNoteModal({
+                    noteModal,
+                    noteTitle,
+                    noteContent,
+                    selectedCategories,
+                    detectedHashtags,
+                    deleteNoteBtn,
+                    viewMode,
+                    editMode,
+                    viewTitle,
+                    viewContent,
+                    editButton,
+                    saveNoteBtn
+                });
+                
+                // Injecter les fonctions nécessaires au noteModal
+                initModalFunctions({
+                    extractHashtags: extractHashtags,
+                    extractYoutubeUrls: extractYoutubeUrls,
+                    addCategoryTag: addCategoryTag,
+                    addHashtagTag: addHashtagTag,
+                    saveNote: async (noteData) => {
+                        try {
+                            // Sauvegarder la note avec Supabase
+                            let savedNote;
+                            if (noteData.id) {
+                                savedNote = await updateNote(noteData.id, noteData);
+                            } else {
+                                savedNote = await createNote(noteData);
+                            }
+                            
+                            // Mettre à jour l'état de l'application
+                            if (savedNote) {
+                                const index = appState.notes.findIndex(n => n.id === savedNote.id);
+                                if (index !== -1) {
+                                    appState.notes[index] = savedNote;
+                                } else {
+                                    appState.notes.push(savedNote);
+                                }
+                                
+                                // Rafraîchir les résultats de recherche si nécessaire
+                                if (appState.lastQuery) {
+                                    executeSearch(appState.lastQuery);
+                                }
+                            }
+                            
+                            return savedNote;
+                        } catch (error) {
+                            console.error('Erreur lors de la sauvegarde de la note:', error);
+                            return null;
+                        }
+                    }
+                });
             }
-            advancedSearchInput.value = query;
             
-            // Exécuter la recherche
-            executeSearch(query);
-            
-            console.log(`Recherche exécutée avec la requête: ${query}`);
-        } else {
-            console.log("Aucune requête trouvée dans l'URL");
+            // Initialiser les fonctions notesManager seulement si les éléments nécessaires existent
+            if (hasNoteModal) {
+                initNotesManager(
+                    // Fonction d'ouverture du modal
+                    (note, fromSearch, searchTerms) => {
+                        openNoteModal(note, fromSearch, searchTerms);
+                    },
+                    // Fonction de mise à jour
+                    () => {
+                        // Rafraîchir les résultats de recherche si nécessaire
+                        if (appState.lastQuery) {
+                            executeSearch(appState.lastQuery);
+                        }
+                    }
+                );
+            }
+    
+            // Remplir le filtre de catégories
+            populateCategoryFilter();
+    
+            // Vérifier s'il y a une requête de recherche dans l'URL
+            const params = getUrlParams();
+            if (params.query) {
+                const query = params.query;
+                
+                // Remplir les deux champs de recherche si disponibles
+                if (hasSearchElements) {
+                    searchInput.value = query;
+                }
+                advancedSearchInput.value = query;
+                
+                // Exécuter la recherche
+                executeSearch(query);
+                
+                console.log(`Recherche exécutée avec la requête: ${query}`);
+            } else {
+                console.log("Aucune requête trouvée dans l'URL");
+                searchResultsList.innerHTML = '<div class="empty-search-results"><p>Entrez un terme de recherche pour commencer</p></div>';
+            }
+    
+            // Configurer les écouteurs d'événements
+            setupEventListeners();
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation:', error);
+            searchResultsList.innerHTML = '<div class="error">Erreur lors du chargement des notes. Veuillez vérifier votre connexion.</div>';
         }
-
-        // Configurer les écouteurs d'événements
-        setupEventListeners();
     }
 
     /**
@@ -477,43 +521,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Import/Export seulement si les éléments existent
-        if (importExportBtn && importExportModal) {
-            importExportBtn.addEventListener('click', () => {
-                importExportModal.style.display = 'flex';
-            });
+        // Import/Export désactivé pour Supabase 
+        if (importExportBtn) {
+            importExportBtn.style.display = 'none';
         }
-
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                exportNotes(appState.notes);
-            });
+        
+        // Cacher le bouton d'import/export qui est désactivé avec Supabase
+        const importExportHeaderBtn = document.querySelector('.header-button[title="Import/Export"]');
+        if (importExportHeaderBtn) {
+            importExportHeaderBtn.style.display = 'none';
         }
-
-        if (importBtn && importFile) {
-            importBtn.addEventListener('click', () => {
-                importFile.click();
-            });
-
-            importFile.addEventListener('change', (event) => {
-                importNotes(event, appState.notes, (importedNotes) => {
-                    if (importedNotes && Array.isArray(importedNotes)) {
-                        // Mettre à jour les catégories
-                        appState.allCategories.clear();
-                        appState.notes.forEach(note => {
-                            if (note.categories) {
-                                note.categories.forEach(category => appState.allCategories.add(category));
-                            }
-                        });
-                        
-                        // Rafraîchir les résultats de recherche
-                        populateCategoryFilter();
-                        if (appState.lastQuery) {
-                            executeSearch(appState.lastQuery);
-                        }
-                    }
-                    
-                    // Fermer le modal après importation réussie
                     setTimeout(() => {
                         importExportModal.style.display = 'none';
                         if (importStatus) importStatus.textContent = '';
