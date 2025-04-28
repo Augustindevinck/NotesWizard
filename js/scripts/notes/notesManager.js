@@ -137,10 +137,15 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
  */
 export async function saveNote(noteData, notes = [], callback = null) {
     try {
-        const { id, title, content } = noteData;
-        const categories = Array.isArray(noteData.categories) ? noteData.categories : [];
-        const hashtags = Array.isArray(noteData.hashtags) ? noteData.hashtags : [];
-        const videoUrls = Array.isArray(noteData.videoUrls) ? noteData.videoUrls : [];
+        // S'assurer que categories est un tableau
+        const processedNoteData = {
+            ...noteData,
+            categories: Array.isArray(noteData.categories) ? noteData.categories : [],
+            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
+            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : []
+        };
+
+        const { id, title, content } = processedNoteData;
         let noteToSave;
 
         if (id) {
@@ -149,9 +154,9 @@ export async function saveNote(noteData, notes = [], callback = null) {
             if (existingNote) {
                 existingNote.title = title;
                 existingNote.content = content;
-                existingNote.categories = categories || [];
-                existingNote.hashtags = hashtags || [];
-                existingNote.videoUrls = videoUrls || [];
+                existingNote.categories = processedNoteData.categories || [];
+                existingNote.hashtags = processedNoteData.hashtags || [];
+                existingNote.videoUrls = processedNoteData.videoUrls || [];
                 existingNote.updatedAt = new Date().toISOString();
 
                 noteToSave = existingNote;
@@ -161,9 +166,9 @@ export async function saveNote(noteData, notes = [], callback = null) {
                     id,
                     title,
                     content,
-                    categories: categories || [],
-                    hashtags: hashtags || [],
-                    videoUrls: videoUrls || [],
+                    categories: processedNoteData.categories || [],
+                    hashtags: processedNoteData.hashtags || [],
+                    videoUrls: processedNoteData.videoUrls || [],
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
@@ -175,9 +180,9 @@ export async function saveNote(noteData, notes = [], callback = null) {
                 id: generateUniqueId(),
                 title,
                 content,
-                categories: categories || [],
-                hashtags: hashtags || [],
-                videoUrls: videoUrls || [],
+                categories: processedNoteData.categories || [],
+                hashtags: processedNoteData.hashtags || [],
+                videoUrls: processedNoteData.videoUrls || [],
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
