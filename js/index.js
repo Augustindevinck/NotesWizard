@@ -151,8 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Injecter la fonction createNoteElement dans le module revisit
         initCreateNoteElement(createNoteElement);
 
-        // Afficher un état vide au démarrage (pas de notes) dans la section principale
-        renderEmptyState(notesContainer);
+        
 
         // Afficher les notes à revisiter
         renderRevisitSections(appState.notes);
