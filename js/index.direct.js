@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Récupération des éléments du DOM
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
+    const notesContainer = document.getElementById('notes-container');
     const addNoteBtn = document.getElementById('add-note-btn');
     const noteModal = document.getElementById('note-modal');
     const noteTitle = document.getElementById('note-title');
@@ -72,20 +73,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const revisitSections = document.querySelector('.revisit-sections');
 
     // Vérification que tous les éléments requis sont présents
-    if (!searchInput || !searchResults || !addNoteBtn || !noteModal ||
+    if (!searchInput || !searchResults || !notesContainer || !addNoteBtn || !noteModal ||
         !noteTitle || !noteContent || !saveNoteBtn || !deleteNoteBtn || !categoryInput ||
         !categorySuggestions || !selectedCategories || !detectedHashtags) {
         console.error('Éléments DOM manquants - Initialisation impossible');
         return;
     }
-
-    // Initialiser l'état de l'application
-    const appState = {
-        notes: [],
-        allCategories: new Set(),
-        currentSearchTerms: [],
-        currentNote: null
-    };
 
     // État de l'application
     const appState = {
