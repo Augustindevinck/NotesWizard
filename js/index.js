@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Récupération des éléments du DOM
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
-    const notesContainer = document.getElementById('notes-container');
     const addNoteBtn = document.getElementById('add-note-btn');
     const noteModal = document.getElementById('note-modal');
     const noteTitle = document.getElementById('note-title');
