@@ -48,13 +48,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const selectedCategories = document.getElementById('selected-categories');
     const detectedHashtags = document.getElementById('detected-hashtags');
     
-    // Créer un élément "fantôme" pour notesContainer, juste pour le code
-    const notesContainer = {
-        innerHTML: '', // Permet d'assigner innerHTML sans erreur
-        appendChild: () => {}, // Fonction vide pour appendChild
-        removeChild: () => {}, // Fonction vide pour removeChild
-        querySelectorAll: () => [] // Retourne un tableau vide pour querySelectorAll
-    };
+    // Récupération du conteneur de notes (invisible mais présent dans le DOM)
+    const notesContainer = document.getElementById('notes-container');
     const supabaseConfigBtn = document.getElementById('supabase-config-btn');
     const modalCloseButtons = document.querySelectorAll('.close');
     const viewMode = document.getElementById('note-view-mode');

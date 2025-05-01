@@ -37,6 +37,9 @@
         </header>
 
         <button id="general-view-btn" class="general-view-button">Vue générale des notes</button>
+        
+        <!-- Container invisible pour les notes (nécessaire pour le bon fonctionnement du code) -->
+        <div id="notes-container" style="display: none; position: absolute; visibility: hidden; width: 0; height: 0; overflow: hidden;"></div>
 
         <div class="revisit-sections">
             <div class="revisit-section" id="revisit-section-today">
@@ -124,8 +127,8 @@
         <button id="add-note-btn" class="fab" aria-label="Ajouter une note"><span>+</span></button>
     </div>
 
-    <!-- Script simplifié qui gère uniquement les boutons essentiels -->
-    <script type="module" src="js/simplifiedIndex.js"></script>
+    <!-- Revenir au script original avec les fonctionnalités complètes -->
+    <script type="module" src="js/index.direct.js"></script>
     
     <!-- Styles pour les éléments Supabase -->
     <style>
