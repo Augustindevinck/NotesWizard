@@ -79,12 +79,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     const saveDaysBtn = document.getElementById('save-days-btn');
     const revisitSections = document.querySelector('.revisit-sections');
 
-    // Vérification que tous les éléments requis sont présents
-    if (!searchInput || !searchResults || !addNoteBtn || !noteModal ||
-        !noteTitle || !noteContent || !saveNoteBtn || !deleteNoteBtn || !categoryInput ||
-        !categorySuggestions || !selectedCategories || !detectedHashtags) {
-        console.error('Éléments DOM manquants - Initialisation impossible');
+    // Vérification que les éléments essentiels sont présents
+    // On ne vérifie plus certains éléments non-critiques
+    if (!addNoteBtn || !noteModal || !noteTitle || !noteContent || !saveNoteBtn) {
+        console.error('Éléments DOM essentiels manquants - Initialisation impossible');
         return;
+    }
+    
+    // Message de log pour indiquer que l'initialisation continue
+    console.log('Initialisation en cours...');
+    
+    // Créer des objets fantômes pour les éléments manquants
+    // Cela permet d'éviter des erreurs lorsque ces éléments sont utilisés dans le code
+    if (!searchInput) {
+        searchInput = { value: '', addEventListener: () => {} };
+    }
+    if (!searchResults) {
+        searchResults = { innerHTML: '', appendChild: () => {}, style: { display: 'none' } };
+    }
+    if (!selectedCategories) {
+        selectedCategories = { 
+            querySelectorAll: () => [], 
+            innerHTML: '', 
+            appendChild: () => {} 
+        };
+    }
+    if (!detectedHashtags) {
+        detectedHashtags = { 
+            querySelectorAll: () => [], 
+            innerHTML: '', 
+            appendChild: () => {} 
+        };
+    }
+    if (!categorySuggestions) {
+        categorySuggestions = { 
+            innerHTML: '', 
+            appendChild: () => {}, 
+            style: { display: 'none' } 
+        };
+    }
+    if (!categoryInput) {
+        categoryInput = { 
+            value: '', 
+            addEventListener: () => {} 
+        };
     }
 
     // État de l'application
