@@ -79,6 +79,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // Initialiser l'état de l'application
+    const appState = {
+        notes: [],
+        allCategories: new Set(),
+        currentSearchTerms: [],
+        currentNote: null
+    };
+
     // État de l'application
     const appState = {
         notes: [],
