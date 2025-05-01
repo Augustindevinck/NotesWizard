@@ -47,6 +47,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const categorySuggestions = document.getElementById('category-suggestions');
     const selectedCategories = document.getElementById('selected-categories');
     const detectedHashtags = document.getElementById('detected-hashtags');
+    
+    // Créer un élément "fantôme" pour notesContainer, juste pour le code
+    const notesContainer = {
+        innerHTML: '', // Permet d'assigner innerHTML sans erreur
+        appendChild: () => {}, // Fonction vide pour appendChild
+        removeChild: () => {}, // Fonction vide pour removeChild
+        querySelectorAll: () => [] // Retourne un tableau vide pour querySelectorAll
+    };
     const supabaseConfigBtn = document.getElementById('supabase-config-btn');
     const modalCloseButtons = document.querySelectorAll('.close');
     const viewMode = document.getElementById('note-view-mode');
