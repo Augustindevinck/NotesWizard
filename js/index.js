@@ -26,7 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Récupération des éléments du DOM
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
-    const notesContainer = document.getElementById('notes-container');
     const addNoteBtn = document.getElementById('add-note-btn');
     const noteModal = document.getElementById('note-modal');
     const noteTitle = document.getElementById('note-title');
@@ -50,24 +49,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewContent = document.getElementById('note-view-content');
     const editButton = document.getElementById('edit-note-btn');
 
-    // Éléments pour les sections de révision
-    const revisitSectionToday = document.getElementById('revisit-section-today');
-    const revisitSection1 = document.getElementById('revisit-section-1');
-    const revisitSection2 = document.getElementById('revisit-section-2');
-    const revisitNotesToday = document.getElementById('revisit-notes-today');
-    const revisitNotes1 = document.getElementById('revisit-notes-1');
-    const revisitNotes2 = document.getElementById('revisit-notes-2');
-    const showMoreBtnToday = document.getElementById('show-more-today');
-    const showMoreBtn1 = document.getElementById('show-more-1');
-    const showMoreBtn2 = document.getElementById('show-more-2');
-    const editDaysBtns = document.querySelectorAll('.edit-days-btn');
-    const daysEditModal = document.getElementById('days-edit-modal');
-    const daysInput = document.getElementById('days-input');
-    const saveDaysBtn = document.getElementById('save-days-btn');
-    const revisitSections = document.querySelector('.revisit-sections');
 
     // Vérification que tous les éléments requis sont présents
-    if (!searchInput || !searchResults || !notesContainer || !addNoteBtn || !noteModal ||
+    if (!searchInput || !searchResults || !addNoteBtn || !noteModal ||
         !noteTitle || !noteContent || !saveNoteBtn || !deleteNoteBtn || !categoryInput ||
         !categorySuggestions || !selectedCategories || !detectedHashtags) {
         console.error('Éléments DOM manquants - Initialisation impossible');
@@ -89,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         // Charger les notes depuis localStorage
         appState.notes = loadNotes();
-        
+
         // Extraire toutes les catégories des notes
         appState.notes.forEach(note => {
             if (note.categories) {
@@ -103,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialisation des modules
         initCategoryManager(appState.allCategories);
         initSearchManager();
-        
+
         // Initialiser les éléments du modal
         initNoteModal({
             noteModal,
@@ -119,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editButton,
             saveNoteBtn
         });
-        
+
         // Injecter les fonctions nécessaires au noteModal
         initModalFunctions({
             extractHashtags: extractHashtags,
@@ -127,34 +111,36 @@ document.addEventListener('DOMContentLoaded', () => {
             addCategoryTag: addCategoryTag,
             addHashtagTag: addHashtagTag,
             saveNote: (noteData) => saveNote(noteData, appState.notes, () => {
-                renderRevisitSections(appState.notes);
+                //renderRevisitSections(appState.notes); // Removed as revisitSections is not used anymore.
             })
         });
-        
+
         // Initialiser les fonctions notesManager
-        initNotesManager(openNoteModal, () => renderRevisitSections(appState.notes));
-        
-        // Initialiser les révisitations
+        initNotesManager(openNoteModal, () => {/*renderRevisitSections(appState.notes);*/}); // Removed as revisitSections is not used anymore.
+
+
+        // Initialiser les révisitations  -  This section needs to be reviewed and possibly removed or rewritten
         initRevisit({
             containers: {
-                today: revisitNotesToday,
-                section1: revisitNotes1,
-                section2: revisitNotes2
+                today: null, // revisitNotesToday,
+                section1: null, //revisitNotes1,
+                section2: null //revisitNotes2
             },
             showMoreBtns: {
-                today: showMoreBtnToday,
-                section1: showMoreBtn1,
-                section2: showMoreBtn2
+                today: null, //showMoreBtnToday,
+                section1: null, //showMoreBtn1,
+                section2: null //showMoreBtn2
             }
         }, revisitSettings);
-        
+
+
         // Injecter la fonction createNoteElement dans le module revisit
         initCreateNoteElement(createNoteElement);
 
-        
 
-        // Afficher les notes à revisiter
-        renderRevisitSections(appState.notes);
+        // Afficher les notes à revisiter  -  This section might need to be removed or completely rewritten
+        //renderRevisitSections(appState.notes);
+
 
         // Configurer les écouteurs d'événements
         setupEventListeners();
@@ -170,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Bouton de sauvegarde de note
         saveNoteBtn.addEventListener('click', () => {
             saveCurrentNote(appState.notes, () => {
-                renderRevisitSections(appState.notes);
+                //renderRevisitSections(appState.notes); // Removed as revisitSections is not used anymore.
             });
         });
 
@@ -179,10 +165,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
                 const currentNoteId = deleteNoteBtn.dataset.currentNoteId;
                 if (currentNoteId) {
-                    deleteNote(currentNoteId, appState.notes, () => renderEmptyState(notesContainer));
+                    deleteNote(currentNoteId, appState.notes, () => renderEmptyState(null)); // Removed notesContainer
                     cleanupHighlightedElements();
                     noteModal.style.display = 'none';
-                    renderRevisitSections(appState.notes);
+                    //renderRevisitSections(appState.notes); // Removed as revisitSections is not used anymore.
                 }
             }
         });
@@ -191,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryInput.addEventListener('input', (event) => {
             handleCategoryInput(event, categoryInput, categorySuggestions);
         });
-        
+
         categoryInput.addEventListener('keydown', (event) => {
             handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions);
         });
@@ -204,9 +190,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Suggestions de recherche en temps réel
         searchInput.addEventListener('input', () => {
             showSearchSuggestions(
-                searchInput.value, 
-                appState.notes, 
-                searchResults, 
+                searchInput.value,
+                appState.notes,
+                searchResults,
                 (note) => {
                     openNoteModal(note, true, getCurrentSearchTerms());
                     searchInput.value = '';
@@ -241,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 cleanupHighlightedElements();
                 noteModal.style.display = 'none';
                 importExportModal.style.display = 'none';
-                daysEditModal.style.display = 'none';
+                //daysEditModal.style.display = 'none'; // Removed as revisitSections is not used anymore.
             });
         });
 
@@ -253,9 +239,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (event.target === importExportModal) {
                 importExportModal.style.display = 'none';
             }
-            if (event.target === daysEditModal) {
-                daysEditModal.style.display = 'none';
-            }
+            //if (event.target === daysEditModal) {  // Removed as revisitSections is not used anymore.
+            //    daysEditModal.style.display = 'none';
+            //}
         });
 
         // Import/Export
@@ -281,11 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             note.categories.forEach(category => appState.allCategories.add(category));
                         }
                     });
-                    
+
                     // Actualiser l'affichage
-                    renderRevisitSections(appState.notes);
+                    //renderRevisitSections(appState.notes); // Removed as revisitSections is not used anymore.
                 }
-                
+
                 // Fermer le modal après importation réussie
                 setTimeout(() => {
                     importExportModal.style.display = 'none';
@@ -295,23 +281,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, importStatus);
         });
 
-        // Édition du nombre de jours pour les sections de révision
-        editDaysBtns.forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                // Ouvrir la modal d'édition du nombre de jours pour la section correspondante
-                openDaysEditModal(index === 0 ? 'section1' : 'section2');
-            });
-        });
 
-        // Sauvegarde du nombre de jours
-        saveDaysBtn.addEventListener('click', () => {
-            saveDaysSettings();
-            renderRevisitSections(appState.notes);
-        });
-
-        // Afficher plus de notes dans les sections de révision
-        showMoreBtnToday.addEventListener('click', () => showMoreNotes('today'));
-        showMoreBtn1.addEventListener('click', () => showMoreNotes('section1'));
-        showMoreBtn2.addEventListener('click', () => showMoreNotes('section2'));
     }
 });
