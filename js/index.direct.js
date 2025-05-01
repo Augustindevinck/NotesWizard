@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Récupération des éléments du DOM
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
-    const notesContainer = document.getElementById('notes-container');
     const addNoteBtn = document.getElementById('add-note-btn');
     const noteModal = document.getElementById('note-modal');
     const noteTitle = document.getElementById('note-title');
@@ -73,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const revisitSections = document.querySelector('.revisit-sections');
 
     // Vérification que tous les éléments requis sont présents
-    if (!searchInput || !searchResults || !notesContainer || !addNoteBtn || !noteModal ||
+    if (!searchInput || !searchResults || !addNoteBtn || !noteModal ||
         !noteTitle || !noteContent || !saveNoteBtn || !deleteNoteBtn || !categoryInput ||
         !categorySuggestions || !selectedCategories || !detectedHashtags) {
         console.error('Éléments DOM manquants - Initialisation impossible');
@@ -98,8 +97,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Initialise l'application
      */
     async function init() {
-        // Afficher un indicateur de chargement
-        notesContainer.innerHTML = '<div class="loading">Chargement des notes...</div>';
+        console.log('Chargement des notes...');
         
         // Charger les notes depuis Supabase
         try {
@@ -157,7 +155,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error('Erreur lors du chargement des notes:', error);
-            notesContainer.innerHTML = '<div class="error">Erreur lors du chargement des notes. Veuillez vérifier votre connexion.</div>';
         }
     }
     
@@ -294,9 +291,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Injecter la fonction createNoteElement dans le module revisit
         initCreateNoteElement(createNoteElement);
 
-        // Afficher un état vide (pas de notes) ou les notes
+        // Vérifier si des notes sont disponibles
         if (appState.notes.length === 0) {
-            renderEmptyState(notesContainer);
+            console.log('Aucune note disponible');
         }
 
         // Afficher les notes à revisiter
@@ -415,9 +412,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                         // Fermer le modal
                         noteModal.style.display = 'none';
                         
-                        // Actualiser l'affichage
+                        // Vérifier si des notes sont disponibles
                         if (appState.notes.length === 0) {
-                            renderEmptyState(notesContainer);
+                            console.log('Aucune note disponible après suppression');
                         }
                         
                         await renderRevisitSections(appState.notes);
