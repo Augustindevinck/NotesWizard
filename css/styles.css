@@ -69,8 +69,81 @@ body {
 }
 
 .note-card {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
     position: relative;
-    /* autres styles existants... */
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.note-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Conteneur des catégories en haut */
+.note-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+/* Style de chaque catégorie */
+.note-category {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+}
+
+.note-category:hover {
+    background-color: #5a7ae0;
+}
+
+/* Prévisualisation du contenu */
+.note-preview {
+    margin: 10px 0;
+    line-height: 1.5;
+    color: var(--text-color);
+    font-size: 0.95rem;
+}
+
+/* Conteneur des hashtags en bas */
+.note-hashtags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* Style de chaque hashtag */
+.note-hashtag {
+    background-color: #353535;
+    color: #cccccc;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.note-hashtag:hover {
+    background-color: #454545;
+    color: white;
+    transform: translateY(-1px);
 }
 
     flex-direction: column;
