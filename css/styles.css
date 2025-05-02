@@ -350,16 +350,46 @@ header {
 
 /* Styles spécifiques pour le bouton de révision des notes anciennes */
 .review-button-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 30px auto;
+}
+
+.review-button-link {
+    text-decoration: none;
     display: block;
     width: 100%;
-    max-width: 800px;
-    margin: 20px auto;
+    max-width: 300px;
+}
+
+.review-button {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: bold;
+    padding: 14px 20px;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+}
+
+.review-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    background-color: #5a7de0;
+}
+
+.review-button svg {
+    margin-right: 10px;
 }
 
 /* Style spécifique pour le bouton de révision */
 #review-oldest-btn {
-    background-color: #2c5282;
-    border-color: #2c5282;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
     font-weight: 600;
 }
 
