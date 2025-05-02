@@ -107,12 +107,7 @@
                 <span class="close">&times;</span>
                 <div id="note-view-mode">
                     <h2 id="note-view-title"></h2>
-                    <div id="note-view-content">
-                        <!-- Structure améliorée pour la visualisation des notes -->
-                        <div id="note-categories-view" class="note-categories-view"></div>
-                        <div id="note-content-text" class="note-content-text"></div>
-                        <div id="note-hashtags-view" class="note-hashtags-view"></div>
-                    </div>
+                    <div id="note-view-content"></div>
                     <button id="edit-note-btn" class="edit-button">Éditer</button>
                 </div>
                 <div id="note-edit-mode" class="hidden">
@@ -139,111 +134,14 @@
                 </div>
             </div>
         </div>
-        
-        <!-- Script pour améliorer l'affichage des notes -->
-        <script>
-            // Fonction pour afficher la note avec les catégories en haut et hashtags en bas
-            function enhanceNoteDisplay(note) {
-                if (!note) return;
-                
-                // Récupérer les éléments du DOM
-                const viewTitle = document.getElementById('note-view-title');
-                const categoriesView = document.getElementById('note-categories-view');
-                const contentView = document.getElementById('note-content-text');
-                const hashtagsView = document.getElementById('note-hashtags-view');
-                
-                // Effacer le contenu précédent
-                categoriesView.innerHTML = '';
-                contentView.innerHTML = '';
-                hashtagsView.innerHTML = '';
-                
-                // Afficher le titre
-                viewTitle.textContent = note.title || 'Sans titre';
-                
-                // Afficher les catégories en haut
-                if (note.categories && note.categories.length > 0) {
-                    note.categories.forEach(category => {
-                        const categorySpan = document.createElement('span');
-                        categorySpan.className = 'note-category';
-                        categorySpan.textContent = category;
-                        categoriesView.appendChild(categorySpan);
-                    });
-                }
-                
-                // Afficher le contenu
-                let displayContent = note.content || '';
-                displayContent = displayContent.replace(/\[\[.*?\]\]/g, ''); // Masquer les liens [[...]]
-                contentView.textContent = displayContent;
-                
-                // Afficher les hashtags cliquables en bas
-                if (note.hashtags && note.hashtags.length > 0) {
-                    note.hashtags.forEach(tag => {
-                        const tagSpan = document.createElement('span');
-                        tagSpan.className = 'note-hashtag';
-                        tagSpan.dataset.tag = tag;
-                        tagSpan.textContent = '#' + tag;
-                        tagSpan.addEventListener('click', (event) => {
-                            event.stopPropagation();
-                            window.location.href = `search.html?q=%23${tag}`;
-                        });
-                        hashtagsView.appendChild(tagSpan);
-                    });
-                }
-                
-                // Si la note a des vidéos, les ajouter après le contenu
-                if (note.videoUrls && note.videoUrls.length > 0) {
-                    const videoContainer = document.createElement('div');
-                    videoContainer.className = 'note-videos';
-                    note.videoUrls.forEach(url => {
-                        const iframe = document.createElement('iframe');
-                        iframe.src = url;
-                        iframe.width = '100%';
-                        iframe.height = '315';
-                        iframe.frameBorder = '0';
-                        iframe.allowFullscreen = true;
-                        videoContainer.appendChild(iframe);
-                    });
-                    contentView.appendChild(videoContainer);
-                }
-            }
-            
-            // Observer les changements d'affichage du modal 
-            // pour intercepter l'affichage d'une note
-            const noteModalObserver = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    if (mutation.type === 'attributes' && 
-                        mutation.attributeName === 'style' && 
-                        document.getElementById('note-modal').style.display === 'block') {
-                        
-                        // Chercher les données de la note actuellement affichée
-                        const noteId = document.getElementById('delete-note-btn').dataset.currentNoteId;
-                        if (noteId) {
-                            // Rechercher la note dans le stockage local
-                            const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
-                            const note = localNotes.find(n => n.id === noteId);
-                            if (note) {
-                                // Améliorer l'affichage
-                                enhanceNoteDisplay(note);
-                            }
-                        }
-                    }
-                });
-            });
-            
-            // Démarrer l'observation du modal
-            document.addEventListener('DOMContentLoaded', () => {
-                const noteModal = document.getElementById('note-modal');
-                if (noteModal) {
-                    noteModalObserver.observe(noteModal, { attributes: true });
-                }
-            });
-        </script>
 
         <button id="add-note-btn" class="fab" aria-label="Ajouter une note"><span>+</span></button>
     </div>
 
     <!-- Revenir au script original avec les fonctionnalités complètes -->
     <script type="module" src="js/index.direct.js"></script>
+    
+
     
     <!-- Styles pour les éléments Supabase et l'affichage des notes -->
     <style>
