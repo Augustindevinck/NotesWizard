@@ -331,6 +331,33 @@ header {
     transform: translateY(-2px);
 }
 
+.general-button {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 12px 20px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    transition: all 0.2s ease;
+    margin: 0 auto;
+}
+
+.general-button:hover {
+    background-color: var(--hover-bg);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.general-button svg {
+    margin-right: 8px;
+}
+
 .delete-note {
     position: absolute;
     top: 8px;
