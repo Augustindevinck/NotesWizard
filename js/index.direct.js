@@ -41,6 +41,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         reviewOldestBtn.addEventListener('click', () => {
             console.log('Clic sur le bouton de révision détecté');
             window.location.href = 'review.html';
+            // Force la redirection avec un petit délai si nécessaire
+            setTimeout(() => {
+                if (window.location.pathname !== '/review.html') {
+                    console.log('Redirection forcée vers review.html');
+                    window.location.replace('review.html');
+                }
+            }, 100);
         });
     } else {
         console.error('Bouton de révision non trouvé dans le DOM');
