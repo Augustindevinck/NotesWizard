@@ -334,6 +334,58 @@ header {
     overflow-x: hidden; /* Empêche le défilement horizontal */
 }
 
+/* Conteneur des catégories dans le mode visualisation */
+.note-categories-view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 15px;
+}
+
+/* Conteneur du texte principal */
+.note-content-text {
+    white-space: pre-wrap;
+    margin: 15px 0;
+}
+
+/* Conteneur des hashtags dans le mode visualisation */
+.note-hashtags-view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* Style pour les hashtags cliquables */
+#note-view-content .note-hashtag {
+    background-color: #353535;
+    color: #cccccc;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-block;
+}
+
+#note-view-content .note-hashtag:hover {
+    background-color: #454545;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Style pour les catégories dans le mode visualisation */
+#note-view-content .note-category {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    display: inline-block;
+}
+
 .edit-button {
     background-color: var(--primary-color);
     color: white;
