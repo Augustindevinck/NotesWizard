@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Révision de Notes - Notes Rapides</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/note-modal.css">
+    <style>
+        .review-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .review-title {
+            font-size: 1.8rem;
+            color: var(--heading-color);
+        }
+        .review-note-container {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .review-actions {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .review-note-title {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--heading-color);
+        }
+        .review-note-content {
+            white-space: pre-wrap;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            font-size: 1rem;
+        }
+        .review-categories {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .review-category {
+            background-color: var(--category-bg);
+            color: var(--category-text);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .review-hashtags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .review-hashtag {
+            background-color: var(--hashtag-bg);
+            color: var(--hashtag-text);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .review-next-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+        .review-next-btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        .back-btn {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: none;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        .back-btn:hover {
+            background-color: var(--secondary-hover);
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        .empty-state h2 {
+            color: var(--heading-color);
+            margin-bottom: 15px;
+        }
+        .empty-state p {
+            color: var(--text-color);
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Notes Rapides</h1>
+            <nav>
+                <button id="back-to-home" class="back-btn">Retour à l'accueil</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="review-container">
+        <div class="review-header">
+            <h2 class="review-title">Révision de notes</h2>
+        </div>
+
+        <div id="review-note-display">
+            <!-- Le contenu de la note sera inséré ici dynamiquement -->
+            <div class="loading">Chargement de la note à réviser...</div>
+        </div>
+
+        <div class="review-actions">
+            <button id="next-review-btn" class="review-next-btn">Note suivante</button>
+        </div>
+    </main>
+
+    <!-- Modal pour afficher/éditer des notes (réutilisé depuis index.html) -->
+    <div id="note-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close-modal">&times;</span>
+                <h2>Note</h2>
+            </div>
+            <div id="view-mode" class="modal-view-mode">
+                <h3 id="view-title" class="view-title"></h3>
+                <div id="view-categories" class="view-categories"></div>
+                <div id="view-hashtags" class="view-hashtags"></div>
+                <div id="view-content" class="view-content"></div>
+                <button id="edit-button" class="edit-button">Modifier</button>
+            </div>
+            <div id="edit-mode" class="modal-edit-mode">
+                <div class="form-group">
+                    <label for="note-title">Titre</label>
+                    <input type="text" id="note-title" placeholder="Titre de la note">
+                </div>
+                <div class="form-group">
+                    <label for="category-input">Catégories</label>
+                    <div class="category-input-container">
+                        <input type="text" id="category-input" placeholder="Ajouter une catégorie">
+                        <div id="category-suggestions" class="category-suggestions"></div>
+                    </div>
+                    <div id="selected-categories" class="selected-categories"></div>
+                </div>
+                <div class="form-group">
+                    <label for="note-content">Contenu</label>
+                    <textarea id="note-content" placeholder="Contenu de votre note"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Hashtags détectés</label>
+                    <div id="detected-hashtags" class="detected-hashtags"></div>
+                </div>
+                <div class="modal-actions">
+                    <button id="delete-note-btn" class="delete-button">Supprimer</button>
+                    <button id="save-note-btn" class="save-button">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/review.js"></script>
+</body>
+</html>
