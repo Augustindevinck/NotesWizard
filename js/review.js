@@ -8,7 +8,6 @@ import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { addLastReviewedViaButtonColumn } from './scripts/utils/databaseMigration.js';
 
 // Éléments DOM
 const reviewNoteDisplay = document.getElementById('review-note-display');
@@ -79,21 +78,7 @@ async function init() {
     // Configurer les écouteurs d'événements
     setupEventListeners();
     
-    try {
-        // Vérifier et ajouter la colonne lastReviewedViaButton si nécessaire
-        console.log('Vérification de la présence de la colonne lastReviewedViaButton...');
-        const columnAdded = await addLastReviewedViaButtonColumn();
-        
-        if (columnAdded) {
-            console.log('Colonne lastReviewedViaButton vérifiée avec succès');
-        } else {
-            console.warn('Impossible de vérifier/ajouter la colonne lastReviewedViaButton');
-            // On continue quand même, au cas où la colonne existe déjà
-        }
-    } catch (error) {
-        console.error('Erreur lors de la vérification/ajout de la colonne lastReviewedViaButton:', error);
-        // On continue quand même, au cas où la colonne existe déjà
-    }
+    // La colonne lastReviewedViaButton existe déjà, pas besoin de la vérifier
     
     // Charger la note à réviser
     await loadNoteForReview();
@@ -135,14 +120,7 @@ async function loadNoteForReview() {
             return;
         }
         
-        // Vérifier d'abord si la colonne lastReviewedViaButton existe, sinon la créer
-        try {
-            // Cette vérification a déjà été faite dans init(), mais on le refait ici pour être sûr
-            await addLastReviewedViaButtonColumn();
-        } catch (migrationError) {
-            console.error('Erreur lors de la migration de la base de données:', migrationError);
-            // On continue quand même, au cas où la colonne existe déjà malgré l'erreur
-        }
+        // La colonne lastReviewedViaButton existe déjà, pas besoin de la vérifier
         
         // Tentative de récupération des notes pour la révision
         console.log('Récupération de la note la plus ancienne à réviser...');
@@ -248,13 +226,7 @@ async function updateCurrentNoteReviewTimestamp() {
             return false;
         }
         
-        // Vérifier encore une fois que la colonne existe
-        try {
-            await addLastReviewedViaButtonColumn();
-        } catch (migrationError) {
-            console.warn('Impossible de vérifier/créer la colonne lastReviewedViaButton:', migrationError);
-            // On continue quand même pour essayer de faire la mise à jour
-        }
+        // La colonne lastReviewedViaButton existe déjà, pas besoin de la vérifier
         
         // Mettre à jour le timestamp de dernière révision
         const now = new Date().toISOString();
