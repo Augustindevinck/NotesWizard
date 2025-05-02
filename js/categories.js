@@ -115,6 +115,59 @@ document.addEventListener('DOMContentLoaded', () => {
         // Afficher l'arborescence des catégories
         renderCategoryTree();
 
+        // Vérifier s'il y a un paramètre de catégorie dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const categoryParam = urlParams.get('category');
+        
+        // Si une catégorie est spécifiée dans l'URL, l'afficher directement
+        if (categoryParam) {
+            console.log(`Catégorie spécifiée dans l'URL: ${categoryParam}`);
+            // Sélectionner visuellement la catégorie dans l'arborescence si elle existe
+            const categoryItems = document.querySelectorAll('.category-tree-item');
+            let categoryFound = false;
+            
+            categoryItems.forEach(item => {
+                if (item.dataset.category === categoryParam) {
+                    // Mettre en évidence cette catégorie
+                    categoryItems.forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    categoryFound = true;
+                    
+                    // Ouvrir les parents si nécessaire
+                    let parent = item.parentElement;
+                    while (parent && !parent.classList.contains('category-tree-view')) {
+                        if (parent.classList.contains('category-tree-children')) {
+                            parent.style.display = 'block';
+                            const expandBtn = parent.parentElement.querySelector('.category-tree-expand-btn');
+                            if (expandBtn) {
+                                expandBtn.innerHTML = '▼';
+                                expandBtn.dataset.expanded = 'true';
+                            }
+                        }
+                        parent = parent.parentElement;
+                    }
+                    
+                    // Afficher les notes de cette catégorie
+                    showNotesForCategory(categoryParam);
+                }
+            });
+            
+            // Si la catégorie n'existe pas encore dans l'arborescence
+            if (!categoryFound) {
+                // On peut ajouter cette partie si besoin pour créer une nouvelle catégorie
+                // appState.allCategories.add(categoryParam);
+                // renderCategoryTree();
+                // showNotesForCategory(categoryParam);
+                
+                // Ou simplement afficher un message
+                categoryNotesContainer.innerHTML = `
+                    <div class="empty-category-notes">
+                        <p>La catégorie "${categoryParam}" n'existe pas encore.</p>
+                    </div>
+                `;
+            }
+        }
+
         // Configurer les écouteurs d'événements
         setupEventListeners();
     }

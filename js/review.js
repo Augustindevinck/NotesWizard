@@ -200,16 +200,20 @@ function displayNote(note) {
     titleElement.textContent = note.title || 'Sans titre';
     noteElement.appendChild(titleElement);
     
-    // Ajouter les catégories
+    // Ajouter les catégories en haut comme boutons cliquables
     if (note.categories && note.categories.length > 0) {
         const categoriesContainer = document.createElement('div');
         categoriesContainer.className = 'review-categories';
         
         note.categories.forEach(category => {
-            const categoryTag = document.createElement('span');
-            categoryTag.className = 'review-category';
-            categoryTag.textContent = category;
-            categoriesContainer.appendChild(categoryTag);
+            const categoryButton = document.createElement('button');
+            categoryButton.className = 'review-category';
+            categoryButton.textContent = category;
+            categoryButton.addEventListener('click', () => {
+                // Rediriger vers la page des catégories avec cette catégorie
+                window.location.href = `categories.html?category=${encodeURIComponent(category)}`;
+            });
+            categoriesContainer.appendChild(categoryButton);
         });
         
         noteElement.appendChild(categoriesContainer);
@@ -221,16 +225,20 @@ function displayNote(note) {
     contentElement.textContent = note.content || '';
     noteElement.appendChild(contentElement);
     
-    // Ajouter les hashtags en bas du contenu, après le texte
+    // Ajouter les hashtags en bas comme boutons cliquables
     if (note.hashtags && note.hashtags.length > 0) {
         const hashtagsContainer = document.createElement('div');
         hashtagsContainer.className = 'review-hashtags';
         
         note.hashtags.forEach(tag => {
-            const hashtagTag = document.createElement('span');
-            hashtagTag.className = 'review-hashtag';
-            hashtagTag.textContent = `#${tag}`;
-            hashtagsContainer.appendChild(hashtagTag);
+            const hashtagButton = document.createElement('button');
+            hashtagButton.className = 'review-hashtag';
+            hashtagButton.textContent = `#${tag}`;
+            hashtagButton.addEventListener('click', () => {
+                // Rediriger vers la page de recherche avec ce hashtag
+                window.location.href = `search.html?query=${encodeURIComponent('#' + tag)}`;
+            });
+            hashtagsContainer.appendChild(hashtagButton);
         });
         
         noteElement.appendChild(hashtagsContainer);

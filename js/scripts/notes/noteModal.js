@@ -237,7 +237,49 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Afficher le bouton de suppression pour les notes existantes
         deleteNoteBtn.classList.remove('hidden');
 
-        // Add categories
+        // Créer le conteneur pour les catégories en haut de la note
+        const viewCategoriesContainer = document.createElement('div');
+        viewCategoriesContainer.className = 'view-categories';
+        
+        // Ajouter les catégories en haut comme boutons cliquables
+        if (note.categories && note.categories.length > 0) {
+            note.categories.forEach(category => {
+                const categoryButton = document.createElement('button');
+                categoryButton.className = 'view-category-btn';
+                categoryButton.textContent = category;
+                categoryButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Rediriger vers la page des catégories
+                    window.location.href = `categories.html?category=${encodeURIComponent(category)}`;
+                });
+                viewCategoriesContainer.appendChild(categoryButton);
+            });
+            // Insérer les catégories au début du contenu visuel
+            viewMode.insertBefore(viewCategoriesContainer, viewTitle);
+        }
+        
+        // Créer le conteneur pour les hashtags en bas de la note
+        const viewHashtagsContainer = document.createElement('div');
+        viewHashtagsContainer.className = 'view-hashtags';
+        
+        // Ajouter les hashtags en bas comme boutons cliquables
+        if (note.hashtags && note.hashtags.length > 0) {
+            note.hashtags.forEach(tag => {
+                const hashtagButton = document.createElement('button');
+                hashtagButton.className = 'view-hashtag-btn';
+                hashtagButton.textContent = `#${tag}`;
+                hashtagButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Rediriger vers la page de recherche avec le hashtag
+                    window.location.href = `search.html?query=${encodeURIComponent('#' + tag)}`;
+                });
+                viewHashtagsContainer.appendChild(hashtagButton);
+            });
+            // Ajouter les hashtags après le contenu
+            viewMode.appendChild(viewHashtagsContainer);
+        }
+        
+        // Add categories pour le mode édition
         if (note.categories && note.categories.length > 0) {
             note.categories.forEach(category => {
                 if (addCategoryTagFn) {
@@ -248,7 +290,7 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
             });
         }
 
-        // Show hashtags
+        // Show hashtags pour le mode édition
         if (note.hashtags && note.hashtags.length > 0) {
             note.hashtags.forEach(tag => {
                 if (addHashtagTagFn) {
