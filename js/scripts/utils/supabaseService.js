@@ -156,8 +156,11 @@ export function updateNote(noteId, noteData) {
 export function deleteNote(noteId) {
     return new Promise((resolve, reject) => {
         try {
+            console.log(`Début du processus de suppression de la note ${noteId}...`);
+            
             // Supprimer la note du stockage local pour une réponse rapide
             localStorage.deleteNote(noteId);
+            console.log(`Note ${noteId} supprimée du stockage local`);
             
             // Vérifier si Supabase est configuré
             if (isSupabaseConfigured()) {
@@ -172,15 +175,20 @@ export function deleteNote(noteId) {
                         return { data: { session } };
                     }).then(() => {
                         // Supprimer la note dans Supabase
+                        console.log(`Suppression de la note ${noteId} dans Supabase...`);
                         return supabaseStorage.deleteNote(noteId);
                     }).then(success => {
                         // Si la suppression dans Supabase a réussi, mettre à jour le stockage local
                         if (success) {
+                            console.log(`Note ${noteId} supprimée avec succès dans Supabase`);
                             // Mettre à jour toutes les notes locales pour s'assurer que tout est synchronisé
+                            console.log('Synchronisation après suppression...');
                             return syncWithSupabase().then(() => {
+                                console.log('Synchronisation terminée après suppression');
                                 resolve(true);
                             });
                         } else {
+                            console.error(`Échec de suppression de la note ${noteId} dans Supabase`);
                             resolve(true);
                         }
                     }).catch(supabaseError => {
@@ -188,9 +196,11 @@ export function deleteNote(noteId) {
                         resolve(true);
                     });
                 } else {
+                    console.error('Client Supabase non disponible pour supprimer la note');
                     resolve(true);
                 }
             } else {
+                console.log('Supabase non configuré, suppression uniquement en local');
                 resolve(true);
             }
         } catch (error) {

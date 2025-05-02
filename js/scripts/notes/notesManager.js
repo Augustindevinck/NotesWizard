@@ -195,16 +195,24 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
                     await supabaseService.syncWithSupabase();
                     console.log('Synchronisation avec Supabase terminée après suppression');
 
-                    // Recharger la page pour actualiser l'affichage
-                    console.log('Rechargement de la page pour actualiser l\'affichage');
-                    window.location.href = window.location.href;
-
-                    return true;
+                    // Attendre que la suppression soit complètement terminée avant de recharger
+                    console.log('Attente supplémentaire pour garantir la suppression complète...');
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            console.log('Rechargement de la page pour actualiser l\'affichage');
+                            window.location.href = window.location.href;
+                            resolve(true);
+                        }, 1000); // Délai de 1 seconde pour s'assurer que la suppression est terminée
+                    });
                 } catch (syncError) {
                     console.error('Erreur lors de la synchronisation après suppression:', syncError);
-                    // En cas d'erreur de synchronisation, forcer quand même le rechargement
-                    window.location.href = window.location.href;
-                    return true;
+                    // En cas d'erreur de synchronisation, attendre aussi avant le rechargement
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            window.location.href = window.location.href;
+                            resolve(true);
+                        }, 1000);
+                    });
                 }
             } else {
                 console.error(`Échec de la suppression de la note ${noteId} dans Supabase`);
