@@ -348,6 +348,21 @@ header {
     margin: 0 auto;
 }
 
+/* Styles spécifiques pour le bouton de révision des notes anciennes */
+.review-button-container {
+    display: block;
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
+}
+
+/* Style spécifique pour le bouton de révision */
+#review-oldest-btn {
+    background-color: #2c5282;
+    border-color: #2c5282;
+    font-weight: 600;
+}
+
 .general-button:hover {
     background-color: var(--hover-bg);
     transform: translateY(-2px);

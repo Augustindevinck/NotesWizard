@@ -36,10 +36,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Gestionnaire pour le bouton de révision des notes anciennes
     const reviewOldestBtn = document.getElementById('review-oldest-btn');
+    console.log('Bouton de révision trouvé:', reviewOldestBtn);
     if (reviewOldestBtn) {
         reviewOldestBtn.addEventListener('click', () => {
+            console.log('Clic sur le bouton de révision détecté');
             window.location.href = 'review.html';
         });
+    } else {
+        console.error('Bouton de révision non trouvé dans le DOM');
     }
     
     // Récupération des éléments du DOM
