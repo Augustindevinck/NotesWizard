@@ -106,14 +106,11 @@ export function createNoteElement(note, currentSearchTerms) {
         scoreHTML = `<div class="${scoreClasses}" title="${detailsTitle}">${roundedScore}</div>`;
     }
 
-    // Structure complète de la note avec catégories en haut et hashtags en bas
+    // Structure simplifiée de la prévisualisation : uniquement le titre
     noteDiv.innerHTML = `
         <div class="delete-note" title="Supprimer cette note">&times;</div>
         ${scoreHTML}
-        ${categoriesHTML}
         <h3 class="note-title">${note.title || 'Sans titre'}</h3>
-        <div class="note-preview">${previewContent}</div>
-        ${hashtagsHTML}
         <div class="note-date">Créée le ${formattedDate}</div>
     `;
 
