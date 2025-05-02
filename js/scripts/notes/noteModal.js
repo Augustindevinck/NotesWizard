@@ -177,6 +177,18 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
     editButton.onclick = () => {
         viewMode.classList.add('hidden');
         editMode.classList.remove('hidden');
+        
+        // Restaurer les champs d'édition s'ils ont été masqués
+        const highlightedContainers = document.querySelectorAll('.highlighted-content');
+        if (highlightedContainers.length > 0) {
+            // Supprimer les conteneurs surlignés
+            highlightedContainers.forEach(el => el.remove());
+            
+            // Restaurer l'affichage des champs d'origine
+            noteTitle.style.display = '';
+            noteContent.style.display = '';
+        }
+        
         noteTitle.focus();
     };
 
