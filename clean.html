@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nettoyage d'urgence</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        h1 {
+            color: #ff3d3d;
+            text-align: center;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #ff3d3d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #d32f2f;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .loading:after {
+            content: '.';
+            animation: dots 1s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: '....'; }
+        }
+    </style>
+</head>
+<body>
+    <h1>⚠️ Nettoyage d'urgence de la base de données</h1>
+    
+    <div class="warning">
+        <p><strong>ATTENTION:</strong> Cette page va complètement effacer toutes les notes de la base de données Supabase ainsi que du stockage local. Cette action est IRRÉVERSIBLE et ne peut pas être annulée.</p>
+        <p>Utilisez cette option uniquement en dernier recours lorsque l'application est dans un état critique.</p>
+    </div>
+    
+    <button id="clean-database">EFFACER TOUTES LES NOTES</button>
+    <button id="go-back" style="background-color: #6c757d;">RETOUR À L'APPLICATION</button>
+    
+    <div id="loading" class="loading">Nettoyage en cours, veuillez patienter</div>
+    
+    <div id="result"></div>
+    
+    <script>
+        // Variables pour les éléments DOM
+        const cleanButton = document.getElementById('clean-database');
+        const goBackButton = document.getElementById('go-back');
+        const loadingDiv = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        
+        // Fonction pour obtenir les informations de configuration Supabase
+        function getSupabaseConfig() {
+            const url = localStorage.getItem('supabase_url');
+            const key = localStorage.getItem('supabase_key');
+            
+            if (!url || !key) {
+                return null;
+            }
+            
+            return { url, key };
+        }
+        
+        // Fonctions pour afficher les résultats
+        function showSuccess(message) {
+            resultDiv.className = 'success';
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+            loadingDiv.style.display = 'none';
+        }
+        
+        function showError(message) {
+            resultDiv.className = 'error';
+            resultDiv.textContent = message;
+            resultDiv.style.display = 'block';
+            loadingDiv.style.display = 'none';
+        }
+        
+        // Fonction pour nettoyer la base de données
+        async function cleanDatabase() {
+            // Récupérer la configuration Supabase
+            const config = getSupabaseConfig();
+            
+            if (!config) {
+                showError('Configuration Supabase non trouvée. Veuillez configurer Supabase avant d\'utiliser cette fonction.');
+                return;
+            }
+            
+            try {
+                loadingDiv.style.display = 'block';
+                resultDiv.style.display = 'none';
+                
+                // 1. Supprimer toutes les notes de Supabase
+                const deleteResponse = await fetch(`${config.url}/rest/v1/notes?select=id`, {
+                    method: 'DELETE',
+                    headers: {
+                        'apikey': config.key,
+                        'Authorization': `Bearer ${config.key}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!deleteResponse.ok) {
+                    throw new Error(`Erreur lors de la suppression des notes: ${deleteResponse.status} ${deleteResponse.statusText}`);
+                }
+                
+                // 2. Vérifier que toutes les notes ont été supprimées
+                const checkResponse = await fetch(`${config.url}/rest/v1/notes?select=id`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': config.key,
+                        'Authorization': `Bearer ${config.key}`
+                    }
+                });
+                
+                if (!checkResponse.ok) {
+                    throw new Error(`Erreur lors de la vérification: ${checkResponse.status} ${checkResponse.statusText}`);
+                }
+                
+                const remainingNotes = await checkResponse.json();
+                
+                if (Array.isArray(remainingNotes) && remainingNotes.length > 0) {
+                    showError(`La suppression n'a pas été complète. Il reste encore ${remainingNotes.length} notes dans Supabase.`);
+                    return;
+                }
+                
+                // 3. Nettoyer le stockage local
+                localStorage.setItem('notes', JSON.stringify([]));
+                
+                showSuccess('Toutes les notes ont été supprimées avec succès ! Vous pouvez maintenant retourner à l\'application.');
+                
+            } catch (error) {
+                showError(`Une erreur est survenue: ${error.message}`);
+                console.error('Erreur détaillée:', error);
+            }
+        }
+        
+        // Gestionnaires d'événements
+        cleanButton.addEventListener('click', () => {
+            if (confirm('⚠️ ATTENTION: Vous êtes sur le point de SUPPRIMER DÉFINITIVEMENT TOUTES les notes.\n\nCette action est irréversible et ne peut pas être annulée.\n\nÊtes-vous absolument sûr de vouloir continuer?')) {
+                cleanDatabase();
+            }
+        });
+        
+        goBackButton.addEventListener('click', () => {
+            window.location.href = '/';
+        });
+    </script>
+</body>
+</html>
