@@ -10,8 +10,10 @@ import { createNoteElement, deleteNote, saveNote, initNotesManager } from './scr
 import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { initSearchManager, showSearchSuggestions, getCurrentSearchTerms } from './scripts/search/searchManager.js';
+import { initSearchManager } from './scripts/search/searchManager.js';
+import { showSearchSuggestions, getCurrentSearchTerms } from './scripts/search/searchUtils.js';
 import { navigateToPage } from './scripts/utils/navigation.js';
+import { showSupabaseConfigForm } from './scripts/utils/supabaseDirectConfig.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', () => {
@@ -647,43 +649,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Import/Export
-        importExportBtn.addEventListener('click', () => {
-            importExportModal.style.display = 'flex';
-        });
-
-        exportBtn.addEventListener('click', () => {
-            exportNotes(appState.notes);
-        });
-
-        importBtn.addEventListener('click', () => {
-            importFile.click();
-        });
-
-        importFile.addEventListener('change', (event) => {
-            importNotes(event, (importedNotes) => {
-                // Fusionner les notes importées avec les existantes
-                appState.notes = [...appState.notes, ...importedNotes];
-                saveNotes(appState.notes);
-                
-                // Mettre à jour les catégories
-                appState.allCategories.clear();
-                appState.notes.forEach(note => {
-                    if (note.categories) {
-                        note.categories.forEach(category => appState.allCategories.add(category));
-                    }
+        // Configuration Supabase
+        const supabaseConfigBtn = document.getElementById('supabase-config-btn');
+        if (supabaseConfigBtn) {
+            supabaseConfigBtn.addEventListener('click', () => {
+                showSupabaseConfigForm(() => {
+                    // Recharger les notes après configuration
+                    appState.notes = loadNotes();
+                    
+                    // Mettre à jour les catégories
+                    appState.allCategories.clear();
+                    appState.notes.forEach(note => {
+                        if (note.categories) {
+                            note.categories.forEach(category => appState.allCategories.add(category));
+                        }
+                    });
+                    
+                    // Actualiser l'affichage
+                    renderCategoryTree();
                 });
-                
-                // Actualiser l'affichage
-                renderCategoryTree();
-                
-                // Fermer le modal après importation réussie
-                setTimeout(() => {
-                    importExportModal.style.display = 'none';
-                    importStatus.textContent = '';
-                    importFile.value = '';
-                }, 3000);
             });
-        });
+        }
     }
 });
