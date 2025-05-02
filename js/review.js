@@ -215,7 +215,13 @@ function displayNote(note) {
         noteElement.appendChild(categoriesContainer);
     }
     
-    // Ajouter les hashtags
+    // Ajouter le contenu
+    const contentElement = document.createElement('div');
+    contentElement.className = 'review-note-content';
+    contentElement.textContent = note.content || '';
+    noteElement.appendChild(contentElement);
+    
+    // Ajouter les hashtags en bas du contenu, après le texte
     if (note.hashtags && note.hashtags.length > 0) {
         const hashtagsContainer = document.createElement('div');
         hashtagsContainer.className = 'review-hashtags';
@@ -230,18 +236,9 @@ function displayNote(note) {
         noteElement.appendChild(hashtagsContainer);
     }
     
-    // Ajouter le contenu
-    const contentElement = document.createElement('div');
-    contentElement.className = 'review-note-content';
-    contentElement.textContent = note.content || '';
-    noteElement.appendChild(contentElement);
-    
     // Ajouter les dates de création et dernière révision
     const datesElement = document.createElement('div');
     datesElement.className = 'review-note-dates';
-    datesElement.style.fontSize = '0.85rem';
-    datesElement.style.color = 'var(--text-muted)';
-    datesElement.style.marginTop = '15px';
     
     const createdDate = new Date(note.createdAt).toLocaleDateString();
     datesElement.innerHTML = `Créé le: ${createdDate}`;
