@@ -203,22 +203,6 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Créer le contenu avec mise en évidence si c'est un résultat de recherche
         const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
 
-        // Préparer les catégories pour l'affichage
-        let categoriesHTML = '';
-        if (note.categories && note.categories.length > 0) {
-            categoriesHTML = `<div class="note-categories-view">
-                ${note.categories.map(cat => `<span class="note-category">${cat}</span>`).join('')}
-            </div>`;
-        }
-        
-        // Préparer les hashtags pour l'affichage
-        let hashtagsHTML = '';
-        if (note.hashtags && note.hashtags.length > 0) {
-            hashtagsHTML = `<div class="note-hashtags-view">
-                ${note.hashtags.map(tag => `<span class="note-hashtag" data-tag="${tag}">#${tag}</span>`).join('')}
-            </div>`;
-        }
-
         if (fromSearch && currentSearchTerms.length > 0) {
             // Mise en évidence du titre
             let highlightedTitle = note.title || 'Sans titre';
@@ -228,7 +212,8 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
                     highlightedTitle = highlightedTitle.replace(regex, '<span class="highlighted-term">$1</span>');
                 }
             });
-            
+            viewTitle.innerHTML = highlightedTitle;
+
             // Mise en évidence du contenu
             let highlightedContent = displayContent;
             currentSearchTerms.forEach(term => {
@@ -237,35 +222,12 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
                     highlightedContent = highlightedContent.replace(regex, '<span class="highlighted-term">$1</span>');
                 }
             });
-            
-            // Structure complète avec catégories en haut et hashtags en bas
-            viewTitle.innerHTML = highlightedTitle;
-            viewContent.innerHTML = `
-                ${categoriesHTML}
-                <div class="note-content-text">${highlightedContent}</div>
-                ${hashtagsHTML}
-            `;
+            viewContent.innerHTML = highlightedContent;
         } else {
             // Affichage normal sans mise en évidence
             viewTitle.textContent = note.title || 'Sans titre';
-            viewContent.innerHTML = `
-                ${categoriesHTML}
-                <div class="note-content-text">${displayContent}</div>
-                ${hashtagsHTML}
-            `;
+            viewContent.textContent = displayContent;
         }
-        
-        // Ajouter les écouteurs d'événements pour les hashtags cliquables
-        setTimeout(() => {
-            const hashtagElements = viewContent.querySelectorAll('.note-hashtag');
-            hashtagElements.forEach(element => {
-                element.addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    const tag = element.dataset.tag;
-                    window.location.href = `search.html?q=%23${tag}`;
-                });
-            });
-        }, 0);
 
         // Préparer le mode édition
         noteTitle.value = note.title || '';
@@ -299,28 +261,18 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
 
         // Show video URL if present
         if (note.videoUrls && note.videoUrls.length > 0) {
-            // Créer un conteneur pour les vidéos
-            setTimeout(() => {
-                const videoContainer = document.createElement('div');
-                videoContainer.className = 'note-videos';
-                note.videoUrls.forEach(url => {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = url;
-                    iframe.width = '100%';
-                    iframe.height = '315';
-                    iframe.frameBorder = '0';
-                    iframe.allowFullscreen = true;
-                    videoContainer.appendChild(iframe);
-                });
-                
-                // Ajouter après le contenu textuel mais avant les hashtags si présents
-                const hashtagsContainer = viewContent.querySelector('.note-hashtags-view');
-                if (hashtagsContainer) {
-                    viewContent.insertBefore(videoContainer, hashtagsContainer);
-                } else {
-                    viewContent.appendChild(videoContainer);
-                }
-            }, 10);
+            const videoContainer = document.createElement('div');
+            videoContainer.className = 'note-videos';
+            note.videoUrls.forEach(url => {
+                const iframe = document.createElement('iframe');
+                iframe.src = url;
+                iframe.width = '100%';
+                iframe.height = '315';
+                iframe.frameBorder = '0';
+                iframe.allowFullscreen = true;
+                videoContainer.appendChild(iframe);
+            });
+            viewContent.appendChild(videoContainer);
         }
 
         // Surligner les termes de recherche dans les éléments du mode édition si on vient d'une recherche

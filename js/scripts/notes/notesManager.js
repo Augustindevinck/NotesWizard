@@ -32,11 +32,6 @@ export function createNoteElement(note, currentSearchTerms) {
     // Masquer les liens [[...]] pour l'affichage
     const displayContent = note.content.replace(/\[\[.*?\]\]/g, '');
 
-    // Limiter le contenu à 150 caractères pour l'aperçu
-    const previewContent = displayContent.length > 150 
-        ? displayContent.substring(0, 150) + '...' 
-        : displayContent;
-
     // Ajouter une classe spéciale pour les résultats de recherche
     if (note.isSearchResult) {
         noteDiv.className += ' is-search-result';
@@ -50,12 +45,12 @@ export function createNoteElement(note, currentSearchTerms) {
 
     // Create categories HTML
     const categoriesHTML = note.categories && note.categories.length > 0
-        ? `<div class="note-categories">${note.categories.map(cat => `<span class="note-category">${cat}</span>`).join('')}</div>`
+        ? note.categories.map(cat => `<span class="note-category">${cat}</span>`).join('')
         : '';
 
-    // Create hashtags HTML with clickable elements
+    // Create hashtags HTML
     const hashtagsHTML = note.hashtags && note.hashtags.length > 0
-        ? `<div class="note-hashtags">${note.hashtags.map(tag => `<span class="note-hashtag" data-tag="${tag}">#${tag}</span>`).join('')}</div>`
+        ? note.hashtags.map(tag => `<span class="note-hashtag">#${tag}</span>`).join('')
         : '';
         
     // Générer le score pour les résultats de recherche
@@ -106,7 +101,7 @@ export function createNoteElement(note, currentSearchTerms) {
         scoreHTML = `<div class="${scoreClasses}" title="${detailsTitle}">${roundedScore}</div>`;
     }
 
-    // Structure simplifiée de la prévisualisation : uniquement le titre
+    // Add delete button, score indicator, and only the title (no content, categories or hashtags)
     noteDiv.innerHTML = `
         <div class="delete-note" title="Supprimer cette note">&times;</div>
         ${scoreHTML}
@@ -120,14 +115,6 @@ export function createNoteElement(note, currentSearchTerms) {
         if (event.target.classList.contains('delete-note')) {
             event.stopPropagation();
             deleteNote(note.id);
-            return;
-        }
-        
-        // Si on clique sur un hashtag, naviguer vers la page de recherche
-        if (event.target.classList.contains('note-hashtag')) {
-            event.stopPropagation();
-            const tag = event.target.dataset.tag;
-            window.location.href = `search.html?q=%23${tag}`;
             return;
         }
 
@@ -145,16 +132,6 @@ export function createNoteElement(note, currentSearchTerms) {
     deleteBtn.addEventListener('click', (event) => {
         event.stopPropagation();
         deleteNote(note.id);
-    });
-    
-    // Add specific click handlers for hashtags for better touch device support
-    const hashtags = noteDiv.querySelectorAll('.note-hashtag');
-    hashtags.forEach(hashtagElement => {
-        hashtagElement.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const tag = hashtagElement.dataset.tag;
-            window.location.href = `search.html?q=%23${tag}`;
-        });
     });
 
     return noteDiv;

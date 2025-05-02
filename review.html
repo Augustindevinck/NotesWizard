@@ -102,19 +102,16 @@
         }
         
         .review-hashtag {
-            background-color: #353535;
-            color: #cccccc;
+            background-color: var(--hashtag-bg, #f3f4f6);
+            color: var(--hashtag-text, #6b7280);
             padding: 4px 10px;
             border-radius: 4px;
             font-size: 0.85rem;
-            transition: all 0.2s ease;
-            cursor: pointer;
+            transition: background-color 0.2s ease;
         }
         
         .review-hashtag:hover {
-            background-color: #454545;
-            color: white;
-            transform: translateY(-1px);
+            background-color: var(--hashtag-hover, #e5e7eb);
         }
         
         /* Métadonnées de la note (dates) */

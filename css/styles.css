@@ -69,81 +69,8 @@ body {
 }
 
 .note-card {
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    padding: 8px 12px;
-    margin-bottom: 10px;
     position: relative;
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-}
-
-.note-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Conteneur des catégories en haut */
-.note-categories {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
-}
-
-/* Style de chaque catégorie */
-.note-category {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    transition: background-color 0.2s ease;
-}
-
-.note-category:hover {
-    background-color: #5a7ae0;
-}
-
-/* Prévisualisation du contenu */
-.note-preview {
-    margin: 10px 0;
-    line-height: 1.5;
-    color: var(--text-color);
-    font-size: 0.95rem;
-}
-
-/* Conteneur des hashtags en bas */
-.note-hashtags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border-color);
-}
-
-/* Style de chaque hashtag */
-.note-hashtag {
-    background-color: #353535;
-    color: #cccccc;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-.note-hashtag:hover {
-    background-color: #454545;
-    color: white;
-    transform: translateY(-1px);
+    /* autres styles existants... */
 }
 
     flex-direction: column;
@@ -334,58 +261,6 @@ header {
     overflow-x: hidden; /* Empêche le défilement horizontal */
 }
 
-/* Conteneur des catégories dans le mode visualisation */
-.note-categories-view {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 15px;
-}
-
-/* Conteneur du texte principal */
-.note-content-text {
-    white-space: pre-wrap;
-    margin: 15px 0;
-}
-
-/* Conteneur des hashtags dans le mode visualisation */
-.note-hashtags-view {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border-color);
-}
-
-/* Style pour les hashtags cliquables */
-#note-view-content .note-hashtag {
-    background-color: #353535;
-    color: #cccccc;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-    cursor: pointer;
-    display: inline-block;
-}
-
-#note-view-content .note-hashtag:hover {
-    background-color: #454545;
-    color: white;
-    transform: translateY(-1px);
-}
-
-/* Style pour les catégories dans le mode visualisation */
-#note-view-content .note-category {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    display: inline-block;
-}
-
 .edit-button {
     background-color: var(--primary-color);
     color: white;
@@ -438,7 +313,23 @@ header {
     margin-bottom: 20px;
 }
 
-/* Déjà défini plus haut */
+.note-card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 10px;
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    min-height: auto;
+    max-height: auto;
+}
+
+.note-card:hover {
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+}
 
 .general-button {
     background-color: var(--secondary-color);
@@ -510,9 +401,9 @@ header {
 }
 
 .note-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
-    margin: 0;
+    margin-bottom: 4px;
     word-break: break-word;
     padding-right: 20px; /* Espace pour le bouton de suppression */
 }

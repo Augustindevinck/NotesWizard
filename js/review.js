@@ -200,7 +200,7 @@ function displayNote(note) {
     titleElement.textContent = note.title || 'Sans titre';
     noteElement.appendChild(titleElement);
     
-    // Ajouter les catégories en haut
+    // Ajouter les catégories
     if (note.categories && note.categories.length > 0) {
         const categoriesContainer = document.createElement('div');
         categoriesContainer.className = 'review-categories';
@@ -221,7 +221,7 @@ function displayNote(note) {
     contentElement.textContent = note.content || '';
     noteElement.appendChild(contentElement);
     
-    // Ajouter les hashtags en bas du contenu, cliquables pour rediriger vers la recherche
+    // Ajouter les hashtags en bas du contenu, après le texte
     if (note.hashtags && note.hashtags.length > 0) {
         const hashtagsContainer = document.createElement('div');
         hashtagsContainer.className = 'review-hashtags';
@@ -230,13 +230,6 @@ function displayNote(note) {
             const hashtagTag = document.createElement('span');
             hashtagTag.className = 'review-hashtag';
             hashtagTag.textContent = `#${tag}`;
-            hashtagTag.dataset.tag = tag;
-            
-            // Ajouter l'événement de clic pour rediriger vers la page de recherche
-            hashtagTag.addEventListener('click', () => {
-                window.location.href = `search.html?q=%23${tag}`;
-            });
-            
             hashtagsContainer.appendChild(hashtagTag);
         });
         
