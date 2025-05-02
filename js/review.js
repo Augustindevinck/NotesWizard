@@ -10,25 +10,14 @@ import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCat
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
 
 // Éléments DOM
-const reviewNoteDisplay = document.getElementById('review-note-display');
-const nextReviewBtn = document.getElementById('next-review-btn');
-const backToHomeBtn = document.getElementById('back-to-home');
+let reviewNoteDisplay;
+let nextReviewBtn;
+let backToHomeBtn;
 
 // Éléments du modal
-const noteModal = document.getElementById('note-modal');
-const noteTitle = document.getElementById('note-title');
-const noteContent = document.getElementById('note-content');
-const saveNoteBtn = document.getElementById('save-note-btn');
-const deleteNoteBtn = document.getElementById('delete-note-btn');
-const categoryInput = document.getElementById('category-input');
-const categorySuggestions = document.getElementById('category-suggestions');
-const selectedCategories = document.getElementById('selected-categories');
-const detectedHashtags = document.getElementById('detected-hashtags');
-const viewMode = document.getElementById('view-mode');
-const editMode = document.getElementById('edit-mode');
-const viewTitle = document.getElementById('view-title');
-const viewContent = document.getElementById('view-content');
-const editButton = document.getElementById('edit-button');
+let noteModal, noteTitle, noteContent, saveNoteBtn, deleteNoteBtn;
+let categoryInput, categorySuggestions, selectedCategories, detectedHashtags;
+let viewMode, editMode, viewTitle, viewContent, editButton;
 
 // État de l'application
 const appState = {
@@ -45,8 +34,31 @@ document.addEventListener('DOMContentLoaded', init);
  * Initialise l'application
  */
 async function init() {
+    // Initialiser les références DOM
+    reviewNoteDisplay = document.getElementById('review-note-display');
+    nextReviewBtn = document.getElementById('next-review-btn');
+    backToHomeBtn = document.getElementById('back-to-home');
+    
+    // Éléments du modal
+    noteModal = document.getElementById('note-modal');
+    noteTitle = document.getElementById('note-title');
+    noteContent = document.getElementById('note-content');
+    saveNoteBtn = document.getElementById('save-note-btn');
+    deleteNoteBtn = document.getElementById('delete-note-btn');
+    categoryInput = document.getElementById('category-input');
+    categorySuggestions = document.getElementById('category-suggestions');
+    selectedCategories = document.getElementById('selected-categories');
+    detectedHashtags = document.getElementById('detected-hashtags');
+    viewMode = document.getElementById('note-view-mode');
+    editMode = document.getElementById('note-edit-mode');
+    viewTitle = document.getElementById('note-view-title');
+    viewContent = document.getElementById('note-view-content');
+    editButton = document.getElementById('edit-note-btn');
+    
     // Afficher un message de chargement
-    reviewNoteDisplay.innerHTML = '<div class="loading">Chargement de la note à réviser...</div>';
+    if (reviewNoteDisplay) {
+        reviewNoteDisplay.innerHTML = '<div class="loading">Chargement de la note à réviser...</div>';
+    }
     
     // Initialiser le modal de note si présent
     if (noteModal) {
@@ -78,7 +90,8 @@ async function init() {
     // Configurer les écouteurs d'événements
     setupEventListeners();
     
-    // La colonne lastReviewedViaButton existe déjà, pas besoin de la vérifier
+    // La colonne lastReviewedViaButton existe déjà dans la base de données
+    console.log('Chargement des notes pour révision...');
     
     // Charger la note à réviser
     await loadNoteForReview();
@@ -121,8 +134,6 @@ async function loadNoteForReview() {
         }
         
         // La colonne lastReviewedViaButton existe déjà, pas besoin de la vérifier
-        
-        // Tentative de récupération des notes pour la révision
         console.log('Récupération de la note la plus ancienne à réviser...');
         
         // D'abord, essayer de récupérer une note où lastReviewedViaButton est NULL
@@ -135,6 +146,8 @@ async function loadNoteForReview() {
         
         // Si aucune note avec lastReviewedViaButton NULL n'est trouvée, récupérer celle avec la date la plus ancienne
         if ((!nullData || nullData.length === 0) && !nullError) {
+            console.log('Aucune note avec lastReviewedViaButton NULL trouvée, recherche de la plus ancienne...');
+            
             const { data: oldestData, error: oldestError } = await supabase
                 .from('notes')
                 .select('*')
@@ -144,39 +157,8 @@ async function loadNoteForReview() {
             if (oldestError) {
                 console.error('Erreur lors de la récupération de la note la plus ancienne:', oldestError);
                 
-                // Si l'erreur indique que la colonne n'existe pas, essayer de la créer à nouveau
-                if (oldestError.message && oldestError.message.includes('lastReviewedViaButton')) {
-                    console.warn('Tentative de récupération sans la colonne lastReviewedViaButton');
-                    
-                    // Si la colonne n'existe pas, récupérer simplement la note la plus ancienne
-                    const { data: fallbackData, error: fallbackError } = await supabase
-                        .from('notes')
-                        .select('*')
-                        .order('createdAt', { ascending: true })
-                        .limit(1);
-                        
-                    if (fallbackError) {
-                        console.error('Erreur lors de la récupération de secours:', fallbackError);
-                        displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
-                        return;
-                    }
-                    
-                    nullData = fallbackData;
-                } else {
-                    displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
-                    return;
-                }
-            } else {
-                nullData = oldestData;
-            }
-        } else if (nullError) {
-            console.error('Erreur lors de la recherche de notes non révisées:', nullError);
-            
-            // Si l'erreur indique que la colonne n'existe pas, essayer de récupérer sans cette condition
-            if (nullError.message && nullError.message.includes('lastReviewedViaButton')) {
-                console.warn('Tentative de récupération sans la colonne lastReviewedViaButton');
-                
-                // Si la colonne n'existe pas, récupérer simplement la note la plus ancienne
+                // Si l'erreur persiste, récupérer simplement la note la plus ancienne par date de création
+                console.log('Récupération de la note la plus ancienne par date de création...');
                 const { data: fallbackData, error: fallbackError } = await supabase
                     .from('notes')
                     .select('*')
@@ -191,16 +173,35 @@ async function loadNoteForReview() {
                 
                 nullData = fallbackData;
             } else {
+                nullData = oldestData;
+            }
+        } else if (nullError) {
+            console.error('Erreur lors de la recherche de notes non révisées:', nullError);
+            
+            // Si l'erreur persiste, récupérer simplement la note la plus ancienne par date de création
+            console.log('Récupération de la note la plus ancienne par date de création...');
+            const { data: fallbackData, error: fallbackError } = await supabase
+                .from('notes')
+                .select('*')
+                .order('createdAt', { ascending: true })
+                .limit(1);
+                
+            if (fallbackError) {
+                console.error('Erreur lors de la récupération de secours:', fallbackError);
                 displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
                 return;
             }
+            
+            nullData = fallbackData;
         }
         
         // Afficher la note récupérée ou un message si aucune note n'est disponible
         if (nullData && nullData.length > 0) {
+            console.log('Note trouvée pour révision:', nullData[0].title);
             appState.currentNote = nullData[0];
             displayNote(appState.currentNote);
         } else {
+            console.log('Aucune note disponible pour révision');
             displayNoNotesMessage();
         }
     } catch (error) {
@@ -230,30 +231,17 @@ async function updateCurrentNoteReviewTimestamp() {
         
         // Mettre à jour le timestamp de dernière révision
         const now = new Date().toISOString();
-        let updateResult;
+        console.log(`Mise à jour du timestamp de révision pour la note ${appState.currentNote.id} à ${now}`);
         
-        try {
-            // Essayer d'abord avec la colonne lastReviewedViaButton
-            updateResult = await supabase
-                .from('notes')
-                .update({ lastReviewedViaButton: now })
-                .eq('id', appState.currentNote.id)
-                .select()
-                .single();
-        } catch (updateError) {
-            console.error('Erreur lors de la mise à jour avec lastReviewedViaButton:', updateError);
-            
-            // En cas d'échec, mettre à jour sans cette colonne
-            updateResult = await supabase
-                .from('notes')
-                .update({ updatedAt: now })
-                .eq('id', appState.currentNote.id)
-                .select()
-                .single();
-        }
+        const { data, error } = await supabase
+            .from('notes')
+            .update({ lastReviewedViaButton: now })
+            .eq('id', appState.currentNote.id)
+            .select()
+            .single();
         
-        if (updateResult.error) {
-            console.error('Erreur lors de la mise à jour du timestamp de révision:', updateResult.error);
+        if (error) {
+            console.error('Erreur lors de la mise à jour du timestamp de révision:', error);
             return false;
         }
         
