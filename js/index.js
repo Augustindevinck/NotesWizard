@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         // Charger les notes depuis localStorage
         appState.notes = loadNotes();
-        
+
         // Extraire toutes les catégories des notes
         appState.notes.forEach(note => {
             if (note.categories) {
@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialisation des modules
         initCategoryManager(appState.allCategories);
         initSearchManager();
-        
+
         // Initialiser les éléments du modal
         initNoteModal({
             noteModal,
@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editButton,
             saveNoteBtn
         });
-        
+
         // Injecter les fonctions nécessaires au noteModal
         initModalFunctions({
             extractHashtags: extractHashtags,
@@ -129,10 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderRevisitSections(appState.notes);
             })
         });
-        
+
         // Initialiser les fonctions notesManager
         initNotesManager(openNoteModal, () => renderRevisitSections(appState.notes));
-        
+
         // Initialiser les révisitations
         initRevisit({
             containers: {
@@ -146,11 +146,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 section2: showMoreBtn2
             }
         }, revisitSettings);
-        
+
         // Injecter la fonction createNoteElement dans le module revisit
         initCreateNoteElement(createNoteElement);
 
-        
+
 
         // Afficher les notes à revisiter
         renderRevisitSections(appState.notes);
@@ -186,11 +186,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Bouton de révision des notes anciennes
+        const reviewOldestBtn = document.getElementById('review-oldest-btn');
+        if (reviewOldestBtn) {
+            reviewOldestBtn.addEventListener('click', () => {
+                window.location.href = 'review.html';
+            });
+        }
+
         // Saisie de catégorie pour l'autocomplétion
         categoryInput.addEventListener('input', (event) => {
             handleCategoryInput(event, categoryInput, categorySuggestions);
         });
-        
+
         categoryInput.addEventListener('keydown', (event) => {
             handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions);
         });
@@ -280,11 +288,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             note.categories.forEach(category => appState.allCategories.add(category));
                         }
                     });
-                    
+
                     // Actualiser l'affichage
                     renderRevisitSections(appState.notes);
                 }
-                
+
                 // Fermer le modal après importation réussie
                 setTimeout(() => {
                     importExportModal.style.display = 'none';
