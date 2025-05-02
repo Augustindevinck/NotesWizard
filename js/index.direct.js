@@ -23,6 +23,7 @@ import {
 } from './scripts/utils/supabaseService.js';
 import { showSupabaseConfigForm, loadSupabaseFromLocalStorage, isSupabaseConfigured } from './scripts/utils/supabaseDirectConfig.js';
 import { initializeTables } from './scripts/utils/supabaseClient.js';
+import { cleanDatabase, resetSynchronization } from './scripts/utils/databaseCleaner.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', async () => {
