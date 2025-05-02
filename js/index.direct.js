@@ -34,6 +34,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
+    // Gestionnaire pour le bouton de révision des notes anciennes
+    const reviewOldestBtn = document.getElementById('review-oldest-btn');
+    if (reviewOldestBtn) {
+        reviewOldestBtn.addEventListener('click', () => {
+            window.location.href = 'review.html';
+        });
+    }
+    
     // Récupération des éléments du DOM
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');

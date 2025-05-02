@@ -8,6 +8,7 @@ import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
+import { addLastReviewedViaButtonColumn } from './scripts/utils/databaseMigration.js';
 
 // Éléments DOM
 const reviewNoteDisplay = document.getElementById('review-note-display');
@@ -77,6 +78,22 @@ async function init() {
     
     // Configurer les écouteurs d'événements
     setupEventListeners();
+    
+    try {
+        // Vérifier et ajouter la colonne lastReviewedViaButton si nécessaire
+        console.log('Vérification de la présence de la colonne lastReviewedViaButton...');
+        const columnAdded = await addLastReviewedViaButtonColumn();
+        
+        if (columnAdded) {
+            console.log('Colonne lastReviewedViaButton vérifiée avec succès');
+        } else {
+            console.warn('Impossible de vérifier/ajouter la colonne lastReviewedViaButton');
+            // On continue quand même, au cas où la colonne existe déjà
+        }
+    } catch (error) {
+        console.error('Erreur lors de la vérification/ajout de la colonne lastReviewedViaButton:', error);
+        // On continue quand même, au cas où la colonne existe déjà
+    }
     
     // Charger la note à réviser
     await loadNoteForReview();
