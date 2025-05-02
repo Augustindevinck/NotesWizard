@@ -364,6 +364,7 @@ header {
 }
 
 .review-button {
+    width: 100%;
     background-color: var(--primary-color);
     color: white;
     font-weight: bold;
@@ -374,6 +375,9 @@ header {
     justify-content: center;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
 }
 
 .review-button:hover {
