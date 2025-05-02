@@ -246,6 +246,22 @@ export async function deleteNote(id) {
         
         console.log(`Suppression de la note ${id} dans Supabase...`);
         
+        // Première vérification - La note existe-t-elle?
+        const { data: checkData, error: checkError } = await client
+            .from('notes')
+            .select('id')
+            .eq('id', id);
+            
+        if (checkError) {
+            console.error(`Erreur lors de la vérification de la note ${id}:`, checkError);
+        }
+        
+        if (!checkData || checkData.length === 0) {
+            console.log(`La note ${id} n'existe pas dans Supabase, aucune suppression nécessaire.`);
+            return true; // Considéré comme un succès car la note n'existe pas
+        }
+        
+        // La note existe, procéder à la suppression
         const { error } = await client
             .from('notes')
             .delete()
@@ -253,6 +269,33 @@ export async function deleteNote(id) {
         
         if (error) {
             console.error(`Erreur lors de la suppression de la note ${id}:`, error);
+            
+            // Réessayer une fois avec un délai
+            console.log(`Nouvel essai de suppression après délai...`);
+            await new Promise(resolve => setTimeout(resolve, 500)); // Délai de 500ms
+            
+            const { error: retryError } = await client
+                .from('notes')
+                .delete()
+                .eq('id', id);
+                
+            if (retryError) {
+                console.error(`Échec du second essai de suppression:`, retryError);
+                return false;
+            } else {
+                console.log(`Note ${id} supprimée avec succès lors du second essai.`);
+                return true;
+            }
+        }
+        
+        // Vérification finale - La note a-t-elle bien été supprimée?
+        const { data: finalCheckData } = await client
+            .from('notes')
+            .select('id')
+            .eq('id', id);
+            
+        if (finalCheckData && finalCheckData.length > 0) {
+            console.warn(`La note ${id} existe toujours après suppression. Résultat anormal.`);
             return false;
         }
         
