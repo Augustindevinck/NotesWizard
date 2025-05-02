@@ -2,30 +2,15 @@
  * Script principal pour la page de révision des notes les plus anciennes
  */
 
-// Imports des modules
-import { getClient } from './scripts/utils/supabaseClient.js';
-import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
-import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
-import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
-import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
+// État de l'application
+const appState = {
+    currentNote: null,
+};
 
 // Éléments DOM
 let reviewNoteDisplay;
 let nextReviewBtn;
 let backToHomeBtn;
-
-// Éléments du modal
-let noteModal, noteTitle, noteContent, saveNoteBtn, deleteNoteBtn;
-let categoryInput, categorySuggestions, selectedCategories, detectedHashtags;
-let viewMode, editMode, viewTitle, viewContent, editButton;
-
-// État de l'application
-const appState = {
-    notes: [],
-    allCategories: new Set(),
-    currentNote: null,
-    currentSearchTerms: []
-};
 
 // Initialisation de l'application
 document.addEventListener('DOMContentLoaded', init);
@@ -34,64 +19,20 @@ document.addEventListener('DOMContentLoaded', init);
  * Initialise l'application
  */
 async function init() {
+    console.log('Initialisation de la page de révision...');
+    
     // Initialiser les références DOM
     reviewNoteDisplay = document.getElementById('review-note-display');
     nextReviewBtn = document.getElementById('next-review-btn');
     backToHomeBtn = document.getElementById('back-to-home');
-    
-    // Éléments du modal
-    noteModal = document.getElementById('note-modal');
-    noteTitle = document.getElementById('note-title');
-    noteContent = document.getElementById('note-content');
-    saveNoteBtn = document.getElementById('save-note-btn');
-    deleteNoteBtn = document.getElementById('delete-note-btn');
-    categoryInput = document.getElementById('category-input');
-    categorySuggestions = document.getElementById('category-suggestions');
-    selectedCategories = document.getElementById('selected-categories');
-    detectedHashtags = document.getElementById('detected-hashtags');
-    viewMode = document.getElementById('note-view-mode');
-    editMode = document.getElementById('note-edit-mode');
-    viewTitle = document.getElementById('note-view-title');
-    viewContent = document.getElementById('note-view-content');
-    editButton = document.getElementById('edit-note-btn');
     
     // Afficher un message de chargement
     if (reviewNoteDisplay) {
         reviewNoteDisplay.innerHTML = '<div class="loading">Chargement de la note à réviser...</div>';
     }
     
-    // Initialiser le modal de note si présent
-    if (noteModal) {
-        initNoteModal({
-            noteModal,
-            noteTitle,
-            noteContent,
-            selectedCategories,
-            detectedHashtags,
-            deleteNoteBtn,
-            viewMode,
-            editMode,
-            viewTitle,
-            viewContent,
-            editButton,
-            saveNoteBtn
-        });
-        
-        // Injecter les fonctions nécessaires au modal
-        initModalFunctions({
-            extractHashtags: extractHashtags,
-            extractYoutubeUrls: extractYoutubeUrls,
-            addCategoryTag: addCategoryTag,
-            addHashtagTag: addHashtagTag,
-            saveNote: saveNoteWithReviewUpdate
-        });
-    }
-    
     // Configurer les écouteurs d'événements
     setupEventListeners();
-    
-    // La colonne lastReviewedViaButton existe déjà dans la base de données
-    console.log('Chargement des notes pour révision...');
     
     // Charger la note à réviser
     await loadNoteForReview();
@@ -122,7 +63,10 @@ function setupEventListeners() {
  */
 async function loadNoteForReview() {
     try {
-        const supabase = getClient();
+        console.log('Récupération de la note la plus ancienne à réviser...');
+        
+        // Initialiser le client Supabase
+        const supabase = await initSupabaseClient();
         
         if (!supabase) {
             console.error('Client Supabase non disponible - Redirection vers la page d\'accueil');
@@ -132,9 +76,6 @@ async function loadNoteForReview() {
             }, 2000);
             return;
         }
-        
-        // La colonne lastReviewedViaButton existe déjà, pas besoin de la vérifier
-        console.log('Récupération de la note la plus ancienne à réviser...');
         
         // D'abord, essayer de récupérer une note où lastReviewedViaButton est NULL
         let { data: nullData, error: nullError } = await supabase
@@ -220,14 +161,12 @@ async function updateCurrentNoteReviewTimestamp() {
     }
     
     try {
-        const supabase = getClient();
+        const supabase = await initSupabaseClient();
         
         if (!supabase) {
             console.warn('Client Supabase non disponible pour la mise à jour');
             return false;
         }
-        
-        // La colonne lastReviewedViaButton existe déjà, pas besoin de la vérifier
         
         // Mettre à jour le timestamp de dernière révision
         const now = new Date().toISOString();
@@ -250,80 +189,6 @@ async function updateCurrentNoteReviewTimestamp() {
     } catch (error) {
         console.error('Exception lors de la mise à jour du timestamp de révision:', error);
         return false;
-    }
-}
-
-/**
- * Sauvegarde une note avec mise à jour du timestamp de révision
- * @param {Object} noteData - Données de la note
- * @returns {Promise<Object>} - Note sauvegardée
- */
-async function saveNoteWithReviewUpdate(noteData) {
-    try {
-        const supabase = getClient();
-        
-        if (!supabase) {
-            console.warn('Client Supabase non disponible pour la sauvegarde');
-            return null;
-        }
-        
-        // Préparer les données de mise à jour
-        const updates = {
-            ...noteData,
-            updatedAt: new Date().toISOString(),
-            // Ne pas modifier lastReviewedViaButton car l'édition n'est pas une révision
-            categories: Array.isArray(noteData.categories) ? noteData.categories : [],
-            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
-            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : []
-        };
-        
-        // Supprimer lastReviewedViaButton pour éviter qu'il ne soit réinitialisé
-        delete updates.lastReviewedViaButton;
-        
-        // Sauvegarder la note
-        let savedNote;
-        if (noteData.id) {
-            const { data, error } = await supabase
-                .from('notes')
-                .update(updates)
-                .eq('id', noteData.id)
-                .select()
-                .single();
-                
-            if (error) {
-                console.error('Erreur lors de la mise à jour de la note:', error);
-                return null;
-            }
-            
-            savedNote = data;
-        } else {
-            // Cas rare, mais possible si on crée une nouvelle note
-            updates.createdAt = new Date().toISOString();
-            
-            const { data, error } = await supabase
-                .from('notes')
-                .insert(updates)
-                .select()
-                .single();
-                
-            if (error) {
-                console.error('Erreur lors de la création de la note:', error);
-                return null;
-            }
-            
-            savedNote = data;
-        }
-        
-        // Mettre à jour la note courante
-        if (savedNote && appState.currentNote && savedNote.id === appState.currentNote.id) {
-            appState.currentNote = savedNote;
-            displayNote(appState.currentNote);
-        }
-        
-        return savedNote;
-    } catch (error) {
-        console.error('Exception lors de la sauvegarde de la note:', error);
-        return null;
     }
 }
 
@@ -402,13 +267,6 @@ function displayNote(note) {
     
     noteElement.appendChild(datesElement);
     
-    // Ajouter un gestionnaire d'événements pour ouvrir le modal au clic
-    noteElement.addEventListener('click', () => {
-        if (typeof openNoteModal === 'function') {
-            openNoteModal(note, false, []);
-        }
-    });
-    
     // Remplacer le contenu actuel par la nouvelle note
     reviewNoteDisplay.innerHTML = '';
     reviewNoteDisplay.appendChild(noteElement);
@@ -467,5 +325,32 @@ function displayNoNotesMessage() {
         goCreateBtn.addEventListener('click', () => {
             window.location.href = 'index.html';
         });
+    }
+}
+
+/**
+ * Initialise le client Supabase
+ * @returns {Object} - Client Supabase ou null si échec
+ */
+async function initSupabaseClient() {
+    try {
+        // Configuration de Supabase depuis le localStorage
+        const supabaseConfig = JSON.parse(localStorage.getItem('supabaseConfig') || '{}');
+        const supabaseUrl = supabaseConfig.url;
+        const supabaseKey = supabaseConfig.key;
+        
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('Configuration Supabase manquante');
+            return null;
+        }
+        
+        // Utiliser la bibliothèque Supabase Client
+        const { createClient } = supabase;
+        const client = createClient(supabaseUrl, supabaseKey);
+        
+        return client;
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation du client Supabase:', error);
+        return null;
     }
 }
