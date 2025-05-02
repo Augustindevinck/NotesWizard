@@ -236,12 +236,17 @@ header {
 /* Styles pour la vue consultation */
 #note-view-mode {
     padding: 20px 0;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 #note-view-title {
     font-size: 24px;
     margin-bottom: 20px;
     color: var(--text-color);
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    max-width: 100%;
 }
 
 #note-view-content {
@@ -249,6 +254,11 @@ header {
     line-height: 1.6;
     margin-bottom: 20px;
     color: var(--text-color);
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+    overflow-x: hidden; /* Empêche le défilement horizontal */
 }
 
 .edit-button {
@@ -467,6 +477,8 @@ header {
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
     position: relative;
     animation: slideIn 0.3s;
+    overflow-x: hidden; /* Empêche le défilement horizontal */
+    word-wrap: break-word; /* Permet de couper les mots trop longs */
 }
 
 @keyframes slideIn {
@@ -974,6 +986,8 @@ header {
         height: 100%;
         border-radius: 0;
         padding: 15px;
+        overflow-x: hidden;
+        word-wrap: break-word;
     }
 
     .notes-container {
