@@ -1,10 +1,10 @@
 /**
- * Script principal pour la page de révision des notes les plus anciennes
+ * Script pour la page de révision des notes les plus anciennes
  */
 
 // État de l'application
 const appState = {
-    currentNote: null,
+    currentNote: null
 };
 
 // Éléments DOM
@@ -34,8 +34,13 @@ async function init() {
     // Configurer les écouteurs d'événements
     setupEventListeners();
     
-    // Charger la note à réviser
-    await loadNoteForReview();
+    try {
+        // Charger la note à réviser
+        await loadNoteForReview();
+    } catch (error) {
+        console.error("Erreur lors du chargement de la note:", error);
+        displayErrorMessage("Une erreur est survenue lors du chargement de la note à réviser.");
+    }
 }
 
 /**
@@ -65,15 +70,12 @@ async function loadNoteForReview() {
     try {
         console.log('Récupération de la note la plus ancienne à réviser...');
         
-        // Initialiser le client Supabase
-        const supabase = await initSupabaseClient();
+        // Obtenir un client Supabase
+        const supabase = await getSupabaseClient();
         
         if (!supabase) {
-            console.error('Client Supabase non disponible - Redirection vers la page d\'accueil');
-            displayErrorMessage('Client Supabase non disponible. Redirection vers la page d\'accueil...');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
+            console.error('Client Supabase non disponible');
+            displayErrorMessage('Client Supabase non disponible. Veuillez configurer la connexion Supabase dans la page d\'accueil.');
             return;
         }
         
@@ -118,22 +120,8 @@ async function loadNoteForReview() {
             }
         } else if (nullError) {
             console.error('Erreur lors de la recherche de notes non révisées:', nullError);
-            
-            // Si l'erreur persiste, récupérer simplement la note la plus ancienne par date de création
-            console.log('Récupération de la note la plus ancienne par date de création...');
-            const { data: fallbackData, error: fallbackError } = await supabase
-                .from('notes')
-                .select('*')
-                .order('createdAt', { ascending: true })
-                .limit(1);
-                
-            if (fallbackError) {
-                console.error('Erreur lors de la récupération de secours:', fallbackError);
-                displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
-                return;
-            }
-            
-            nullData = fallbackData;
+            displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
+            return;
         }
         
         // Afficher la note récupérée ou un message si aucune note n'est disponible
@@ -161,7 +149,7 @@ async function updateCurrentNoteReviewTimestamp() {
     }
     
     try {
-        const supabase = await initSupabaseClient();
+        const supabase = await getSupabaseClient();
         
         if (!supabase) {
             console.warn('Client Supabase non disponible pour la mise à jour');
@@ -329,26 +317,23 @@ function displayNoNotesMessage() {
 }
 
 /**
- * Initialise le client Supabase
- * @returns {Object} - Client Supabase ou null si échec
+ * Obtient le client Supabase à partir des paramètres stockés dans localStorage
+ * @returns {Object|null} - Client Supabase ou null
  */
-async function initSupabaseClient() {
+async function getSupabaseClient() {
     try {
-        // Configuration de Supabase depuis le localStorage
-        const supabaseConfig = JSON.parse(localStorage.getItem('supabaseConfig') || '{}');
-        const supabaseUrl = supabaseConfig.url;
-        const supabaseKey = supabaseConfig.key;
-        
-        if (!supabaseUrl || !supabaseKey) {
-            console.error('Configuration Supabase manquante');
-            return null;
+        // Vérifier si le client est disponible globalement
+        if (typeof supabase !== 'undefined' && supabase.createClient) {
+            const url = localStorage.getItem('supabase_url');
+            const key = localStorage.getItem('supabase_key');
+            
+            if (url && key) {
+                return supabase.createClient(url, key);
+            }
         }
         
-        // Utiliser la bibliothèque Supabase Client
-        const { createClient } = supabase;
-        const client = createClient(supabaseUrl, supabaseKey);
-        
-        return client;
+        console.error('Client Supabase ou paramètres de connexion non disponibles');
+        return null;
     } catch (error) {
         console.error('Erreur lors de l\'initialisation du client Supabase:', error);
         return null;
