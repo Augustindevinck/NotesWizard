@@ -102,16 +102,19 @@
         }
         
         .review-hashtag {
-            background-color: var(--hashtag-bg, #f3f4f6);
-            color: var(--hashtag-text, #6b7280);
+            background-color: #353535;
+            color: #cccccc;
             padding: 4px 10px;
             border-radius: 4px;
             font-size: 0.85rem;
-            transition: background-color 0.2s ease;
+            transition: all 0.2s ease;
+            cursor: pointer;
         }
         
         .review-hashtag:hover {
-            background-color: var(--hashtag-hover, #e5e7eb);
+            background-color: #454545;
+            color: white;
+            transform: translateY(-1px);
         }
         
         /* Métadonnées de la note (dates) */
@@ -330,8 +333,5 @@
     <!-- Inclure d'abord la bibliothèque Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="module" src="js/review.js"></script>
-    
-    <!-- Script personnalisé pour la visualisation des notes -->
-    <script src="js/customNoteDisplay.js"></script>
 </body>
 </html>
