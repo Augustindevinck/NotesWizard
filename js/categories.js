@@ -10,8 +10,8 @@ import { createNoteElement, deleteNote, saveNote, initNotesManager } from './scr
 import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { initSearchManager } from './scripts/search/searchManager.js';
-import { showSearchSuggestions, getCurrentSearchTerms } from './scripts/search/searchUtils.js';
+import { initSearchManager, getCurrentSearchTerms } from './scripts/search/searchManager.js';
+import { levenshteinDistance } from './scripts/search/searchUtils.js';
 import { navigateToPage } from './scripts/utils/navigation.js';
 import { showSupabaseConfigForm } from './scripts/utils/supabaseDirectConfig.js';
 
@@ -598,15 +598,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Suggestions de recherche en temps réel
         searchInput.addEventListener('input', () => {
-            showSearchSuggestions(
-                searchInput.value, 
-                appState.notes, 
-                searchResults, 
-                (note) => {
-                    openNoteModal(note, true, getCurrentSearchTerms());
-                    searchInput.value = '';
-                }
-            );
+            // Implémentation locale de showSearchSuggestions
+            const query = searchInput.value.trim();
+            if (query.length < 2) {
+                searchResults.innerHTML = '';
+                searchResults.style.display = 'none';
+                return;
+            }
+            
+            // Utiliser la fonction performSearch du searchManager
+            const results = appState.notes.filter(note => {
+                return (note.title && note.title.toLowerCase().includes(query.toLowerCase())) || 
+                       (note.content && note.content.toLowerCase().includes(query.toLowerCase()));
+            }).slice(0, 5);
+            
+            if (results.length > 0) {
+                searchResults.innerHTML = '';
+                results.forEach(note => {
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.textContent = note.title || 'Sans titre';
+                    item.addEventListener('click', () => {
+                        openNoteModal(note, true, getCurrentSearchTerms(query));
+                        searchInput.value = '';
+                        searchResults.style.display = 'none';
+                    });
+                    searchResults.appendChild(item);
+                });
+                searchResults.style.display = 'block';
+            } else {
+                searchResults.innerHTML = '<div class="no-results">Aucun résultat</div>';
+                searchResults.style.display = 'block';
+            }
         });
 
         // Bouton de recherche
