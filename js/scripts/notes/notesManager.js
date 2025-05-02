@@ -195,6 +195,28 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
                     await supabaseService.syncWithSupabase();
                     console.log('Synchronisation avec Supabase terminée après suppression');
 
+                    // Vérifier que la suppression a bien été prise en compte en faisant une vérification supplémentaire
+                    const verificationCheck = async () => {
+                        try {
+                            console.log('Vérification finale de la suppression...');
+                            const supabaseStorage = await import('../utils/supabaseStorage.js');
+                            const noteStillExists = await supabaseStorage.getNote(noteId);
+                            
+                            if (noteStillExists) {
+                                console.warn(`La note ${noteId} existe toujours dans Supabase après suppression, nouvel essai...`);
+                                await supabaseStorage.deleteNote(noteId);
+                                // Une suppression supplémentaire pour s'assurer que la note est bien supprimée
+                                await supabaseService.syncWithSupabase();
+                            } else {
+                                console.log(`Vérification réussie : la note ${noteId} n'existe plus dans Supabase`);
+                            }
+                        } catch (error) {
+                            console.error('Erreur lors de la vérification finale:', error);
+                        }
+                    };
+                    
+                    await verificationCheck();
+                    
                     // Attendre que la suppression soit complètement terminée avant de recharger
                     console.log('Attente supplémentaire pour garantir la suppression complète...');
                     return new Promise(resolve => {
@@ -202,7 +224,7 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
                             console.log('Rechargement de la page pour actualiser l\'affichage');
                             window.location.href = window.location.href;
                             resolve(true);
-                        }, 1000); // Délai de 1 seconde pour s'assurer que la suppression est terminée
+                        }, 1500); // Délai de 1.5 secondes pour s'assurer que la suppression est terminée
                     });
                 } catch (syncError) {
                     console.error('Erreur lors de la synchronisation après suppression:', syncError);

@@ -400,9 +400,30 @@ export function syncWithSupabase() {
                     console.log('Finalisation de la synchronisation...');
                     const updatedSupabaseNotes = await supabaseStorage.getAllNotes();
                     
+                    // Garder une trace du nombre de notes pour les logs
+                    console.log(`${updatedSupabaseNotes.length} notes récupérées depuis Supabase.`);
+                    
                     if (updatedSupabaseNotes.length > 0) {
-                        // Mettre à jour le stockage local avec les notes mises à jour
-                        localStorage.saveAllNotes(updatedSupabaseNotes);
+                        // Récupérer les IDs locaux actuels pour les comparer avec ceux de Supabase
+                        const currentLocalNotes = localStorage.getAllNotes();
+                        const currentLocalIds = new Set(currentLocalNotes.map(note => note.id));
+                        
+                        // Récupérer les IDs Supabase pour la comparaison
+                        const supabaseIds = new Set(updatedSupabaseNotes.map(note => note.id));
+                        
+                        // Vérifier s'il y a des notes locales qui n'existent plus dans Supabase (supprimées dans Supabase)
+                        const notesToKeep = currentLocalNotes.filter(note => supabaseIds.has(note.id));
+                        
+                        // Si des notes ont été supprimées côté Supabase, les supprimer aussi localement
+                        if (notesToKeep.length < currentLocalNotes.length) {
+                            console.log(`${currentLocalNotes.length - notesToKeep.length} notes supprimées côté Supabase, synchronisation...`);
+                            // Mise à jour avec uniquement les notes qui existent toujours dans Supabase
+                            localStorage.saveAllNotes(updatedSupabaseNotes);
+                        } else {
+                            // Sinon, mise à jour normale
+                            localStorage.saveAllNotes(updatedSupabaseNotes);
+                        }
+                        
                         console.log(`Stockage local mis à jour avec ${updatedSupabaseNotes.length} notes de Supabase.`);
                     }
                     
