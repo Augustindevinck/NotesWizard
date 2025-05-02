@@ -23,78 +23,9 @@ import {
 } from './scripts/utils/supabaseService.js';
 import { showSupabaseConfigForm, loadSupabaseFromLocalStorage, isSupabaseConfigured } from './scripts/utils/supabaseDirectConfig.js';
 import { initializeTables } from './scripts/utils/supabaseClient.js';
-import { cleanDatabase, resetSynchronization } from './scripts/utils/databaseCleaner.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', async () => {
-    // Bouton d'urgence pour nettoyer complètement la base de données
-    const emergencyResetBtn = document.createElement('button');
-    emergencyResetBtn.id = 'emergency-reset-btn';
-    emergencyResetBtn.className = 'emergency-btn';
-    emergencyResetBtn.innerHTML = '⚠️ Réinitialisation d\'Urgence';
-    emergencyResetBtn.title = 'Nettoyer complètement la base de données en cas de problème grave';
-    emergencyResetBtn.style.position = 'fixed';
-    emergencyResetBtn.style.bottom = '10px';
-    emergencyResetBtn.style.right = '10px';
-    emergencyResetBtn.style.zIndex = '1000';
-    emergencyResetBtn.style.backgroundColor = '#ff5252';
-    emergencyResetBtn.style.color = 'white';
-    emergencyResetBtn.style.border = 'none';
-    emergencyResetBtn.style.borderRadius = '4px';
-    emergencyResetBtn.style.padding = '8px 12px';
-    emergencyResetBtn.style.cursor = 'pointer';
-    emergencyResetBtn.style.fontSize = '14px';
-    emergencyResetBtn.style.fontWeight = 'bold';
-    emergencyResetBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-    
-    // Ajouter l'écouteur d'événement pour le bouton d'urgence
-    emergencyResetBtn.addEventListener('click', async () => {
-        const confirmReset = confirm(
-            'ATTENTION : Vous êtes sur le point de réinitialiser complètement la base de données.' +
-            '\n\nCette action va supprimer toutes les notes et résoudre les problèmes de synchronisation.' +
-            '\n\nVoulez-vous préserver les notes locales actuelles ? (Annuler pour tout supprimer)'
-        );
-        
-        if (confirmReset !== null) { // L'utilisateur n'a pas cliqué sur "Fermer"
-            try {
-                // Afficher un message de chargement
-                const loadingMessage = document.createElement('div');
-                loadingMessage.style.position = 'fixed';
-                loadingMessage.style.top = '50%';
-                loadingMessage.style.left = '50%';
-                loadingMessage.style.transform = 'translate(-50%, -50%)';
-                loadingMessage.style.padding = '20px';
-                loadingMessage.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-                loadingMessage.style.color = 'white';
-                loadingMessage.style.borderRadius = '5px';
-                loadingMessage.style.zIndex = '9999';
-                loadingMessage.innerHTML = 'Nettoyage en cours... Veuillez patienter.';
-                document.body.appendChild(loadingMessage);
-                
-                // Attendre un peu pour que le message s'affiche
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Nettoyer la base de données
-                const success = await cleanDatabase(confirmReset === true);
-                
-                if (success) {
-                    // Attendre un peu avant de recharger
-                    setTimeout(() => {
-                        alert('Nettoyage terminé avec succès. La page va être rechargée.');
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    document.body.removeChild(loadingMessage);
-                    alert('Erreur lors du nettoyage. Veuillez réessayer ou contacter le support.');
-                }
-            } catch (error) {
-                console.error('Erreur lors du nettoyage d\'urgence:', error);
-                alert('Une erreur critique est survenue. Veuillez contacter le support technique.');
-            }
-        }
-    });
-    
-    document.body.appendChild(emergencyResetBtn);
     // Gestionnaire pour le bouton Vue générale
     const generalViewBtn = document.getElementById('general-view-btn');
     if (generalViewBtn) {

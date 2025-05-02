@@ -2,9 +2,8 @@
  * Gestionnaire des notes (création, édition, suppression)
  */
 
-import { saveNotes, saveNote as saveSupabaseNote } from '../utils/supabaseStorage.js';
+import { saveNotes, saveNote as saveSupabaseNote, deleteNote as deleteSupabaseNote } from '../utils/supabaseStorage.js';
 import { generateUniqueId, formatDate } from '../utils/domHelpers.js';
-import { deleteNotePermanently } from '../utils/databaseCleaner.js';
 
 // Variable pour stocker la fonction openNoteModal (à initialiser)
 let openNoteModalFn = null;
@@ -139,56 +138,87 @@ export function createNoteElement(note, currentSearchTerms) {
 }
 
 /**
- * Supprime une note avec une suppression définitive et robuste
+ * Supprime une note
  * @param {string} noteId - L'identifiant de la note à supprimer
  * @param {Array} notes - Le tableau des notes
  * @param {Function} renderEmptyState - Fonction pour afficher l'état vide
  * @returns {Promise<boolean>} - True si la note a été supprimée, false sinon
  */
 export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
-    // Demander confirmation avant de supprimer
+    // Ask for confirmation before deleting
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         try {
-            console.log('=== SUPPRESSION DE NOTE AVEC NOUVEL UTILITAIRE ===');
-            
-            // Utiliser notre nouvel utilitaire de suppression permanente
-            const success = await deleteNotePermanently(noteId);
-            
+            console.log(`Début de la suppression de la note ${noteId}...`);
+
+            // Supprimer la note via Supabase
+            const success = await deleteSupabaseNote(noteId);
+
             if (success) {
-                console.log('Suppression définitive réussie, mise à jour de l\'interface...');
-                
-                // Mettre à jour l'état local si des notes sont fournies
+                console.log(`Note ${noteId} supprimée avec succès dans Supabase`);
+
+                // Mise à jour synchrone du stockage local via localStorage
+                try {
+                    const localStorage = await import('../utils/localStorage.js');
+                    // Supprimer toutes les notes avec cet ID pour éviter des problèmes de doublons
+                    const localNotes = localStorage.getAllNotes();
+
+                    // Filtrer strictement avec triple égalité pour garantir une correspondance exacte
+                    const updatedLocalNotes = localNotes.filter(note => note.id !== noteId);
+
+                    // Vérifier si des notes ont été supprimées
+                    const deletedCount = localNotes.length - updatedLocalNotes.length;
+
+                    localStorage.saveAllNotes(updatedLocalNotes);
+                    console.log(`${deletedCount} note(s) avec ID ${noteId} supprimée(s) du stockage local, ${updatedLocalNotes.length} notes restantes`);
+                } catch (localStorageError) {
+                    console.error('Erreur lors de la mise à jour du stockage local:', localStorageError);
+                }
+
+                // Si des notes sont fournies, mettre à jour l'état local aussi
                 if (notes && notes.length > 0) {
                     const noteIndex = notes.findIndex(note => note.id === noteId);
                     if (noteIndex !== -1) {
                         notes.splice(noteIndex, 1);
-                        console.log(`Note ${noteId} supprimée du tableau local, ${notes.length} notes restantes.`);
+                        console.log(`Note ${noteId} supprimée du tableau local, ${notes.length} notes restantes`);
                     }
                 }
-                
-                // Mettre à jour les sections de révision si disponible
+
+                // Mettre à jour les sections de révision si la fonction est disponible
                 if (renderRevisitSectionsFn) {
                     await renderRevisitSectionsFn(notes);
-                    console.log('Sections de révision mises à jour après suppression.');
+                    console.log('Sections de révision mises à jour après suppression');
                 }
-                
-                // Recharger la page pour terminer la suppression
-                console.log('Rechargement de la page après suppression définitive...');
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        window.location.href = window.location.href;
-                        resolve(true);
-                    }, 2000);
-                });
+
+                try {
+                    // Forcer une synchronisation complète avec Supabase pour mettre à jour l'état local
+                    const supabaseService = await import('../utils/supabaseService.js');
+                    await supabaseService.syncWithSupabase();
+                    console.log('Synchronisation avec Supabase terminée après suppression');
+
+                    // Attendre que la suppression soit complètement terminée avant de recharger
+                    console.log('Attente supplémentaire pour garantir la suppression complète...');
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            console.log('Rechargement de la page pour actualiser l\'affichage');
+                            window.location.href = window.location.href;
+                            resolve(true);
+                        }, 1000); // Délai de 1 seconde pour s'assurer que la suppression est terminée
+                    });
+                } catch (syncError) {
+                    console.error('Erreur lors de la synchronisation après suppression:', syncError);
+                    // En cas d'erreur de synchronisation, attendre aussi avant le rechargement
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            window.location.href = window.location.href;
+                            resolve(true);
+                        }, 1000);
+                    });
+                }
             } else {
-                console.error('Échec de la suppression définitive.');
-                alert('La suppression a échoué. Veuillez réessayer plus tard.');
-                return false;
+                console.error(`Échec de la suppression de la note ${noteId} dans Supabase`);
             }
         } catch (error) {
-            console.error('Erreur grave lors de la suppression:', error);
-            alert('Une erreur est survenue lors de la suppression. Veuillez réessayer.');
-            return false;
+            console.error('Erreur lors de la suppression de la note:', error);
         }
     }
     return false;
