@@ -127,25 +127,21 @@ async function loadNoteForReview() {
         const supabase = getClient();
         
         if (!supabase) {
-            displayErrorMessage('Client Supabase non disponible. Veuillez vérifier votre connexion.');
+            console.error('Client Supabase non disponible - Redirection vers la page d\'accueil');
+            displayErrorMessage('Client Supabase non disponible. Redirection vers la page d\'accueil...');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
             return;
         }
         
-        // Vérifier si l'utilisateur est connecté à Supabase
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-            try {
-                const { error: authError } = await supabase.auth.signInAnonymously();
-                if (authError) {
-                    displayErrorMessage('Erreur de connexion à Supabase. Veuillez réessayer.');
-                    console.error('Erreur lors de la connexion anonyme:', authError);
-                    return;
-                }
-            } catch (authError) {
-                displayErrorMessage('Erreur de connexion à Supabase. Veuillez réessayer.');
-                console.error('Exception lors de la connexion anonyme:', authError);
-                return;
-            }
+        // Vérifier d'abord si la colonne lastReviewedViaButton existe, sinon la créer
+        try {
+            // Cette vérification a déjà été faite dans init(), mais on le refait ici pour être sûr
+            await addLastReviewedViaButtonColumn();
+        } catch (migrationError) {
+            console.error('Erreur lors de la migration de la base de données:', migrationError);
+            // On continue quand même, au cas où la colonne existe déjà malgré l'erreur
         }
         
         // Tentative de récupération des notes pour la révision
@@ -160,7 +156,7 @@ async function loadNoteForReview() {
             .limit(1);
         
         // Si aucune note avec lastReviewedViaButton NULL n'est trouvée, récupérer celle avec la date la plus ancienne
-        if ((nullError || !nullData || nullData.length === 0) && !nullError) {
+        if ((!nullData || nullData.length === 0) && !nullError) {
             const { data: oldestData, error: oldestError } = await supabase
                 .from('notes')
                 .select('*')
@@ -170,26 +166,56 @@ async function loadNoteForReview() {
             if (oldestError) {
                 console.error('Erreur lors de la récupération de la note la plus ancienne:', oldestError);
                 
-                // Vérifier si l'erreur est due à une colonne manquante
+                // Si l'erreur indique que la colonne n'existe pas, essayer de la créer à nouveau
                 if (oldestError.message && oldestError.message.includes('lastReviewedViaButton')) {
-                    displayErrorMessage('La colonne lastReviewedViaButton n\'existe pas encore dans la base de données. Veuillez la créer.');
+                    console.warn('Tentative de récupération sans la colonne lastReviewedViaButton');
+                    
+                    // Si la colonne n'existe pas, récupérer simplement la note la plus ancienne
+                    const { data: fallbackData, error: fallbackError } = await supabase
+                        .from('notes')
+                        .select('*')
+                        .order('createdAt', { ascending: true })
+                        .limit(1);
+                        
+                    if (fallbackError) {
+                        console.error('Erreur lors de la récupération de secours:', fallbackError);
+                        displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
+                        return;
+                    }
+                    
+                    nullData = fallbackData;
                 } else {
                     displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
+                    return;
                 }
-                return;
+            } else {
+                nullData = oldestData;
             }
-            
-            nullData = oldestData;
         } else if (nullError) {
             console.error('Erreur lors de la recherche de notes non révisées:', nullError);
             
-            // Vérifier si l'erreur est due à une colonne manquante
+            // Si l'erreur indique que la colonne n'existe pas, essayer de récupérer sans cette condition
             if (nullError.message && nullError.message.includes('lastReviewedViaButton')) {
-                displayErrorMessage('La colonne lastReviewedViaButton n\'existe pas encore dans la base de données. Veuillez la créer.');
+                console.warn('Tentative de récupération sans la colonne lastReviewedViaButton');
+                
+                // Si la colonne n'existe pas, récupérer simplement la note la plus ancienne
+                const { data: fallbackData, error: fallbackError } = await supabase
+                    .from('notes')
+                    .select('*')
+                    .order('createdAt', { ascending: true })
+                    .limit(1);
+                    
+                if (fallbackError) {
+                    console.error('Erreur lors de la récupération de secours:', fallbackError);
+                    displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
+                    return;
+                }
+                
+                nullData = fallbackData;
             } else {
                 displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
+                return;
             }
-            return;
         }
         
         // Afficher la note récupérée ou un message si aucune note n'est disponible
@@ -222,17 +248,40 @@ async function updateCurrentNoteReviewTimestamp() {
             return false;
         }
         
+        // Vérifier encore une fois que la colonne existe
+        try {
+            await addLastReviewedViaButtonColumn();
+        } catch (migrationError) {
+            console.warn('Impossible de vérifier/créer la colonne lastReviewedViaButton:', migrationError);
+            // On continue quand même pour essayer de faire la mise à jour
+        }
+        
         // Mettre à jour le timestamp de dernière révision
         const now = new Date().toISOString();
-        const { data, error } = await supabase
-            .from('notes')
-            .update({ lastReviewedViaButton: now })
-            .eq('id', appState.currentNote.id)
-            .select()
-            .single();
+        let updateResult;
         
-        if (error) {
-            console.error('Erreur lors de la mise à jour du timestamp de révision:', error);
+        try {
+            // Essayer d'abord avec la colonne lastReviewedViaButton
+            updateResult = await supabase
+                .from('notes')
+                .update({ lastReviewedViaButton: now })
+                .eq('id', appState.currentNote.id)
+                .select()
+                .single();
+        } catch (updateError) {
+            console.error('Erreur lors de la mise à jour avec lastReviewedViaButton:', updateError);
+            
+            // En cas d'échec, mettre à jour sans cette colonne
+            updateResult = await supabase
+                .from('notes')
+                .update({ updatedAt: now })
+                .eq('id', appState.currentNote.id)
+                .select()
+                .single();
+        }
+        
+        if (updateResult.error) {
+            console.error('Erreur lors de la mise à jour du timestamp de révision:', updateResult.error);
             return false;
         }
         
