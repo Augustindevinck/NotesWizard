@@ -438,23 +438,7 @@ header {
     margin-bottom: 20px;
 }
 
-.note-card {
-    background: var(--card-bg);
-    border-radius: var(--border-radius);
-    padding: 10px;
-    box-shadow: var(--shadow);
-    transition: var(--transition);
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    min-height: auto;
-    max-height: auto;
-}
-
-.note-card:hover {
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-    transform: translateY(-2px);
-}
+/* Déjà défini plus haut */
 
 .general-button {
     background-color: var(--secondary-color);
