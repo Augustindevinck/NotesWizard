@@ -362,13 +362,17 @@ export function syncWithSupabase() {
                     }
                     
                     // Les notes restantes dans supabaseNotesMap existent uniquement dans Supabase
-                    // Les ajouter au stockage local
+                    // Les ajouter au stockage local sans créer de doublons
                     console.log('Synchronisation des notes Supabase vers le stockage local...');
                     const allNotes = localStorage.getAllNotes();
+                    
+                    // Créer un Set des IDs locaux pour vérification rapide
+                    const localNoteIds = new Set(allNotes.map(note => note.id));
                     let newLocalNotesCount = 0;
                     
                     for (const [id, note] of supabaseNotesMap.entries()) {
-                        if (note && id) {
+                        // Vérifier si la note n'existe pas déjà dans le stockage local
+                        if (note && id && !localNoteIds.has(id)) {
                             console.log(`Ajout de la note Supabase "${note.title}" (ID: ${id}) au stockage local...`);
                             allNotes.push(note);
                             newLocalNotesCount++;

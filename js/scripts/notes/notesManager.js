@@ -52,15 +52,15 @@ export function createNoteElement(note, currentSearchTerms) {
     const hashtagsHTML = note.hashtags && note.hashtags.length > 0
         ? note.hashtags.map(tag => `<span class="note-hashtag">#${tag}</span>`).join('')
         : '';
-        
+
     // Générer le score pour les résultats de recherche
     let scoreHTML = '';
     if ((note.searchScore !== undefined || note.relevanceScore !== undefined) && 
         (note.searchScore > 0 || note.relevanceScore > 0)) {
-        
+
         const score = note.searchScore !== undefined ? note.searchScore : note.relevanceScore;
         const roundedScore = Math.round(score);
-        
+
         // Classes CSS pour le score
         let scoreClasses = "search-score";
         if (note._scoreDetails) {
@@ -71,10 +71,10 @@ export function createNoteElement(note, currentSearchTerms) {
                 scoreClasses += " has-hashtag-score";
             }
         }
-        
+
         // Titre détaillé pour l'infobulle
         let detailsTitle = `Score: ${score.toFixed(1)} points`;
-        
+
         if (note._scoreDetails) {
             const details = [];
             if (note._scoreDetails.title > 0) {
@@ -92,12 +92,12 @@ export function createNoteElement(note, currentSearchTerms) {
             if (note._scoreDetails.recency > 0) {
                 details.push(`Récence: ${note._scoreDetails.recency} pts`);
             }
-            
+
             if (details.length > 0) {
                 detailsTitle += '\n' + details.join('\n');
             }
         }
-        
+
         scoreHTML = `<div class="${scoreClasses}" title="${detailsTitle}">${roundedScore}</div>`;
     }
 
@@ -149,24 +149,31 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         try {
             console.log(`Début de la suppression de la note ${noteId}...`);
-            
+
             // Supprimer la note via Supabase
             const success = await deleteSupabaseNote(noteId);
 
             if (success) {
                 console.log(`Note ${noteId} supprimée avec succès dans Supabase`);
-                
+
                 // Mise à jour synchrone du stockage local via localStorage
                 try {
                     const localStorage = await import('../utils/localStorage.js');
+                    // Supprimer toutes les notes avec cet ID pour éviter des problèmes de doublons
                     const localNotes = localStorage.getAllNotes();
+
+                    // Filtrer strictement avec triple égalité pour garantir une correspondance exacte
                     const updatedLocalNotes = localNotes.filter(note => note.id !== noteId);
+
+                    // Vérifier si des notes ont été supprimées
+                    const deletedCount = localNotes.length - updatedLocalNotes.length;
+
                     localStorage.saveAllNotes(updatedLocalNotes);
-                    console.log(`Note ${noteId} supprimée du stockage local, ${updatedLocalNotes.length} notes restantes`);
+                    console.log(`${deletedCount} note(s) avec ID ${noteId} supprimée(s) du stockage local, ${updatedLocalNotes.length} notes restantes`);
                 } catch (localStorageError) {
                     console.error('Erreur lors de la mise à jour du stockage local:', localStorageError);
                 }
-                
+
                 // Si des notes sont fournies, mettre à jour l'état local aussi
                 if (notes && notes.length > 0) {
                     const noteIndex = notes.findIndex(note => note.id === noteId);
@@ -175,23 +182,23 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
                         console.log(`Note ${noteId} supprimée du tableau local, ${notes.length} notes restantes`);
                     }
                 }
-                
+
                 // Mettre à jour les sections de révision si la fonction est disponible
                 if (renderRevisitSectionsFn) {
                     await renderRevisitSectionsFn(notes);
                     console.log('Sections de révision mises à jour après suppression');
                 }
-                
+
                 try {
                     // Forcer une synchronisation complète avec Supabase pour mettre à jour l'état local
                     const supabaseService = await import('../utils/supabaseService.js');
                     await supabaseService.syncWithSupabase();
                     console.log('Synchronisation avec Supabase terminée après suppression');
-                    
+
                     // Recharger la page pour actualiser l'affichage
                     console.log('Rechargement de la page pour actualiser l\'affichage');
                     window.location.href = window.location.href;
-                    
+
                     return true;
                 } catch (syncError) {
                     console.error('Erreur lors de la synchronisation après suppression:', syncError);
@@ -219,7 +226,7 @@ export async function deleteNote(noteId, notes = [], renderEmptyState = null) {
 export async function saveNote(noteData, notes = [], callback = null) {
     try {
         console.log('Début de la sauvegarde de la note...');
-        
+
         // Normaliser toutes les propriétés pour s'assurer qu'elles sont correctement formatées
         // S'assurer que les propriétés sont des tableaux
         const processedNoteData = {
@@ -323,11 +330,11 @@ export async function saveNote(noteData, notes = [], callback = null) {
  */
 function normalizeArray(value) {
     if (!value) return [];
-    
+
     if (Array.isArray(value)) {
         return value.filter(Boolean); // Filtrer les valeurs falsy
     }
-    
+
     if (typeof value === 'string') {
         // Si c'est une chaîne qui ressemble à un tableau JSON, essayer de la parser
         if (value.startsWith('[') && value.endsWith(']')) {
@@ -344,7 +351,7 @@ function normalizeArray(value) {
         // Retourner un tableau avec la chaîne comme élément unique
         return [value];
     }
-    
+
     // Pour les autres types, essayer de les convertir en chaîne puis les mettre dans un tableau
     return [String(value)];
 }
