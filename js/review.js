@@ -219,6 +219,11 @@ function displayNote(note) {
             const categoryTag = document.createElement('span');
             categoryTag.className = 'review-category';
             categoryTag.textContent = category;
+            categoryTag.style.cursor = 'pointer';
+            // Ajouter un événement de clic pour rediriger vers la page des catégories
+            categoryTag.addEventListener('click', () => {
+                window.location.href = `categories.html?category=${encodeURIComponent(category)}`;
+            });
             categoriesContainer.appendChild(categoryTag);
         });
         

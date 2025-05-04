@@ -75,6 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 note.categories.forEach(category => appState.allCategories.add(category));
             }
         });
+        
+        // Vérifier si une catégorie est spécifiée dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const categoryParam = urlParams.get('category');
 
         // Initialisation des modules
         initCategoryManager(appState.allCategories);
@@ -117,6 +121,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Configurer les écouteurs d'événements
         setupEventListeners();
+        
+        // Sélectionner automatiquement la catégorie spécifiée dans l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const categoryParam = urlParams.get('category');
+        if (categoryParam && appState.allCategories.has(categoryParam)) {
+            // Attendre un court instant pour que l'arborescence soit complètement rendue
+            setTimeout(() => {
+                const categoryItems = document.querySelectorAll('.category-tree-item');
+                for (const item of categoryItems) {
+                    if (item.dataset.category === categoryParam) {
+                        // Trouver le nom de la catégorie pour simuler un clic
+                        const nameElement = item.querySelector('.category-tree-name');
+                        if (nameElement) {
+                            nameElement.click();
+                            
+                            // Ouvrir les parents si nécessaire (pour les sous-catégories)
+                            let parent = item.parentElement.closest('.category-tree-item');
+                            while (parent) {
+                                const expandBtn = parent.querySelector('.category-tree-expand-btn');
+                                if (expandBtn && expandBtn.dataset.expanded === 'false') {
+                                    expandBtn.click();
+                                }
+                                parent = parent.parentElement.closest('.category-tree-item');
+                            }
+                            
+                            // Faire défiler jusqu'à l'élément
+                            item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        break;
+                    }
+                }
+            }, 300);
+        }
     }
 
     /**

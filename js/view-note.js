@@ -231,15 +231,18 @@ function displayNote(note) {
     categoriesContainer.innerHTML = '';
     if (note.categories && note.categories.length > 0) {
         note.categories.forEach(category => {
-            // Créer l'élément tag manuellement pour éviter les comportements indésirables
+            // Créer l'élément tag manuellement
             const tagElement = document.createElement('span');
             tagElement.className = 'category-tag';
             tagElement.textContent = category;
             tagElement.dataset.value = category;
-            // Éviter que les catégories soient cliquables sur la page de visualisation
+            // Rendre la catégorie cliquable pour rediriger vers la page des catégories
+            tagElement.style.cursor = 'pointer';
             tagElement.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                // Rediriger vers la page des catégories avec cette catégorie sélectionnée
+                window.location.href = `categories.html?category=${encodeURIComponent(category)}`;
             });
             categoriesContainer.appendChild(tagElement);
         });
