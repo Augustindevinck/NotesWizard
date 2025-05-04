@@ -92,13 +92,13 @@ export function extractImgurImages(content) {
                 if (albumIdMatch && albumIdMatch[1]) {
                     const albumId = albumIdMatch[1];
                     
-                    // Pour les albums, nous allons créer un iframe avec l'URL complète
+                    // Pour les albums, nous allons créer un iframe avec l'URL correcte d'intégration
                     imgurMedia.push({
                         type: 'album',
                         id: albumId,
                         originalUrl: imgUrl,
-                        embedUrl: `https://imgur.com/a/${albumId}/embed`,
-                        thumbnailUrl: `https://i.imgur.com/a/${albumId}.jpg`
+                        embedUrl: `https://imgur.com/a/${albumId}/embed?pub=true`,
+                        thumbnailUrl: `https://i.imgur.com/${albumId}h.jpg`
                     });
                 }
             } else {

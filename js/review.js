@@ -299,6 +299,7 @@ function displayNote(note) {
                 iframe.frameBorder = '0';
                 iframe.allowFullscreen = true;
                 iframe.loading = 'lazy';
+                iframe.style.backgroundColor = '#2e2e2e';
                 
                 // Ajouter un texte informatif
                 const albumInfo = document.createElement('div');
