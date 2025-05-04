@@ -2,6 +2,8 @@
  * Script pour la page de révision des notes les plus anciennes
  */
 
+import { extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
+
 // État de l'application
 const appState = {
     currentNote: null
@@ -235,6 +237,22 @@ function displayNote(note) {
     contentElement.className = 'review-note-content';
     contentElement.textContent = note.content || '';
     noteElement.appendChild(contentElement);
+    
+    // Ajouter les vidéos YouTube si présentes
+    if (note.videoUrls && note.videoUrls.length > 0) {
+        const videoContainer = document.createElement('div');
+        videoContainer.className = 'note-videos';
+        note.videoUrls.forEach(url => {
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.width = '100%';
+            iframe.height = '315';
+            iframe.frameBorder = '0';
+            iframe.allowFullscreen = true;
+            videoContainer.appendChild(iframe);
+        });
+        noteElement.appendChild(videoContainer);
+    }
     
     // Ajouter les hashtags en bas du contenu, après le texte
     if (note.hashtags && note.hashtags.length > 0) {
