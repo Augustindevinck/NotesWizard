@@ -76,10 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Vérifier si une catégorie est spécifiée dans l'URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const categoryParam = urlParams.get('category');
-
         // Initialisation des modules
         initCategoryManager(appState.allCategories);
         initSearchManager();
@@ -125,26 +121,39 @@ document.addEventListener('DOMContentLoaded', () => {
         // Sélectionner automatiquement la catégorie spécifiée dans l'URL
         const urlParams = new URLSearchParams(window.location.search);
         const categoryParam = urlParams.get('category');
-        if (categoryParam && appState.allCategories.has(categoryParam)) {
-            // Attendre un court instant pour que l'arborescence soit complètement rendue
+        if (categoryParam) {
+            console.log('Recherche de la catégorie:', categoryParam);
+            // Attendre un instant plus long pour que l'arborescence soit complètement rendue
             setTimeout(() => {
                 const categoryItems = document.querySelectorAll('.category-tree-item');
+                console.log('Nombre d\'éléments trouvés:', categoryItems.length);
+                
+                let found = false;
                 for (const item of categoryItems) {
                     if (item.dataset.category === categoryParam) {
-                        // Trouver le nom de la catégorie pour simuler un clic
+                        console.log('Catégorie trouvée dans l\'arborescence:', item.dataset.category);
+                        found = true;
+                        
+                        // Ouvrir les parents d'abord si nécessaire (pour les sous-catégories)
+                        let parent = item.parentElement.closest('.category-tree-item');
+                        while (parent) {
+                            const expandBtn = parent.querySelector('.category-tree-expand-btn');
+                            if (expandBtn && expandBtn.dataset.expanded === 'false') {
+                                console.log('Ouverture du parent:', parent.dataset.category);
+                                expandBtn.click();
+                            }
+                            parent = parent.parentElement.closest('.category-tree-item');
+                        }
+                        
+                        // Après avoir ouvert les parents, simuler le clic sur la catégorie
                         const nameElement = item.querySelector('.category-tree-name');
                         if (nameElement) {
+                            console.log('Clic sur la catégorie:', item.dataset.category);
                             nameElement.click();
                             
-                            // Ouvrir les parents si nécessaire (pour les sous-catégories)
-                            let parent = item.parentElement.closest('.category-tree-item');
-                            while (parent) {
-                                const expandBtn = parent.querySelector('.category-tree-expand-btn');
-                                if (expandBtn && expandBtn.dataset.expanded === 'false') {
-                                    expandBtn.click();
-                                }
-                                parent = parent.parentElement.closest('.category-tree-item');
-                            }
+                            // Mettre en évidence visuellement
+                            item.classList.add('selected');
+                            item.style.backgroundColor = 'rgba(77, 144, 254, 0.1)';
                             
                             // Faire défiler jusqu'à l'élément
                             item.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -152,7 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
                     }
                 }
-            }, 300);
+                
+                if (!found) {
+                    console.warn('Catégorie non trouvée dans l\'arborescence:', categoryParam);
+                }
+            }, 500); // Augmentation du délai pour s'assurer que l'arborescence est rendue
         }
     }
 

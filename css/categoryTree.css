@@ -143,13 +143,19 @@
 .category-tree-item-content {
     display: flex;
     align-items: center;
-    padding: 8px 10px;
+    padding: 8px;
     border-radius: 4px;
-    border-left: 3px solid transparent;
+    margin: 2px 0;
+    cursor: pointer;
 }
 
 .category-tree-item-content:hover {
-    background-color: var(--hover-bg);
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.category-tree-item.selected .category-tree-item-content {
+    background-color: rgba(77, 144, 254, 0.2);
+    border-left: 3px solid #4d90fe;
 }
 
 .category-tree-expand-btn, .category-tree-spacer {
