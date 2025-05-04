@@ -52,60 +52,48 @@ async function initSupabase() {
 }
 
 /**
- * Récupère toutes les notes depuis Supabase, avec fallback vers le stockage local uniquement si nécessaire
+ * Récupère toutes les notes depuis Supabase directement
  * @returns {Promise<Array>} - Tableau de notes
  */
 async function fetchAllNotes() {
     try {
         console.log('Récupération des notes depuis Supabase...');
         
-        // Tenter d'abord de récupérer depuis Supabase
-        if (supabaseClient) {
-            try {
-                const { data: supabaseNotes, error } = await supabaseClient
-                    .from('notes')
-                    .select('*');
-                
-                if (error) {
-                    console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
-                    throw error; // Passer au fallback
-                }
-                
-                if (!supabaseNotes || !Array.isArray(supabaseNotes)) {
-                    console.error('Format de données invalide depuis Supabase:', supabaseNotes);
-                    throw new Error('Format de données invalide'); // Passer au fallback
-                }
-                
-                console.log(`${supabaseNotes.length} notes récupérées depuis Supabase.`);
-                
-                // Mettre à jour le localStorage comme cache seulement
-                localStorage.setItem('notes', JSON.stringify(supabaseNotes));
-                
-                return supabaseNotes;
-            } catch (supabaseError) {
-                console.error('Exception lors de la récupération depuis Supabase, fallback au localStorage:', supabaseError);
-                // Continuer vers le fallback
-            }
-        } else {
-            console.log('Client Supabase non disponible');
-        }
-        
-        // Fallback: Utiliser le localStorage uniquement en cas d'échec de Supabase
-        console.log('Utilisation du fallback localStorage');
-        const localNotesStr = localStorage.getItem('notes');
-        const localNotes = localNotesStr ? JSON.parse(localNotesStr) : [];
-        return localNotes;
-    } catch (error) {
-        console.error('Erreur critique lors de la récupération des notes:', error);
-        
-        // Dernier recours en cas d'erreur critique
-        try {
-            const notesStr = localStorage.getItem('notes');
-            return notesStr ? JSON.parse(notesStr) : [];
-        } catch (e) {
-            console.error('Erreur lors de la récupération des notes locales:', e);
+        if (!supabaseClient) {
+            console.error('Client Supabase non disponible');
             return [];
         }
+        
+        // Récupérer les notes uniquement depuis Supabase
+        const { data: supabaseNotes, error } = await supabaseClient
+            .from('notes')
+            .select('*');
+        
+        if (error) {
+            console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
+            return [];
+        }
+        
+        if (!supabaseNotes || !Array.isArray(supabaseNotes)) {
+            console.error('Format de données invalide depuis Supabase:', supabaseNotes);
+            return [];
+        }
+        
+        console.log(`${supabaseNotes.length} notes récupérées depuis Supabase.`);
+        
+        // Filtrer les notes marquées comme supprimées dans la session courante
+        const filteredNotes = supabaseNotes.filter(note => {
+            return !sessionStorage.getItem(`deleted_${note.id}`);
+        });
+        
+        if (filteredNotes.length < supabaseNotes.length) {
+            console.log(`${supabaseNotes.length - filteredNotes.length} notes récemment supprimées filtrées`);
+        }
+        
+        return filteredNotes;
+    } catch (error) {
+        console.error('Erreur critique lors de la récupération des notes:', error);
+        return [];
     }
 }
 
@@ -297,7 +285,7 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 }
 
 /**
- * Supprime une note par son ID (priorité à Supabase, avec fallback localStorage)
+ * Supprime une note par son ID dans Supabase uniquement
  * @param {string} noteId - ID de la note à supprimer 
  * @returns {Promise<boolean>} True si la suppression a réussi
  */
@@ -305,51 +293,31 @@ async function deleteNote(noteId) {
     try {
         console.log(`Suppression de la note ${noteId}...`);
         
-        // Priorité à Supabase si disponible
-        let supabaseSuccess = false;
-        
-        if (supabaseClient) {
-            try {
-                // Supprimer directement dans Supabase
-                console.log(`Suppression de la note ${noteId} dans Supabase...`);
-                
-                const { error } = await supabaseClient
-                    .from('notes')
-                    .delete()
-                    .eq('id', noteId);
-                
-                if (error) {
-                    console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                    // Continuer vers le fallback
-                } else {
-                    console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
-                    supabaseSuccess = true;
-                }
-            } catch (supabaseError) {
-                console.error(`Exception lors de la suppression dans Supabase:`, supabaseError);
-                // Continuer vers le fallback
-            }
-        } else {
-            console.warn('Client Supabase non disponible pour supprimer la note');
+        if (!supabaseClient) {
+            console.error('Client Supabase non disponible pour supprimer la note');
+            return false;
         }
         
-        // Mettre à jour le localStorage comme cache, que Supabase ait réussi ou non
-        // Cela permet de maintenir la cohérence locale même en cas de problème réseau
-        try {
-            // Supprimer la note du cache localStorage
-            const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
-            const updatedNotes = localNotes.filter(note => note.id !== noteId);
-            localStorage.setItem('notes', JSON.stringify(updatedNotes));
-            console.log(`Cache localStorage mis à jour : note ${noteId} supprimée`);
-        } catch (localError) {
-            console.error(`Erreur lors de la mise à jour du cache localStorage:`, localError);
-            // Ne pas échouer si le localStorage échoue alors que Supabase a réussi
-            if (!supabaseSuccess) {
-                throw localError;
-            }
+        // Supprimer directement dans Supabase
+        console.log(`Suppression de la note ${noteId} dans Supabase...`);
+        
+        const { error } = await supabaseClient
+            .from('notes')
+            .delete()
+            .eq('id', noteId);
+        
+        if (error) {
+            console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
+            return false;
         }
         
-        // Si on arrive ici, la suppression a réussi soit dans Supabase, soit dans localStorage
+        console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
+        
+        // Stockage temporaire de l'ID de la note supprimée uniquement pour la session courante
+        // Cela empêche la note de "revenir" pendant la session actuelle
+        // Pas besoin de localStorage car Supabase est la source principale
+        sessionStorage.setItem(`deleted_${noteId}`, 'true');
+        
         return true;
     } catch (error) {
         console.error(`Erreur critique lors de la suppression de la note ${noteId}:`, error);
