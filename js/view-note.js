@@ -221,16 +221,37 @@ async function deleteNote(noteId) {
                 
                 // Supprimer dans Supabase
                 console.log(`Suppression de la note ${noteId} dans Supabase...`);
-                const { error } = await client
-                    .from('notes')
-                    .delete()
-                    .eq('id', noteId);
                 
-                if (error) {
-                    console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                    // Continuer quand même - la note est déjà supprimée localement
-                } else {
-                    console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
+                try {
+                    // Vérifier d'abord si la note existe toujours
+                    const { data: existingNote, error: checkError } = await client
+                        .from('notes')
+                        .select('id')
+                        .eq('id', noteId)
+                        .single();
+                    
+                    if (checkError) {
+                        console.error(`Erreur lors de la vérification de l'existence de la note ${noteId}:`, checkError);
+                    }
+                    
+                    if (existingNote || checkError?.code !== 'PGRST116') {
+                        // Si la note existe ou si l'erreur n'est pas "note non trouvée", procéder à la suppression
+                        const { error } = await client
+                            .from('notes')
+                            .delete()
+                            .eq('id', noteId);
+                        
+                        if (error) {
+                            console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
+                            // Continuer quand même - la note est déjà supprimée localement
+                        } else {
+                            console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
+                        }
+                    } else {
+                        console.log(`Note ${noteId} n'existe pas dans Supabase, aucune suppression nécessaire.`);
+                    }
+                } catch (deleteError) {
+                    console.error(`Exception lors de la suppression dans Supabase:`, deleteError);
                 }
             } catch (clientError) {
                 console.error('Erreur lors de la suppression dans Supabase:', clientError);

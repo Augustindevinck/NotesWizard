@@ -171,17 +171,47 @@ async function saveNote(note) {
                 
                 console.log('Mise à jour dans Supabase:', noteUpdate);
                 
+                console.log('Utilisation de la méthode upsert Supabase pour garantir la mise à jour:', processedNote.id);
+                
+                // Utiliser upsert qui tente de mettre à jour si l'entrée existe, ou de l'insérer si elle n'existe pas
                 const { data, error } = await client
                     .from('notes')
-                    .update(noteUpdate)
-                    .eq('id', processedNote.id)
+                    .upsert(noteUpdate)
                     .select()
                     .single();
                 
                 if (error) {
-                    console.error('Erreur lors de la mise à jour dans Supabase:', error);
+                    console.error('Erreur lors de l\'upsert dans Supabase:', error);
+                    
+                    // Essayer explicitement une mise à jour puis une insertion en cas d'échec
+                    console.log('Tentative de mise à jour explicite...');
+                    const { data: updateData, error: updateError } = await client
+                        .from('notes')
+                        .update(noteUpdate)
+                        .eq('id', processedNote.id)
+                        .select()
+                        .single();
+                    
+                    if (updateError) {
+                        console.error('Échec de la mise à jour explicite:', updateError);
+                        
+                        console.log('Tentative d\'insertion explicite...');
+                        const { data: insertData, error: insertError } = await client
+                            .from('notes')
+                            .insert(noteUpdate)
+                            .select()
+                            .single();
+                        
+                        if (insertError) {
+                            console.error('Échec de l\'insertion explicite:', insertError);
+                        } else {
+                            console.log('Note insérée explicitement dans Supabase:', insertData);
+                        }
+                    } else {
+                        console.log('Note mise à jour explicitement dans Supabase:', updateData);
+                    }
                 } else {
-                    console.log('Note mise à jour dans Supabase:', data);
+                    console.log('Note upsert réussie dans Supabase:', data);
                 }
             }
             
@@ -215,16 +245,33 @@ async function saveNote(note) {
                 
                 console.log('Création dans Supabase:', newNote);
                 
+                console.log(`Utilisation directe d'upsert pour nouvelle note avec ID: ${newId}`);
+                
+                // Utiliser directement upsert pour éviter les problèmes de conflit
                 const { data, error } = await client
                     .from('notes')
-                    .insert(newNote)
+                    .upsert(newNote)
                     .select()
                     .single();
                 
                 if (error) {
-                    console.error('Erreur lors de la création dans Supabase:', error);
+                    console.error('Erreur lors de l\'upsert dans Supabase:', error);
+                    
+                    // Tenter explicitement une insertion en cas d'échec
+                    console.log('Tentative d\'insertion explicite...');
+                    const { data: insertData, error: insertError } = await client
+                        .from('notes')
+                        .insert(newNote)
+                        .select()
+                        .single();
+                    
+                    if (insertError) {
+                        console.error('Échec de l\'insertion explicite:', insertError);
+                    } else {
+                        console.log('Note insérée explicitement dans Supabase:', insertData);
+                    }
                 } else {
-                    console.log('Note créée dans Supabase:', data);
+                    console.log('Note créée dans Supabase avec succès via upsert:', data);
                 }
             }
             
