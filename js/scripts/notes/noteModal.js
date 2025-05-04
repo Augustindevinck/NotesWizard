@@ -199,6 +199,17 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Afficher en mode consultation
         viewMode.classList.remove('hidden');
         editMode.classList.add('hidden');
+        
+        // Nettoyer les conteneurs de catégories et hashtags existants
+        const existingCategoriesContainer = viewMode.querySelector('.view-categories');
+        if (existingCategoriesContainer) {
+            existingCategoriesContainer.remove();
+        }
+        
+        const existingHashtagsContainer = viewMode.querySelector('.view-hashtags');
+        if (existingHashtagsContainer) {
+            existingHashtagsContainer.remove();
+        }
 
         // Créer le contenu avec mise en évidence si c'est un résultat de recherche
         const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
@@ -233,6 +244,10 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         noteTitle.value = note.title || '';
         noteContent.value = note.content || '';
         currentNoteId = note.id;
+        
+        // Nettoyer les catégories et hashtags du mode édition
+        selectedCategories.innerHTML = '';
+        detectedHashtags.innerHTML = '';
 
         // Afficher le bouton de suppression pour les notes existantes
         deleteNoteBtn.classList.remove('hidden');
@@ -301,6 +316,12 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
             });
         }
 
+        // Nettoyer les vidéos précédentes s'il y en a
+        const existingVideoContainer = viewContent.querySelector('.note-videos');
+        if (existingVideoContainer) {
+            existingVideoContainer.remove();
+        }
+        
         // Show video URL if present
         if (note.videoUrls && note.videoUrls.length > 0) {
             const videoContainer = document.createElement('div');
@@ -328,6 +349,29 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Mode création de nouvelle note
         viewMode.classList.add('hidden');
         editMode.classList.remove('hidden');
+        
+        // Nettoyer tous les conteneurs et champs
+        noteTitle.value = '';
+        noteContent.value = '';
+        selectedCategories.innerHTML = '';
+        detectedHashtags.innerHTML = '';
+        
+        // Nettoyer les éléments du mode consultation
+        const existingCategoriesContainer = viewMode.querySelector('.view-categories');
+        if (existingCategoriesContainer) {
+            existingCategoriesContainer.remove();
+        }
+        
+        const existingHashtagsContainer = viewMode.querySelector('.view-hashtags');
+        if (existingHashtagsContainer) {
+            existingHashtagsContainer.remove();
+        }
+        
+        const existingVideoContainer = viewContent.querySelector('.note-videos');
+        if (existingVideoContainer) {
+            existingVideoContainer.remove();
+        }
+        
         noteTitle.focus();
     }
 
