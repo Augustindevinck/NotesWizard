@@ -457,32 +457,6 @@ async function deleteCurrentNote() {
     
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         try {
-            // Désactiver les boutons pour éviter les actions multiples
-            const deleteBtn = document.getElementById('delete-note-btn');
-            const editBtn = document.getElementById('edit-note-btn');
-            
-            if (deleteBtn) deleteBtn.disabled = true;
-            if (editBtn) editBtn.disabled = true;
-            
-            // Afficher une indication visuelle
-            const noteContainer = document.querySelector('.note-page-container');
-            if (noteContainer) {
-                const loadingOverlay = document.createElement('div');
-                loadingOverlay.style.position = 'absolute';
-                loadingOverlay.style.top = '0';
-                loadingOverlay.style.left = '0';
-                loadingOverlay.style.width = '100%';
-                loadingOverlay.style.height = '100%';
-                loadingOverlay.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-                loadingOverlay.style.display = 'flex';
-                loadingOverlay.style.justifyContent = 'center';
-                loadingOverlay.style.alignItems = 'center';
-                loadingOverlay.style.zIndex = '1000';
-                loadingOverlay.innerHTML = '<div>Suppression en cours...</div>';
-                noteContainer.style.position = 'relative';
-                noteContainer.appendChild(loadingOverlay);
-            }
-            
             console.log('Suppression de la note:', currentNote.id);
             
             // Supprimer la note avec notre fonction directe
@@ -491,12 +465,11 @@ async function deleteCurrentNote() {
             if (success) {
                 console.log('Note supprimée avec succès');
                 
-                // Augmenter le délai avant la redirection pour s'assurer que la suppression est terminée
+                // Ajouter un délai avant la redirection pour permettre aux opérations asynchrones de se terminer
                 setTimeout(() => {
-                    console.log('Redirection vers la page d\'accueil après suppression...');
                     // Forcer le rechargement complet pour s'assurer que les changements sont reflétés
                     window.location.href = 'index.html?t=' + new Date().getTime();
-                }, 1500); // Augmenter à 1.5 secondes pour être sûr
+                }, 500);
             } else {
                 throw new Error('Échec de la suppression de la note.');
             }
