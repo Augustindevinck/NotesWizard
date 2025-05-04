@@ -297,7 +297,7 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 }
 
 /**
- * Supprime une note par son ID
+ * Supprime une note par son ID (priorité à Supabase, avec fallback localStorage)
  * @param {string} noteId - ID de la note à supprimer 
  * @returns {Promise<boolean>} True si la suppression a réussi
  */
@@ -305,55 +305,54 @@ async function deleteNote(noteId) {
     try {
         console.log(`Suppression de la note ${noteId}...`);
         
-        // Supprimer la note du stockage local
-        const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
-        const updatedNotes = localNotes.filter(note => note.id !== noteId);
-        localStorage.setItem('notes', JSON.stringify(updatedNotes));
-        console.log(`Note ${noteId} supprimée du stockage local`);
+        // Priorité à Supabase si disponible
+        let supabaseSuccess = false;
         
-        // Supprimer la note de Supabase si configuré
         if (supabaseClient) {
             try {
-                // Supprimer dans Supabase
+                // Supprimer directement dans Supabase
                 console.log(`Suppression de la note ${noteId} dans Supabase...`);
                 
-                // Vérifier d'abord si la note existe toujours
-                const { data: existingNote, error: checkError } = await supabaseClient
+                const { error } = await supabaseClient
                     .from('notes')
-                    .select('id')
-                    .eq('id', noteId)
-                    .single();
+                    .delete()
+                    .eq('id', noteId);
                 
-                if (checkError && checkError.code !== 'PGRST116') {
-                    console.error(`Erreur lors de la vérification de l'existence de la note ${noteId}:`, checkError);
-                }
-                
-                if (existingNote || checkError?.code !== 'PGRST116') {
-                    // Si la note existe ou si l'erreur n'est pas "note non trouvée", procéder à la suppression
-                    const { error } = await supabaseClient
-                        .from('notes')
-                        .delete()
-                        .eq('id', noteId);
-                    
-                    if (error) {
-                        console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                    } else {
-                        console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
-                    }
+                if (error) {
+                    console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
+                    // Continuer vers le fallback
                 } else {
-                    console.log(`Note ${noteId} n'existe pas dans Supabase, aucune suppression nécessaire.`);
+                    console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
+                    supabaseSuccess = true;
                 }
             } catch (supabaseError) {
                 console.error(`Exception lors de la suppression dans Supabase:`, supabaseError);
-                // Continuer quand même - la note est déjà supprimée localement
+                // Continuer vers le fallback
             }
         } else {
             console.warn('Client Supabase non disponible pour supprimer la note');
         }
         
+        // Mettre à jour le localStorage comme cache, que Supabase ait réussi ou non
+        // Cela permet de maintenir la cohérence locale même en cas de problème réseau
+        try {
+            // Supprimer la note du cache localStorage
+            const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+            const updatedNotes = localNotes.filter(note => note.id !== noteId);
+            localStorage.setItem('notes', JSON.stringify(updatedNotes));
+            console.log(`Cache localStorage mis à jour : note ${noteId} supprimée`);
+        } catch (localError) {
+            console.error(`Erreur lors de la mise à jour du cache localStorage:`, localError);
+            // Ne pas échouer si le localStorage échoue alors que Supabase a réussi
+            if (!supabaseSuccess) {
+                throw localError;
+            }
+        }
+        
+        // Si on arrive ici, la suppression a réussi soit dans Supabase, soit dans localStorage
         return true;
     } catch (error) {
-        console.error(`Erreur lors de la suppression de la note ${noteId}:`, error);
+        console.error(`Erreur critique lors de la suppression de la note ${noteId}:`, error);
         return false;
     }
 }
