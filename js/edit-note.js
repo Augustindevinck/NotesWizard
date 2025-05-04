@@ -139,15 +139,29 @@ async function saveCurrentNote() {
 
     // Get categories
     const categoryElements = selectedCategories.querySelectorAll('.category-tag');
-    const categories = Array.from(categoryElements).map(el => {
+    let categories = Array.from(categoryElements).map(el => {
         return el.dataset.value || el.textContent.trim();
     });
+    
+    // Assurez-vous que categories est toujours un tableau
+    if (!Array.isArray(categories)) {
+        console.error("Les catégories ne sont pas un tableau, conversion forcée:", categories);
+        categories = categories ? [categories] : [];
+    }
 
     // Get hashtags
     const hashtagElements = detectedHashtags.querySelectorAll('.hashtag-tag');
-    const hashtags = Array.from(hashtagElements).map(el => {
-        return el.dataset.value || el.textContent.trim().substring(1);
+    let hashtags = Array.from(hashtagElements).map(el => {
+        // Utilisez substring uniquement si le texte commence par # 
+        const text = el.textContent.trim();
+        return el.dataset.value || (text.startsWith('#') ? text.substring(1) : text);
     });
+    
+    // Assurez-vous que hashtags est toujours un tableau
+    if (!Array.isArray(hashtags)) {
+        console.error("Les hashtags ne sont pas un tableau, conversion forcée:", hashtags);
+        hashtags = hashtags ? [hashtags] : [];
+    }
 
     // Extract YouTube URLs from content
     const videoUrls = extractYoutubeUrls(content);
@@ -163,22 +177,35 @@ async function saveCurrentNote() {
     };
 
     try {
+        console.log('Préparation de la sauvegarde avec les données:', {
+            id: noteData.id,
+            title: noteData.title,
+            contentLength: noteData.content?.length,
+            categories: noteData.categories,
+            hashtags: noteData.hashtags,
+            videoUrls: noteData.videoUrls
+        });
+        
         // Sauvegarder la note
         const savedNoteId = await saveNote(noteData, notes);
         
+        console.log('Résultat de saveNote:', savedNoteId);
+        
         if (savedNoteId) {
+            console.log('Note sauvegardée avec succès, ID:', savedNoteId);
             // Rediriger vers la page d'affichage de la note
             const params = new URLSearchParams();
             params.append('id', savedNoteId);
             window.location.href = `view-note.html?${params.toString()}`;
             return true;
         } else {
+            console.error('saveNote a retourné null ou undefined');
             alert('Erreur lors de la sauvegarde de la note.');
             return false;
         }
     } catch (error) {
-        console.error('Erreur lors de la sauvegarde de la note:', error);
-        alert('Erreur lors de la sauvegarde de la note.');
+        console.error('Exception lors de la sauvegarde de la note:', error);
+        alert('Erreur lors de la sauvegarde de la note: ' + error.message);
         return false;
     }
 }

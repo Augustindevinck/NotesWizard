@@ -103,7 +103,17 @@ function displayNote(note) {
     categoriesContainer.innerHTML = '';
     if (note.categories && note.categories.length > 0) {
         note.categories.forEach(category => {
-            addCategoryTag(category, categoriesContainer);
+            // Créer l'élément tag manuellement pour éviter les comportements indésirables
+            const tagElement = document.createElement('span');
+            tagElement.className = 'category-tag';
+            tagElement.textContent = category;
+            tagElement.dataset.value = category;
+            // Éviter que les catégories soient cliquables sur la page de visualisation
+            tagElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            categoriesContainer.appendChild(tagElement);
         });
     }
 
@@ -111,7 +121,17 @@ function displayNote(note) {
     hashtagsContainer.innerHTML = '';
     if (note.hashtags && note.hashtags.length > 0) {
         note.hashtags.forEach(tag => {
-            addHashtagTag(tag, hashtagsContainer);
+            // Créer l'élément hashtag manuellement pour éviter les comportements indésirables
+            const tagElement = document.createElement('span');
+            tagElement.className = 'hashtag-tag';
+            tagElement.textContent = '#' + tag;
+            tagElement.dataset.value = tag;
+            // Éviter que les hashtags soient cliquables sur la page de visualisation
+            tagElement.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+            hashtagsContainer.appendChild(tagElement);
         });
     }
 
