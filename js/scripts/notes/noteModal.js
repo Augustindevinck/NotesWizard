@@ -190,11 +190,36 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         return;
     }
 
+    // Recréer les éléments conteneurs pour éviter toute accumulation
+    if (selectedCategories) {
+        // Créer un nouveau conteneur vide
+        const newSelectedCategories = document.createElement('div');
+        newSelectedCategories.id = 'selected-categories';
+        newSelectedCategories.className = 'selected-categories';
+        
+        // Remplacer l'ancien par le nouveau
+        selectedCategories.parentNode.replaceChild(newSelectedCategories, selectedCategories);
+        
+        // Mettre à jour la référence
+        selectedCategories = newSelectedCategories;
+    }
+    
+    if (detectedHashtags) {
+        // Créer un nouveau conteneur vide
+        const newDetectedHashtags = document.createElement('div');
+        newDetectedHashtags.id = 'detected-hashtags';
+        newDetectedHashtags.className = 'detected-hashtags';
+        
+        // Remplacer l'ancien par le nouveau
+        detectedHashtags.parentNode.replaceChild(newDetectedHashtags, detectedHashtags);
+        
+        // Mettre à jour la référence
+        detectedHashtags = newDetectedHashtags;
+    }
+
     // Clear previous note data
     noteTitle.value = '';
     noteContent.value = '';
-    selectedCategories.innerHTML = '';
-    detectedHashtags.innerHTML = '';
     currentNoteId = null;
 
     // Configure edit button
