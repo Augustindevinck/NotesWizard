@@ -485,37 +485,80 @@ async function deleteCurrentNote() {
             
             console.log(`Suppression de la note: ${currentNote.id}`);
             
-            // Supprimer du localStorage
+            // Étape 1: Supprimer du localStorage
             const notesStr = localStorage.getItem('notes');
             if (notesStr) {
                 const notes = JSON.parse(notesStr);
                 const updatedNotes = notes.filter(note => note.id !== currentNote.id);
                 localStorage.setItem('notes', JSON.stringify(updatedNotes));
-                console.log(`Suppression de la note: ${currentNote.id}`);
-                console.log(`Suppression de la note ${currentNote.id}...`);
                 console.log(`Note ${currentNote.id} supprimée du stockage local`);
             }
             
-            // Essayer de supprimer via Supabase si disponible
+            // Étape 2: Supprimer via Supabase
             if (supabaseClient) {
                 try {
                     console.log(`Suppression de la note ${currentNote.id} dans Supabase...`);
                     
-                    const { error } = await supabaseClient
+                    // Vérifier que le client fonctionne avec un test simple
+                    const { data: testData, error: testError } = await supabaseClient
                         .from('notes')
-                        .delete()
-                        .eq('id', currentNote.id);
+                        .select('id')
+                        .limit(1);
                     
-                    if (error) {
-                        console.error(`Erreur lors de la suppression de la note ${currentNote.id} dans Supabase:`, error);
+                    if (testError) {
+                        console.error('Erreur lors du test Supabase avant suppression:', testError);
+                        // Si le test échoue, on tente de réinitialiser le client
+                        supabaseClient = await initSupabase();
+                    }
+                    
+                    // Vérifier que le client est toujours disponible après le test
+                    if (supabaseClient) {
+                        // Vérifier si l'utilisateur est connecté
+                        const { data: { session } } = await supabaseClient.auth.getSession();
+                        if (!session) {
+                            console.log('Reconnexion anonyme pour la suppression...');
+                            await supabaseClient.auth.signInAnonymously();
+                        }
+                        
+                        // Exécuter la suppression
+                        const { error } = await supabaseClient
+                            .from('notes')
+                            .delete()
+                            .eq('id', currentNote.id);
+                        
+                        if (error) {
+                            console.error(`Erreur lors de la suppression de la note ${currentNote.id} dans Supabase:`, error);
+                        } else {
+                            console.log(`Note ${currentNote.id} supprimée avec succès dans Supabase.`);
+                        }
                     } else {
-                        console.log(`Note ${currentNote.id} supprimée avec succès dans Supabase.`);
+                        console.warn('Client Supabase non restauré pour la suppression');
                     }
                 } catch (supabaseError) {
                     console.error(`Exception lors de la suppression dans Supabase:`, supabaseError);
                 }
             } else {
                 console.warn('Client Supabase non disponible pour supprimer la note');
+                // Tentative d'initialisation de Supabase
+                try {
+                    supabaseClient = await initSupabase();
+                    if (supabaseClient) {
+                        console.log('Client Supabase initialisé pour la suppression');
+                        // Réessayer la suppression
+                        const { error } = await supabaseClient
+                            .from('notes')
+                            .delete()
+                            .eq('id', currentNote.id);
+                        
+                        if (error) {
+                            console.error(`Erreur lors de la suppression de la note ${currentNote.id} dans Supabase:`, error);
+                        } else {
+                            console.log(`Note ${currentNote.id} supprimée avec succès dans Supabase.`);
+                        }
+                    }
+                } catch (initError) {
+                    console.error('Échec de l\'initialisation de Supabase pour la suppression:', initError);
+                }
             }
             
             console.log('Note supprimée avec succès');
