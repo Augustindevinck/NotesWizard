@@ -155,23 +155,65 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 }
 
 /**
+ * Nettoie complètement le modal, supprimant tous les éléments dynamiques
+ * Cette fonction s'assure qu'aucun élément ne peut être dupliqué lors de l'ouverture du modal
+ */
+function cleanupCompleteModal() {
+    // Nettoyer les champs de formulaire
+    noteTitle.value = '';
+    noteContent.value = '';
+    
+    // Nettoyer les catégories et hashtags du mode édition
+    selectedCategories.innerHTML = '';
+    detectedHashtags.innerHTML = '';
+    
+    // Nettoyer les conteneurs de catégories dans le mode consultation
+    const existingCategoriesContainers = viewMode.querySelectorAll('.view-categories');
+    if (existingCategoriesContainers && existingCategoriesContainers.length > 0) {
+        existingCategoriesContainers.forEach(container => container.remove());
+    }
+    
+    // Nettoyer les conteneurs de hashtags dans le mode consultation
+    const existingHashtagsContainers = viewMode.querySelectorAll('.view-hashtags');
+    if (existingHashtagsContainers && existingHashtagsContainers.length > 0) {
+        existingHashtagsContainers.forEach(container => container.remove());
+    }
+    
+    // Nettoyer les vidéos
+    const existingVideoContainers = viewContent.querySelectorAll('.note-videos');
+    if (existingVideoContainers && existingVideoContainers.length > 0) {
+        existingVideoContainers.forEach(container => container.remove());
+    }
+    
+    // Nettoyer les conteneurs avec mise en évidence
+    const highlightedContainers = document.querySelectorAll('.highlighted-content');
+    if (highlightedContainers && highlightedContainers.length > 0) {
+        highlightedContainers.forEach(container => container.remove());
+    }
+    
+    // Réinitialiser l'affichage des champs d'origine
+    noteTitle.style.display = '';
+    noteContent.style.display = '';
+    
+    // Réinitialiser l'ID de la note courante
+    currentNoteId = null;
+}
+
+/**
  * Ouvre le modal de note pour consultation ou édition
  * @param {Object} note - La note à afficher/éditer (null pour nouvelle note)
  * @param {boolean} fromSearch - Si on vient d'une recherche
  * @param {Array} currentSearchTerms - Les termes de recherche actuels
  */
 export function openNoteModal(note = null, fromSearch = false, currentSearchTerms = []) {
+    // Nettoyer complètement le modal avant de l'ouvrir
+    cleanupCompleteModal();
     if (!noteModal) {
         console.error('Modal non initialisé - Appelez initNoteModal d\'abord');
         return;
     }
 
-    // Clear previous note data
-    noteTitle.value = '';
-    noteContent.value = '';
-    selectedCategories.innerHTML = '';
-    detectedHashtags.innerHTML = '';
-    currentNoteId = null;
+    // La fonction cleanupCompleteModal a déjà nettoyé toutes les données précédentes
 
     // Configure edit button
     editButton.onclick = () => {
@@ -200,16 +242,7 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         viewMode.classList.remove('hidden');
         editMode.classList.add('hidden');
         
-        // Nettoyer les conteneurs de catégories et hashtags existants
-        const existingCategoriesContainer = viewMode.querySelector('.view-categories');
-        if (existingCategoriesContainer) {
-            existingCategoriesContainer.remove();
-        }
-        
-        const existingHashtagsContainer = viewMode.querySelector('.view-hashtags');
-        if (existingHashtagsContainer) {
-            existingHashtagsContainer.remove();
-        }
+        // Les conteneurs ont déjà été nettoyés par cleanupCompleteModal
 
         // Créer le contenu avec mise en évidence si c'est un résultat de recherche
         const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
