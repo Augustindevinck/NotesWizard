@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Édition de note - Notes Rapides</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/note-page.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Notes Rapides</h1>
+            <nav>
+                <button id="back-to-home" class="back-btn">Retour à l'accueil</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="note-page">
+        <div class="note-page-container">
+            <div id="note-edit-mode">
+                <input type="text" id="note-title" placeholder="Titre" aria-label="Titre de la note">
+                <textarea id="note-content" placeholder="Contenu (utilisez #hashtag pour ajouter des tags)" aria-label="Contenu de la note"></textarea>
+            
+                <div class="categories-container">
+                    <div class="categories-label">Catégories:</div>
+                    <div id="selected-categories" class="selected-categories"></div>
+                    <div class="category-input-container">
+                        <input type="text" id="category-input" placeholder="Ajouter une catégorie..." aria-label="Ajouter une catégorie">
+                        <div id="category-suggestions" class="category-suggestions"></div>
+                    </div>
+                </div>
+                
+                <div class="hashtags-container">
+                    <div class="hashtags-label">Hashtags détectés:</div>
+                    <div id="detected-hashtags" class="detected-hashtags"></div>
+                </div>
+                
+                <div class="note-page-actions">
+                    <button id="save-note-btn" class="save-button">Enregistrer</button>
+                    <button id="cancel-edit-btn" class="cancel-button">Annuler</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2023-2025 Notes Rapides - Tous droits réservés</p>
+    </footer>
+
+    <script type="module" src="js/edit-note.js"></script>
+</body>
+</html>

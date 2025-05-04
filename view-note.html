@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affichage de note - Notes Rapides</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/note-page.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Notes Rapides</h1>
+            <nav>
+                <button id="back-to-home" class="back-btn">Retour à l'accueil</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="note-page">
+        <div class="note-page-container">
+            <div id="note-view-mode">
+                <h2 id="note-view-title"></h2>
+                <div id="note-view-content"></div>
+                
+                <div class="note-metadata">
+                    <div id="note-categories" class="note-categories"></div>
+                    <div id="note-hashtags" class="note-hashtags"></div>
+                </div>
+                
+                <div class="note-actions">
+                    <button id="edit-note-btn" class="edit-button">Éditer</button>
+                    <button id="delete-note-btn" class="delete-button">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2023-2025 Notes Rapides - Tous droits réservés</p>
+    </footer>
+
+    <script type="module" src="js/view-note.js"></script>
+</body>
+</html>
