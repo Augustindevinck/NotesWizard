@@ -1,10 +1,6 @@
 /**
  * Script pour la page de révision des notes les plus anciennes
- * Avec synchronisation entre onglets
  */
-
-// Importation des modules requis
-import { setOnStorageUpdateCallback } from './scripts/utils/localStorage.js';
 
 // État de l'application
 const appState = {
@@ -34,13 +30,6 @@ async function init() {
     if (reviewNoteDisplay) {
         reviewNoteDisplay.innerHTML = '<div class="loading">Chargement de la note à réviser...</div>';
     }
-    
-    // Configurer la synchronisation entre les onglets
-    setOnStorageUpdateCallback((updatedNotes) => {
-        console.log('Mise à jour des notes détectée dans un autre onglet, rechargement...');
-        // Recharger la note actuelle pour révision
-        loadNoteForReview();
-    });
     
     // Configurer les écouteurs d'événements
     setupEventListeners();
@@ -211,20 +200,16 @@ function displayNote(note) {
     titleElement.textContent = note.title || 'Sans titre';
     noteElement.appendChild(titleElement);
     
-    // Ajouter les catégories en haut comme boutons cliquables
+    // Ajouter les catégories
     if (note.categories && note.categories.length > 0) {
         const categoriesContainer = document.createElement('div');
         categoriesContainer.className = 'review-categories';
         
         note.categories.forEach(category => {
-            const categoryButton = document.createElement('button');
-            categoryButton.className = 'review-category';
-            categoryButton.textContent = category;
-            categoryButton.addEventListener('click', () => {
-                // Rediriger vers la page des catégories avec cette catégorie
-                window.location.href = `categories.html?category=${encodeURIComponent(category)}`;
-            });
-            categoriesContainer.appendChild(categoryButton);
+            const categoryTag = document.createElement('span');
+            categoryTag.className = 'review-category';
+            categoryTag.textContent = category;
+            categoriesContainer.appendChild(categoryTag);
         });
         
         noteElement.appendChild(categoriesContainer);
@@ -236,20 +221,16 @@ function displayNote(note) {
     contentElement.textContent = note.content || '';
     noteElement.appendChild(contentElement);
     
-    // Ajouter les hashtags en bas comme boutons cliquables
+    // Ajouter les hashtags en bas du contenu, après le texte
     if (note.hashtags && note.hashtags.length > 0) {
         const hashtagsContainer = document.createElement('div');
         hashtagsContainer.className = 'review-hashtags';
         
         note.hashtags.forEach(tag => {
-            const hashtagButton = document.createElement('button');
-            hashtagButton.className = 'review-hashtag';
-            hashtagButton.textContent = `#${tag}`;
-            hashtagButton.addEventListener('click', () => {
-                // Rediriger vers la page de recherche avec ce hashtag
-                window.location.href = `search.html?query=${encodeURIComponent('#' + tag)}`;
-            });
-            hashtagsContainer.appendChild(hashtagButton);
+            const hashtagTag = document.createElement('span');
+            hashtagTag.className = 'review-hashtag';
+            hashtagTag.textContent = `#${tag}`;
+            hashtagsContainer.appendChild(hashtagTag);
         });
         
         noteElement.appendChild(hashtagsContainer);

@@ -155,65 +155,23 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 }
 
 /**
- * Nettoie complètement le modal, supprimant tous les éléments dynamiques
- * Cette fonction s'assure qu'aucun élément ne peut être dupliqué lors de l'ouverture du modal
- */
-function cleanupCompleteModal() {
-    // Nettoyer les champs de formulaire
-    noteTitle.value = '';
-    noteContent.value = '';
-    
-    // Nettoyer les catégories et hashtags du mode édition
-    selectedCategories.innerHTML = '';
-    detectedHashtags.innerHTML = '';
-    
-    // Nettoyer les conteneurs de catégories dans le mode consultation
-    const existingCategoriesContainers = viewMode.querySelectorAll('.view-categories');
-    if (existingCategoriesContainers && existingCategoriesContainers.length > 0) {
-        existingCategoriesContainers.forEach(container => container.remove());
-    }
-    
-    // Nettoyer les conteneurs de hashtags dans le mode consultation
-    const existingHashtagsContainers = viewMode.querySelectorAll('.view-hashtags');
-    if (existingHashtagsContainers && existingHashtagsContainers.length > 0) {
-        existingHashtagsContainers.forEach(container => container.remove());
-    }
-    
-    // Nettoyer les vidéos
-    const existingVideoContainers = viewContent.querySelectorAll('.note-videos');
-    if (existingVideoContainers && existingVideoContainers.length > 0) {
-        existingVideoContainers.forEach(container => container.remove());
-    }
-    
-    // Nettoyer les conteneurs avec mise en évidence
-    const highlightedContainers = document.querySelectorAll('.highlighted-content');
-    if (highlightedContainers && highlightedContainers.length > 0) {
-        highlightedContainers.forEach(container => container.remove());
-    }
-    
-    // Réinitialiser l'affichage des champs d'origine
-    noteTitle.style.display = '';
-    noteContent.style.display = '';
-    
-    // Réinitialiser l'ID de la note courante
-    currentNoteId = null;
-}
-
-/**
  * Ouvre le modal de note pour consultation ou édition
  * @param {Object} note - La note à afficher/éditer (null pour nouvelle note)
  * @param {boolean} fromSearch - Si on vient d'une recherche
  * @param {Array} currentSearchTerms - Les termes de recherche actuels
  */
 export function openNoteModal(note = null, fromSearch = false, currentSearchTerms = []) {
-    // Nettoyer complètement le modal avant de l'ouvrir
-    cleanupCompleteModal();
     if (!noteModal) {
         console.error('Modal non initialisé - Appelez initNoteModal d\'abord');
         return;
     }
 
-    // La fonction cleanupCompleteModal a déjà nettoyé toutes les données précédentes
+    // Clear previous note data
+    noteTitle.value = '';
+    noteContent.value = '';
+    selectedCategories.innerHTML = '';
+    detectedHashtags.innerHTML = '';
+    currentNoteId = null;
 
     // Configure edit button
     editButton.onclick = () => {
@@ -241,8 +199,6 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Afficher en mode consultation
         viewMode.classList.remove('hidden');
         editMode.classList.add('hidden');
-        
-        // Les conteneurs ont déjà été nettoyés par cleanupCompleteModal
 
         // Créer le contenu avec mise en évidence si c'est un résultat de recherche
         const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
@@ -277,57 +233,11 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         noteTitle.value = note.title || '';
         noteContent.value = note.content || '';
         currentNoteId = note.id;
-        
-        // Nettoyer les catégories et hashtags du mode édition
-        selectedCategories.innerHTML = '';
-        detectedHashtags.innerHTML = '';
 
         // Afficher le bouton de suppression pour les notes existantes
         deleteNoteBtn.classList.remove('hidden');
 
-        // Créer le conteneur pour les catégories en haut de la note
-        const viewCategoriesContainer = document.createElement('div');
-        viewCategoriesContainer.className = 'view-categories';
-        
-        // Ajouter les catégories en haut comme boutons cliquables
-        if (note.categories && note.categories.length > 0) {
-            note.categories.forEach(category => {
-                const categoryButton = document.createElement('button');
-                categoryButton.className = 'view-category-btn';
-                categoryButton.textContent = category;
-                categoryButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    // Rediriger vers la page des catégories
-                    window.location.href = `categories.html?category=${encodeURIComponent(category)}`;
-                });
-                viewCategoriesContainer.appendChild(categoryButton);
-            });
-            // Insérer les catégories au début du contenu visuel
-            viewMode.insertBefore(viewCategoriesContainer, viewTitle);
-        }
-        
-        // Créer le conteneur pour les hashtags en bas de la note
-        const viewHashtagsContainer = document.createElement('div');
-        viewHashtagsContainer.className = 'view-hashtags';
-        
-        // Ajouter les hashtags en bas comme boutons cliquables
-        if (note.hashtags && note.hashtags.length > 0) {
-            note.hashtags.forEach(tag => {
-                const hashtagButton = document.createElement('button');
-                hashtagButton.className = 'view-hashtag-btn';
-                hashtagButton.textContent = `#${tag}`;
-                hashtagButton.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    // Rediriger vers la page de recherche avec le hashtag
-                    window.location.href = `search.html?query=${encodeURIComponent('#' + tag)}`;
-                });
-                viewHashtagsContainer.appendChild(hashtagButton);
-            });
-            // Ajouter les hashtags après le contenu
-            viewMode.appendChild(viewHashtagsContainer);
-        }
-        
-        // Add categories pour le mode édition
+        // Add categories
         if (note.categories && note.categories.length > 0) {
             note.categories.forEach(category => {
                 if (addCategoryTagFn) {
@@ -338,7 +248,7 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
             });
         }
 
-        // Show hashtags pour le mode édition
+        // Show hashtags
         if (note.hashtags && note.hashtags.length > 0) {
             note.hashtags.forEach(tag => {
                 if (addHashtagTagFn) {
@@ -349,12 +259,6 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
             });
         }
 
-        // Nettoyer les vidéos précédentes s'il y en a
-        const existingVideoContainer = viewContent.querySelector('.note-videos');
-        if (existingVideoContainer) {
-            existingVideoContainer.remove();
-        }
-        
         // Show video URL if present
         if (note.videoUrls && note.videoUrls.length > 0) {
             const videoContainer = document.createElement('div');
@@ -382,9 +286,6 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Mode création de nouvelle note
         viewMode.classList.add('hidden');
         editMode.classList.remove('hidden');
-        
-        // cleanupCompleteModal a déjà nettoyé tous les éléments
-        
         noteTitle.focus();
     }
 

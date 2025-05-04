@@ -1,5 +1,5 @@
 /**
- * Script principal pour la page d'accueil avec synchronisation automatique Supabase et entre onglets
+ * Script principal pour la page d'accueil avec synchronisation automatique Supabase
  */
 
 // Imports des modules
@@ -21,7 +21,6 @@ import {
     loadRevisitSettings, 
     saveRevisitSettings 
 } from './scripts/utils/supabaseService.js';
-import { setOnStorageUpdateCallback } from './scripts/utils/localStorage.js';
 import { showSupabaseConfigForm, loadSupabaseFromLocalStorage, isSupabaseConfigured } from './scripts/utils/supabaseDirectConfig.js';
 import { initializeTables } from './scripts/utils/supabaseClient.js';
 
@@ -229,24 +228,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (note.categories) {
                 note.categories.forEach(category => appState.allCategories.add(category));
             }
-        });
-
-        // Configurer la synchronisation entre les onglets
-        setOnStorageUpdateCallback((updatedNotes) => {
-            console.log('Mise à jour des notes détectée dans un autre onglet, rechargement...');
-            // Mettre à jour l'état local
-            appState.notes = updatedNotes;
-            
-            // Extraire les catégories des notes mises à jour
-            appState.allCategories.clear();
-            updatedNotes.forEach(note => {
-                if (note.categories) {
-                    note.categories.forEach(category => appState.allCategories.add(category));
-                }
-            });
-            
-            // Mettre à jour l'affichage des sections de révision
-            renderRevisitSections(updatedNotes);
         });
 
         // Charger les paramètres de révision
