@@ -179,8 +179,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
             // Vérifier s'il y a une requête de recherche dans l'URL
             const params = getUrlParams();
-            if (params.query) {
-                const query = params.query;
+            if (params.query || params.q) {
+                const query = params.query || params.q;
                 
                 // Remplir les deux champs de recherche si disponibles
                 if (hasSearchElements) {

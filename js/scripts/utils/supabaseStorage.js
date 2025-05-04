@@ -14,7 +14,15 @@ export async function getAllNotes() {
     
     if (!client) {
         console.warn('Client Supabase non disponible pour récupérer les notes');
-        return [];
+        // Essayer de récupérer les notes depuis le stockage local comme fallback
+        try {
+            const localNotes = JSON.parse(localStorage.getItem('notes')) || [];
+            console.log(`${localNotes.length} notes récupérées depuis le stockage local comme fallback.`);
+            return localNotes;
+        } catch (error) {
+            console.error('Erreur lors de la récupération des notes depuis le stockage local:', error);
+            return [];
+        }
     }
     
     try {
@@ -274,7 +282,26 @@ export async function searchNotes(query) {
     
     if (!client) {
         console.warn('Client Supabase non disponible pour la recherche');
-        return [];
+        // Essayer de rechercher dans les notes locales comme fallback
+        try {
+            const localNotes = JSON.parse(localStorage.getItem('notes')) || [];
+            console.log(`Recherche dans ${localNotes.length} notes locales comme fallback pour "${query}"`);
+            
+            // Recherche simple dans les notes locales
+            const cleanQuery = query.toLowerCase().trim();
+            const results = localNotes.filter(note => {
+                return (note.title && note.title.toLowerCase().includes(cleanQuery)) || 
+                       (note.content && note.content.toLowerCase().includes(cleanQuery)) ||
+                       (note.categories && note.categories.some(cat => cat.toLowerCase().includes(cleanQuery))) ||
+                       (note.hashtags && note.hashtags.some(tag => tag.toLowerCase().includes(cleanQuery)));
+            });
+            
+            console.log(`${results.length} notes trouvées localement pour la recherche "${query}"`);
+            return results;
+        } catch (error) {
+            console.error('Erreur lors de la recherche dans les notes locales:', error);
+            return [];
+        }
     }
     
     // Si la requête est vide, retourner un tableau vide
