@@ -67,36 +67,61 @@ export function extractYoutubeUrls(content) {
 }
 
 /**
- * Extrait les liens d'images Imgur du contenu entre [[ ]]
+ * Extrait les liens d'images et d'albums Imgur du contenu entre [[ ]]
  * @param {string} content - Le contenu où chercher les liens Imgur
- * @returns {Array} - Tableau des URLs d'images Imgur trouvées
+ * @returns {Array} - Tableau d'objets contenant les informations des médias Imgur trouvés
  */
 export function extractImgurImages(content) {
     if (!content) return [];
 
     // Regex pour trouver les liens Imgur entre [[ ]]
-    const regex = /\[\[(https?:\/\/(?:i\.)?imgur\.com\/[a-zA-Z0-9]+(?:\.[a-zA-Z]{3,4})?)\]\]/g;
+    const regex = /\[\[(https?:\/\/(?:i\.)?imgur\.com\/(?:a\/)?[a-zA-Z0-9]+(?:\.[a-zA-Z]{3,4})?)\]\]/g;
     const matches = content.matchAll(regex);
-    const urls = [];
+    const imgurMedia = [];
 
     // Extraire les URLs des images
     for (const match of matches) {
         const imgUrl = match[1];
         if (imgUrl) {
-            // Standardiser le format d'URL et s'assurer que c'est bien une image
-            let standardUrl = imgUrl;
-            if (!standardUrl.includes('i.imgur.com')) {
-                standardUrl = standardUrl.replace('imgur.com', 'i.imgur.com');
+            // Détecter si c'est un album ou une image simple
+            const isAlbum = imgUrl.includes('/a/');
+            
+            if (isAlbum) {
+                // Extraire l'ID de l'album
+                const albumIdMatch = imgUrl.match(/\/a\/([a-zA-Z0-9]+)/);
+                if (albumIdMatch && albumIdMatch[1]) {
+                    imgurMedia.push({
+                        type: 'album',
+                        id: albumIdMatch[1],
+                        originalUrl: imgUrl
+                    });
+                }
+            } else {
+                // C'est une image simple
+                // Extraire l'ID de l'image
+                const imgIdMatch = imgUrl.match(/\/([a-zA-Z0-9]+)(?:\.[a-zA-Z]{3,4})?$/);
+                if (imgIdMatch && imgIdMatch[1]) {
+                    // Standardiser le format d'URL pour les images simples
+                    let standardUrl = imgUrl;
+                    if (!standardUrl.includes('i.imgur.com')) {
+                        standardUrl = standardUrl.replace('imgur.com', 'i.imgur.com');
+                    }
+                    if (!standardUrl.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                        standardUrl += '.jpg';
+                    }
+                    
+                    imgurMedia.push({
+                        type: 'image',
+                        id: imgIdMatch[1],
+                        url: standardUrl,
+                        originalUrl: imgUrl
+                    });
+                }
             }
-            if (!standardUrl.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                standardUrl += '.jpg';
-            }
-            urls.push(standardUrl);
         }
     }
 
-    // Éliminer les doublons
-    return [...new Set(urls)];
+    return imgurMedia;
 }
 
 /**

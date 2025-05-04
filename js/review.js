@@ -263,18 +263,38 @@ function displayNote(note) {
         noteElement.appendChild(videoContainer);
     }
 
-    // Ajouter les images Imgur si présentes
+    // Ajouter les images et albums Imgur si présents
     if (note.imgurUrls && note.imgurUrls.length > 0) {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'note-images';
-        note.imgurUrls.forEach(url => {
-            const img = document.createElement('img');
-            img.src = url;
-            img.className = 'imgur-image';
-            img.alt = 'Image Imgur';
-            img.loading = 'lazy';
-            imgContainer.appendChild(img);
+        
+        note.imgurUrls.forEach(imgurItem => {
+            if (imgurItem.type === 'image') {
+                // Afficher une image simple
+                const img = document.createElement('img');
+                img.src = imgurItem.url;
+                img.className = 'imgur-image';
+                img.alt = 'Image Imgur';
+                img.loading = 'lazy';
+                imgContainer.appendChild(img);
+            } else if (imgurItem.type === 'album') {
+                // Afficher un album via iframe
+                const albumContainer = document.createElement('div');
+                albumContainer.className = 'imgur-album-container';
+                
+                const iframe = document.createElement('iframe');
+                iframe.className = 'imgur-album';
+                iframe.width = '100%';
+                iframe.height = '500px';
+                iframe.frameBorder = '0';
+                iframe.src = `https://imgur.com/a/${imgurItem.id}/embed`;
+                iframe.allowFullscreen = true;
+                
+                albumContainer.appendChild(iframe);
+                imgContainer.appendChild(albumContainer);
+            }
         });
+        
         noteElement.appendChild(imgContainer);
     }
 

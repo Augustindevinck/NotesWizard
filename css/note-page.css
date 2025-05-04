@@ -284,7 +284,7 @@
     margin-bottom: 15px;
 }
 
-/* Styles pour les images Imgur */
+/* Styles pour les images et albums Imgur */
 .note-images {
     margin-top: 20px;
     margin-bottom: 30px;
@@ -297,6 +297,21 @@
     max-width: 100%;
     border-radius: 8px;
     box-shadow: var(--shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.imgur-album-container {
+    width: 100%;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.imgur-album {
+    border: none;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 8px;
 }
 
 /* Responsive */
