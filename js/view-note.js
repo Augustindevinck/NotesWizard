@@ -483,45 +483,46 @@ async function deleteCurrentNote() {
                 noteContainer.appendChild(loadingOverlay);
             }
             
-            console.log('Suppression de la note:', currentNote.id);
+            console.log(`Suppression de la note: ${currentNote.id}`);
             
-            // Approche 1: Mise à jour du localStorage directement - fonctionne toujours
-            try {
-                const localStorage = await import('./scripts/utils/localStorage.js');
-                const localSuccess = localStorage.deleteNote(currentNote.id);
-                if (localSuccess) {
-                    console.log(`Note ${currentNote.id} supprimée du stockage local`);
+            // Supprimer du localStorage
+            const notesStr = localStorage.getItem('notes');
+            if (notesStr) {
+                const notes = JSON.parse(notesStr);
+                const updatedNotes = notes.filter(note => note.id !== currentNote.id);
+                localStorage.setItem('notes', JSON.stringify(updatedNotes));
+                console.log(`Suppression de la note: ${currentNote.id}`);
+                console.log(`Suppression de la note ${currentNote.id}...`);
+                console.log(`Note ${currentNote.id} supprimée du stockage local`);
+            }
+            
+            // Essayer de supprimer via Supabase si disponible
+            if (supabaseClient) {
+                try {
+                    console.log(`Suppression de la note ${currentNote.id} dans Supabase...`);
+                    
+                    const { error } = await supabaseClient
+                        .from('notes')
+                        .delete()
+                        .eq('id', currentNote.id);
+                    
+                    if (error) {
+                        console.error(`Erreur lors de la suppression de la note ${currentNote.id} dans Supabase:`, error);
+                    } else {
+                        console.log(`Note ${currentNote.id} supprimée avec succès dans Supabase.`);
+                    }
+                } catch (supabaseError) {
+                    console.error(`Exception lors de la suppression dans Supabase:`, supabaseError);
                 }
-            } catch (localError) {
-                console.error('Erreur lors de la suppression locale:', localError);
+            } else {
+                console.warn('Client Supabase non disponible pour supprimer la note');
             }
             
-            // Approche 2: Essayer quand même de supprimer via Supabase (comme sur la page d'accueil)
-            try {
-                const supabaseStorage = await import('./scripts/utils/supabaseStorage.js');
-                await supabaseStorage.deleteNote(currentNote.id);
-                console.log('Suppression Supabase tentée');
-            } catch (supabaseError) {
-                console.warn('Impossible de supprimer via Supabase, mais la note est supprimée localement:', supabaseError);
-            }
+            console.log('Note supprimée avec succès');
             
-            // Mettre à jour l'interface, peu importe si Supabase a réussi
-            console.log('Note considérée comme supprimée avec succès');
-            
-            // Forcer une mise à jour de la synchronisation
-            try {
-                const supabaseService = await import('./scripts/utils/supabaseService.js');
-                await supabaseService.syncWithSupabase();
-                console.log('Synchronisation avec Supabase terminée après suppression');
-            } catch (syncError) {
-                console.warn('Erreur de synchronisation, continuons quand même:', syncError);
-            }
-            
-            // Redirection différée pour laisser le temps aux opérations asynchrones
-            setTimeout(() => {
-                console.log('Redirection vers la page d\'accueil après suppression...');
-                window.location.href = 'index.html?t=' + new Date().getTime();
-            }, 800);
+            // Redirection vers la page d'accueil
+            console.log('Redirection vers la page d\'accueil après suppression...');
+            window.location.href = 'index.html?t=' + new Date().getTime();
         } catch (error) {
             console.error('Erreur lors de la suppression de la note:', error);
             alert('Erreur lors de la suppression de la note: ' + error.message);
