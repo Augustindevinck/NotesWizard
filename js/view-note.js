@@ -37,15 +37,28 @@ async function initSupabase() {
             return null;
         }
         
-        // Vérifier la session
-        const { data: { session } } = await client.auth.getSession();
-        if (!session) {
-            console.log('Connexion anonyme...');
-            await client.auth.signInAnonymously();
+        try {
+            // Vérifier la session
+            const { data: { session } } = await client.auth.getSession();
+            if (!session) {
+                console.log('Connexion anonyme...');
+                await client.auth.signInAnonymously();
+            }
+            
+            // Test rapide de connexion pour vérifier que le client fonctionne
+            const { data, error } = await client.from('notes').select('id').limit(1);
+            
+            if (error) {
+                console.error('Erreur lors du test de connexion Supabase:', error);
+                return null;
+            }
+            
+            console.log('Client Supabase initialisé et testé avec succès');
+            return client;
+        } catch (testError) {
+            console.error('Erreur lors du test de connexion Supabase:', testError);
+            return null;
         }
-        
-        console.log('Client Supabase initialisé avec succès');
-        return client;
     } catch (error) {
         console.error('Erreur lors de l\'initialisation de Supabase:', error);
         return null;
@@ -408,31 +421,15 @@ async function deleteNote(noteId) {
                 // Supprimer dans Supabase
                 console.log(`Suppression de la note ${noteId} dans Supabase...`);
                 
-                // Vérifier d'abord si la note existe toujours
-                const { data: existingNote, error: checkError } = await supabaseClient
+                const { error } = await supabaseClient
                     .from('notes')
-                    .select('id')
-                    .eq('id', noteId)
-                    .single();
+                    .delete()
+                    .eq('id', noteId);
                 
-                if (checkError && checkError.code !== 'PGRST116') {
-                    console.error(`Erreur lors de la vérification de l'existence de la note ${noteId}:`, checkError);
-                }
-                
-                if (existingNote || checkError?.code !== 'PGRST116') {
-                    // Si la note existe ou si l'erreur n'est pas "note non trouvée", procéder à la suppression
-                    const { error } = await supabaseClient
-                        .from('notes')
-                        .delete()
-                        .eq('id', noteId);
-                    
-                    if (error) {
-                        console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                    } else {
-                        console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
-                    }
+                if (error) {
+                    console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
                 } else {
-                    console.log(`Note ${noteId} n'existe pas dans Supabase, aucune suppression nécessaire.`);
+                    console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
                 }
             } catch (supabaseError) {
                 console.error(`Exception lors de la suppression dans Supabase:`, supabaseError);
@@ -468,9 +465,11 @@ async function deleteCurrentNote() {
             if (success) {
                 console.log('Note supprimée avec succès');
                 
-                // La fonction deleteNote gère déjà la suppression dans Supabase et dans le stockage local
-                
-                window.location.href = 'index.html';
+                // Ajouter un délai avant la redirection pour permettre aux opérations asynchrones de se terminer
+                setTimeout(() => {
+                    // Forcer le rechargement complet pour s'assurer que les changements sont reflétés
+                    window.location.href = 'index.html?t=' + new Date().getTime();
+                }, 500);
             } else {
                 throw new Error('Échec de la suppression de la note.');
             }
