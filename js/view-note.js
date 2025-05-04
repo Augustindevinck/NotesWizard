@@ -329,7 +329,8 @@ function displayNote(note) {
                 iframe.className = 'imgur-album-iframe';
                 iframe.src = imgurItem.embedUrl;
                 iframe.width = '100%';
-                iframe.height = '500px';
+                iframe.height = 'auto';
+                iframe.style.minHeight = '600px';
                 iframe.frameBorder = '0';
                 iframe.allowFullscreen = true;
                 iframe.loading = 'lazy';
