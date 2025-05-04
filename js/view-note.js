@@ -310,21 +310,43 @@ function displayNote(note) {
                 img.className = 'imgur-image';
                 img.alt = 'Image Imgur';
                 img.loading = 'lazy';
-                imgContainer.appendChild(img);
+                
+                // Rendre l'image cliquable pour l'ouvrir dans Imgur
+                const linkElement = document.createElement('a');
+                linkElement.href = imgurItem.originalUrl;
+                linkElement.target = '_blank';
+                linkElement.rel = 'noopener noreferrer';
+                linkElement.appendChild(img);
+                
+                imgContainer.appendChild(linkElement);
             } else if (imgurItem.type === 'album') {
-                // Afficher un album via iframe
+                // Créer un conteneur pour l'album
                 const albumContainer = document.createElement('div');
                 albumContainer.className = 'imgur-album-container';
                 
-                const iframe = document.createElement('iframe');
-                iframe.className = 'imgur-album';
-                iframe.width = '100%';
-                iframe.height = '500px';
-                iframe.frameBorder = '0';
-                iframe.src = `https://imgur.com/a/${imgurItem.id}/embed`;
-                iframe.allowFullscreen = true;
+                // Afficher l'image de couverture de l'album
+                const albumCover = document.createElement('img');
+                albumCover.src = imgurItem.thumbnailUrl;
+                albumCover.className = 'imgur-album-cover';
+                albumCover.alt = 'Album Imgur';
+                albumCover.loading = 'lazy';
                 
-                albumContainer.appendChild(iframe);
+                // Ajouter un bouton pour ouvrir l'album dans Imgur
+                const albumLink = document.createElement('a');
+                albumLink.href = imgurItem.originalUrl;
+                albumLink.target = '_blank';
+                albumLink.rel = 'noopener noreferrer';
+                albumLink.className = 'imgur-album-link';
+                
+                // Texte informatif
+                const albumInfo = document.createElement('div');
+                albumInfo.className = 'imgur-album-info';
+                albumInfo.textContent = 'Cliquez pour voir l\'album complet sur Imgur';
+                
+                // Assembler les éléments
+                albumLink.appendChild(albumCover);
+                albumLink.appendChild(albumInfo);
+                albumContainer.appendChild(albumLink);
                 imgContainer.appendChild(albumContainer);
             }
         });

@@ -75,7 +75,7 @@ export function extractImgurImages(content) {
     if (!content) return [];
 
     // Regex pour trouver les liens Imgur entre [[ ]]
-    const regex = /\[\[(https?:\/\/(?:i\.)?imgur\.com\/(?:a\/)?[a-zA-Z0-9]+(?:\.[a-zA-Z]{3,4})?)\]\]/g;
+    const regex = /\[\[(https?:\/\/(?:i\.|m\.)?imgur\.com\/(?:a\/|gallery\/)?[a-zA-Z0-9]+(?:\.[a-zA-Z]{3,4})?)\]\]/g;
     const matches = content.matchAll(regex);
     const imgurMedia = [];
 
@@ -83,17 +83,21 @@ export function extractImgurImages(content) {
     for (const match of matches) {
         const imgUrl = match[1];
         if (imgUrl) {
-            // Détecter si c'est un album ou une image simple
-            const isAlbum = imgUrl.includes('/a/');
+            // Détecter si c'est un album, une galerie ou une image simple
+            const isAlbum = imgUrl.includes('/a/') || imgUrl.includes('/gallery/');
             
             if (isAlbum) {
-                // Extraire l'ID de l'album
-                const albumIdMatch = imgUrl.match(/\/a\/([a-zA-Z0-9]+)/);
+                // Extraire l'ID de l'album ou de la galerie
+                const albumIdMatch = imgUrl.match(/\/(?:a|gallery)\/([a-zA-Z0-9]+)/);
                 if (albumIdMatch && albumIdMatch[1]) {
+                    const albumId = albumIdMatch[1];
+                    // Créer une liste d'URLs pour cet album
                     imgurMedia.push({
                         type: 'album',
-                        id: albumIdMatch[1],
-                        originalUrl: imgUrl
+                        id: albumId,
+                        originalUrl: imgUrl,
+                        // Utiliser directement un lien vers l'image représentative de l'album
+                        thumbnailUrl: `https://i.imgur.com/${albumId}.jpg`
                     });
                 }
             } else {
@@ -101,19 +105,14 @@ export function extractImgurImages(content) {
                 // Extraire l'ID de l'image
                 const imgIdMatch = imgUrl.match(/\/([a-zA-Z0-9]+)(?:\.[a-zA-Z]{3,4})?$/);
                 if (imgIdMatch && imgIdMatch[1]) {
-                    // Standardiser le format d'URL pour les images simples
-                    let standardUrl = imgUrl;
-                    if (!standardUrl.includes('i.imgur.com')) {
-                        standardUrl = standardUrl.replace('imgur.com', 'i.imgur.com');
-                    }
-                    if (!standardUrl.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                        standardUrl += '.jpg';
-                    }
+                    const imageId = imgIdMatch[1];
+                    // Créer une URL directe vers l'image
+                    const directUrl = `https://i.imgur.com/${imageId}.jpg`;
                     
                     imgurMedia.push({
                         type: 'image',
-                        id: imgIdMatch[1],
-                        url: standardUrl,
+                        id: imageId,
+                        url: directUrl,
                         originalUrl: imgUrl
                     });
                 }
