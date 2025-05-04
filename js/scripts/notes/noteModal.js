@@ -237,6 +237,14 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Afficher le bouton de suppression pour les notes existantes
         deleteNoteBtn.classList.remove('hidden');
 
+        // Vider les conteneurs avant d'ajouter de nouvelles catégories et hashtags
+        if (selectedCategories) {
+            selectedCategories.innerHTML = '';
+        }
+        if (detectedHashtags) {
+            detectedHashtags.innerHTML = '';
+        }
+        
         // Add categories
         if (note.categories && note.categories.length > 0) {
             note.categories.forEach(category => {
