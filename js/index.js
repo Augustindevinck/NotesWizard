@@ -7,7 +7,7 @@ import { loadNotes, saveNotes, loadRevisitSettings, saveRevisitSettings } from '
 import { exportNotes, importNotes } from './scripts/utils/exportImport.js';
 import { renderEmptyState, cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { renderNotes, createNoteElement, deleteNote, saveNote, initNotesManager } from './scripts/notes/notesManager.js';
-import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions } from './scripts/notes/noteModal.js';
+import { initNoteModal, openNoteModal, saveCurrentNote, initModalFunctions, cleanupNoteModal } from './scripts/notes/noteModal.js';
 import { initRevisit, renderRevisitSections, showMoreNotes, openDaysEditModal, saveDaysSettings, initCreateNoteElement } from './scripts/notes/revisit.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
