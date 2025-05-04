@@ -4,7 +4,7 @@
 
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { deleteNote as deleteStorageNote } from './scripts/notes/notesManager.js';
-import { addHashtagTag } from './scripts/categories/hashtagManager.js';
+import { addHashtagTag, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { addCategoryTag } from './scripts/categories/categoryManager.js';
 import { fetchAllNotes } from './scripts/utils/supabaseService.js';
 
@@ -177,10 +177,15 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 /**
  * Supprime la note actuelle et redirection vers l'accueil
  */
-function deleteCurrentNote() {
+async function deleteCurrentNote() {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
-        deleteStorageNote(currentNote.id);
-        window.location.href = 'index.html';
+        try {
+            await deleteStorageNote(currentNote.id);
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.error('Erreur lors de la suppression de la note:', error);
+            alert('Erreur lors de la suppression de la note. Veuillez réessayer.');
+        }
     }
 }
 
