@@ -1,181 +1,270 @@
 /**
- * Gestionnaire simplifié du stockage local
- * Version adaptée pour éviter les problèmes de synchronisation
+ * Gestion du stockage local pour les notes
  */
 
-import { DELETED_NOTES_KEY } from './constants.js';
+import { generateUniqueId } from './domHelpers.js';
+
+// Clés de stockage local
+const NOTES_STORAGE_KEY = 'notes';
+const SETTINGS_STORAGE_KEY = 'settings_';
 
 /**
- * Initialise le suivi des notes supprimées
- */
-function initializeDeletedNotes() {
-    if (!localStorage.getItem(DELETED_NOTES_KEY)) {
-        localStorage.setItem(DELETED_NOTES_KEY, JSON.stringify([]));
-    }
-}
-
-/**
- * Vérifie si une note est marquée comme supprimée
- * @param {string} noteId - ID de la note à vérifier
- * @returns {boolean} - True si la note est marquée comme supprimée
- */
-function isNoteMarkedAsDeleted(noteId) {
-    initializeDeletedNotes();
-    try {
-        const deletedNotes = JSON.parse(localStorage.getItem(DELETED_NOTES_KEY) || '[]');
-        return deletedNotes.includes(noteId);
-    } catch (error) {
-        console.error('Erreur lors de la vérification des notes supprimées:', error);
-        return false;
-    }
-}
-
-/**
- * Filtre les notes marquées comme supprimées
- * @param {Array} notes - Notes à filtrer
- * @returns {Array} - Notes filtrées
- */
-function filterDeletedNotes(notes) {
-    if (!Array.isArray(notes)) return [];
-    
-    return notes.filter(note => !isNoteMarkedAsDeleted(note.id));
-}
-
-/**
- * Récupère toutes les notes du stockage local
- * Filtre les notes supprimées
+ * Récupère toutes les notes depuis le stockage local
  * @returns {Array} - Tableau de notes
  */
 export function getAllNotes() {
     try {
-        const notesStr = localStorage.getItem('notes');
-        const notes = notesStr ? JSON.parse(notesStr) : [];
-        return filterDeletedNotes(notes);
+        const notesJson = localStorage.getItem(NOTES_STORAGE_KEY);
+        return notesJson ? JSON.parse(notesJson) : [];
     } catch (error) {
-        console.error('Erreur lors de la récupération des notes du stockage local:', error);
+        console.error('Erreur lors de la récupération des notes du localStorage:', error);
         return [];
     }
 }
 
 /**
- * Récupère une note par son ID
- * Prend en compte les notes supprimées
- * @param {string} noteId - ID de la note à récupérer
- * @returns {Object|null} - La note ou null si non trouvée ou supprimée
+ * Récupère une note spécifique par son ID
+ * @param {string} id - ID de la note
+ * @returns {Object|null} - Note trouvée ou null
  */
-export function getNote(noteId) {
-    if (isNoteMarkedAsDeleted(noteId)) {
-        console.log(`Note ${noteId} est marquée comme supprimée, ignorée`);
-        return null;
-    }
-    
+export function getNote(id) {
     try {
         const notes = getAllNotes();
-        return notes.find(note => note.id === noteId) || null;
+        return notes.find(note => note.id === id) || null;
     } catch (error) {
-        console.error(`Erreur lors de la récupération de la note ${noteId}:`, error);
+        console.error(`Erreur lors de la récupération de la note ${id} du localStorage:`, error);
         return null;
+    }
+}
+
+/**
+ * Sauvegarde toutes les notes dans le stockage local
+ * @param {Array} notes - Tableau de notes à sauvegarder
+ * @returns {boolean} - Vrai si la sauvegarde a réussi
+ */
+export function saveAllNotes(notes) {
+    try {
+        localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+        return true;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des notes dans le localStorage:', error);
+        return false;
     }
 }
 
 /**
  * Crée une nouvelle note dans le stockage local
- * @param {Object} note - La note à créer
- * @returns {string|null} - ID de la note créée ou null en cas d'erreur
+ * @param {Object} noteData - Données de la note
+ * @returns {Object} - Note créée
  */
-export function createNote(note) {
+export function createNote(noteData) {
     try {
-        if (!note || !note.id) {
-            console.error('Note invalide pour la création');
-            return null;
-        }
-        
-        // Vérifier si la note est marquée comme supprimée
-        if (isNoteMarkedAsDeleted(note.id)) {
-            console.log(`Note ${note.id} est marquée comme supprimée, création ignorée`);
-            return null;
-        }
-        
         const notes = getAllNotes();
-        notes.push(note);
         
-        localStorage.setItem('notes', JSON.stringify(notes));
-        return note.id;
+        // Créer la nouvelle note avec un ID unique et des dates
+        const newNote = {
+            id: generateUniqueId(),
+            ...noteData,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        
+        // Ajouter la note au tableau et sauvegarder
+        notes.push(newNote);
+        saveAllNotes(notes);
+        
+        return newNote;
     } catch (error) {
-        console.error('Erreur lors de la création de la note dans le stockage local:', error);
+        console.error('Erreur lors de la création de la note dans le localStorage:', error);
         return null;
     }
 }
 
 /**
- * Met à jour une note dans le stockage local
- * @param {string} noteId - ID de la note à mettre à jour
- * @param {Object} updatedNote - Données mises à jour
- * @returns {Object|null} - La note mise à jour ou null en cas d'erreur
+ * Met à jour une note existante dans le stockage local
+ * @param {string} id - ID de la note à mettre à jour
+ * @param {Object} noteData - Nouvelles données de la note
+ * @returns {Object|null} - Note mise à jour ou null
  */
-export function updateNote(noteId, updatedNote) {
+export function updateNote(id, noteData) {
     try {
-        if (!noteId) {
-            console.error('ID de note non fourni pour la mise à jour');
-            return null;
-        }
-        
-        // Vérifier si la note est marquée comme supprimée
-        if (isNoteMarkedAsDeleted(noteId)) {
-            console.log(`Note ${noteId} est marquée comme supprimée, mise à jour ignorée`);
-            return null;
-        }
-        
         const notes = getAllNotes();
-        const index = notes.findIndex(note => note.id === noteId);
+        const noteIndex = notes.findIndex(note => note.id === id);
         
-        if (index === -1) {
-            console.error(`Note ${noteId} non trouvée pour la mise à jour`);
+        if (noteIndex === -1) {
+            console.warn(`Note ${id} non trouvée dans le localStorage pour mise à jour`);
             return null;
         }
         
-        notes[index] = { ...notes[index], ...updatedNote };
-        localStorage.setItem('notes', JSON.stringify(notes));
+        // Mettre à jour la note
+        const updatedNote = {
+            ...notes[noteIndex],
+            ...noteData,
+            updatedAt: new Date().toISOString()
+        };
         
-        return notes[index];
+        notes[noteIndex] = updatedNote;
+        saveAllNotes(notes);
+        
+        return updatedNote;
     } catch (error) {
-        console.error(`Erreur lors de la mise à jour de la note ${noteId}:`, error);
+        console.error(`Erreur lors de la mise à jour de la note ${id} dans le localStorage:`, error);
         return null;
     }
 }
 
 /**
  * Supprime une note du stockage local
- * Marque également la note comme supprimée
- * @param {string} noteId - ID de la note à supprimer
- * @returns {boolean} - True si la suppression a réussi
+ * @param {string} id - ID de la note à supprimer
+ * @returns {boolean} - Vrai si la suppression a réussi
  */
-export function deleteNote(noteId) {
+export function deleteNote(id) {
     try {
-        if (!noteId) {
-            console.error('ID de note non fourni pour la suppression');
+        const notes = getAllNotes();
+        const filteredNotes = notes.filter(note => note.id !== id);
+        
+        // Si aucune note n'a été supprimée
+        if (filteredNotes.length === notes.length) {
+            console.warn(`Note ${id} non trouvée dans le localStorage pour suppression`);
             return false;
         }
         
-        // Marquer la note comme supprimée
-        initializeDeletedNotes();
-        const deletedNotes = JSON.parse(localStorage.getItem(DELETED_NOTES_KEY) || '[]');
-        if (!deletedNotes.includes(noteId)) {
-            deletedNotes.push(noteId);
-            localStorage.setItem(DELETED_NOTES_KEY, JSON.stringify(deletedNotes));
-            console.log(`Note ${noteId} marquée comme supprimée`);
-        }
-        
-        // Supprimer la note de la liste
-        const notes = getAllNotes();
-        const filteredNotes = notes.filter(note => note.id !== noteId);
-        localStorage.setItem('notes', JSON.stringify(filteredNotes));
-        
-        console.log(`${notes.length - filteredNotes.length} note(s) avec ID ${noteId} supprimée(s) du stockage local, ${filteredNotes.length} notes restantes`);
-        
+        saveAllNotes(filteredNotes);
         return true;
     } catch (error) {
-        console.error(`Erreur lors de la suppression de la note ${noteId}:`, error);
+        console.error(`Erreur lors de la suppression de la note ${id} du localStorage:`, error);
         return false;
     }
+}
+
+/**
+ * Recherche des notes dans le stockage local
+ * @param {string} query - Terme de recherche
+ * @returns {Array} - Notes correspondant à la recherche
+ */
+export function searchNotes(query) {
+    try {
+        if (!query.trim()) {
+            return [];
+        }
+        
+        const notes = getAllNotes();
+        const lowercasedQuery = query.toLowerCase();
+        
+        return notes.filter(note => {
+            const title = note.title?.toLowerCase() || '';
+            const content = note.content?.toLowerCase() || '';
+            const categories = Array.isArray(note.categories) ? note.categories.join(' ').toLowerCase() : '';
+            const hashtags = Array.isArray(note.hashtags) ? note.hashtags.join(' ').toLowerCase() : '';
+            
+            return title.includes(lowercasedQuery) || 
+                   content.includes(lowercasedQuery) || 
+                   categories.includes(lowercasedQuery) || 
+                   hashtags.includes(lowercasedQuery);
+        });
+    } catch (error) {
+        console.error('Erreur lors de la recherche des notes dans le localStorage:', error);
+        return [];
+    }
+}
+
+/**
+ * Sauvegarde un paramètre dans le stockage local
+ * @param {string} key - Clé du paramètre
+ * @param {any} value - Valeur du paramètre
+ * @returns {boolean} - Vrai si la sauvegarde a réussi
+ */
+export function saveSettings(key, value) {
+    try {
+        localStorage.setItem(`${SETTINGS_STORAGE_KEY}${key}`, JSON.stringify(value));
+        return true;
+    } catch (error) {
+        console.error(`Erreur lors de la sauvegarde du paramètre ${key} dans le localStorage:`, error);
+        return false;
+    }
+}
+
+/**
+ * Récupère un paramètre du stockage local
+ * @param {string} key - Clé du paramètre
+ * @param {any} defaultValue - Valeur par défaut si le paramètre n'existe pas
+ * @returns {any} - Valeur du paramètre
+ */
+export function getSettings(key, defaultValue = null) {
+    try {
+        const valueJson = localStorage.getItem(`${SETTINGS_STORAGE_KEY}${key}`);
+        return valueJson ? JSON.parse(valueJson) : defaultValue;
+    } catch (error) {
+        console.error(`Erreur lors de la récupération du paramètre ${key} du localStorage:`, error);
+        return defaultValue;
+    }
+}
+
+/**
+ * Supprime un paramètre du stockage local
+ * @param {string} key - Clé du paramètre
+ * @returns {boolean} - Vrai si la suppression a réussi
+ */
+export function deleteSettings(key) {
+    try {
+        localStorage.removeItem(`${SETTINGS_STORAGE_KEY}${key}`);
+        return true;
+    } catch (error) {
+        console.error(`Erreur lors de la suppression du paramètre ${key} du localStorage:`, error);
+        return false;
+    }
+}
+
+/**
+ * Efface toutes les données du stockage local
+ * @returns {boolean} - Vrai si l'effacement a réussi
+ */
+export function clearAllData() {
+    try {
+        localStorage.clear();
+        return true;
+    } catch (error) {
+        console.error('Erreur lors de l\'effacement des données du localStorage:', error);
+        return false;
+    }
+}
+
+/**
+ * Alias de saveAllNotes pour la compatibilité avec d'autres modules
+ * @param {Array} notes - Tableau de notes à sauvegarder
+ * @returns {boolean} - Vrai si la sauvegarde a réussi
+ */
+export function saveNotes(notes) {
+    return saveAllNotes(notes);
+}
+
+/**
+ * Alias de getAllNotes pour la compatibilité avec d'autres modules
+ * @returns {Array} - Tableau de notes
+ */
+export function loadNotes() {
+    return getAllNotes();
+}
+
+/**
+ * Charge les paramètres de révision depuis le stockage local
+ * @returns {Object} - Les paramètres de révision
+ */
+export function loadRevisitSettings() {
+    return getSettings('revisitSettings', {
+        today: 0,
+        yesterday: 1,
+        week: 7,
+        month: 30,
+        threeMonths: 90
+    });
+}
+
+/**
+ * Sauvegarde les paramètres de révision dans le stockage local
+ * @param {Object} settings - Les paramètres de révision à sauvegarder
+ * @returns {boolean} - Vrai si la sauvegarde a réussi
+ */
+export function saveRevisitSettings(settings) {
+    return saveSettings('revisitSettings', settings);
 }

@@ -1,355 +1,614 @@
 /**
- * Interface de stockage Supabase pour l'application
- * Nouvelle implémentation qui utilise exclusivement Supabase, minimisant localStorage
+ * Gestion du stockage avec Supabase
  */
 
 import { getClient } from './supabaseClient.js';
-
-/**
- * Vérifie si une note est marquée comme supprimée dans la session
- * @param {string} noteId - ID de la note à vérifier
- * @returns {boolean} - True si la note est marquée comme supprimée
- */
-function isNoteDeletedInSession(noteId) {
-    return !!sessionStorage.getItem(`deleted_${noteId}`);
-}
+import { generateUniqueId } from './domHelpers.js';
 
 /**
  * Récupère toutes les notes depuis Supabase
  * @returns {Promise<Array>} - Tableau de notes
  */
 export async function getAllNotes() {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour récupérer les notes');
+        return [];
+    }
+    
     try {
-        const client = getClient();
-        if (!client) {
-            console.error('Client Supabase non disponible');
-            return [];
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour récupérer les notes...');
+            try {
+                const { error: authError } = await client.auth.signInAnonymously();
+                if (authError) {
+                    console.error('Erreur lors de la connexion anonyme:', authError);
+                    return [];
+                }
+            } catch (authError) {
+                console.error('Exception lors de la connexion anonyme:', authError);
+                return [];
+            }
         }
         
+        console.log('Récupération des notes depuis Supabase...');
         const { data, error } = await client
             .from('notes')
-            .select('*');
-            
+            .select('*')
+            .order('createdAt', { ascending: false });
+        
         if (error) {
             console.error('Erreur lors de la récupération des notes:', error);
+            // Vérifier si l'erreur est liée à la structure de table
+            if (error.code === '42P01') {
+                console.error('Table notes inexistante. Veuillez vérifier votre configuration Supabase.');
+            }
             return [];
         }
         
-        // Filtrer les notes marquées comme supprimées dans la session
-        const filteredNotes = data.filter(note => !isNoteDeletedInSession(note.id));
+        if (!data || !Array.isArray(data)) {
+            console.warn('Données invalides reçues de Supabase:', data);
+            return [];
+        }
         
-        return filteredNotes;
+        console.log(`${data.length} notes récupérées depuis Supabase.`);
+        
+        // S'assurer que les tableaux sont correctement formatés
+        return data.map(note => {
+            if (!note) return null;
+            
+            return {
+                ...note,
+                id: note.id || generateUniqueId(),
+                title: note.title || '',
+                content: note.content || '',
+                categories: Array.isArray(note.categories) ? note.categories : 
+                          (typeof note.categories === 'string' ? 
+                           (note.categories ? [note.categories] : []) : []),
+                hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
+                         (typeof note.hashtags === 'string' ? 
+                          (note.hashtags ? [note.hashtags] : []) : []),
+                videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
+                          (typeof note.videoUrls === 'string' ? 
+                           (note.videoUrls ? [note.videoUrls] : []) : []),
+                createdAt: note.createdAt || new Date().toISOString(),
+                updatedAt: note.updatedAt || new Date().toISOString()
+            };
+        }).filter(note => note !== null); // Éliminer les notes nulles
     } catch (error) {
-        console.error('Exception lors de la récupération des notes:', error);
+        console.error('Erreur lors de la récupération des notes:', error);
         return [];
     }
 }
 
 /**
- * Charge toutes les notes depuis Supabase
- * Alias de getAllNotes pour compatibilité
- * @returns {Promise<Array>} - Tableau de notes
+ * Récupère une note spécifique par son ID
+ * @param {string} id - ID de la note
+ * @returns {Promise<Object|null>} - Note trouvée ou null
  */
-export const loadNotes = getAllNotes;
-
-/**
- * Sauvegarde une note dans Supabase
- * @param {Object} note - La note à sauvegarder
- * @returns {Promise<string|null>} - ID de la note ou null
- */
-export async function saveNote(note) {
+export async function getNote(id) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour récupérer la note');
+        return null;
+    }
+    
     try {
-        const client = getClient();
-        if (!client) {
-            console.error('Client Supabase non disponible');
-            return null;
-        }
-        
-        // S'assurer que la note a un ID
-        const noteToSave = { ...note };
-        if (!noteToSave.id) {
-            noteToSave.id = Date.now() + '-' + Math.random().toString(36).substring(2, 9);
-        }
-        
-        // Mettre à jour les timestamps
-        const now = new Date().toISOString();
-        noteToSave.updatedAt = now;
-        if (!noteToSave.createdAt) {
-            noteToSave.createdAt = now;
-        }
-        
-        // Sauvegarder dans Supabase
-        const { error } = await client
+        const { data, error } = await client
             .from('notes')
-            .upsert(noteToSave);
-            
+            .select('*')
+            .eq('id', id)
+            .single();
+        
         if (error) {
-            console.error('Erreur lors de la sauvegarde de la note:', error);
+            console.error(`Erreur lors de la récupération de la note ${id}:`, error);
             return null;
         }
         
-        // Si la note était marquée comme supprimée, enlever cette marque
-        sessionStorage.removeItem(`deleted_${noteToSave.id}`);
-        
-        return noteToSave.id;
+        // S'assurer que les tableaux sont correctement formatés
+        return {
+            ...data,
+            categories: Array.isArray(data.categories) ? data.categories : [],
+            hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
+            videoUrls: Array.isArray(data.videoUrls) ? data.videoUrls : []
+        };
     } catch (error) {
-        console.error('Exception lors de la sauvegarde de la note:', error);
+        console.error(`Erreur lors de la récupération de la note ${id}:`, error);
         return null;
     }
 }
 
 /**
- * Sauvegarde plusieurs notes dans Supabase
- * @param {Array} notes - Tableau de notes à sauvegarder
- * @returns {Promise<boolean>} - True si la sauvegarde a réussi
+ * Crée une nouvelle note dans Supabase
+ * @param {Object} noteData - Données de la note
+ * @returns {Promise<Object|null>} - Note créée ou null
  */
-export async function saveNotes(notes) {
+export async function createNote(noteData) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour créer la note');
+        return null;
+    }
+    
     try {
-        if (!Array.isArray(notes) || notes.length === 0) {
-            return false;
-        }
+        // Préparer les données de la note
+        const newNote = {
+            id: generateUniqueId(),
+            title: noteData.title || '',
+            content: noteData.content || '',
+            categories: Array.isArray(noteData.categories) ? noteData.categories : [],
+            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
+            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
         
-        const client = getClient();
-        if (!client) {
-            console.error('Client Supabase non disponible');
-            return false;
-        }
-        
-        // Upsert toutes les notes
-        const { error } = await client
+        const { data, error } = await client
             .from('notes')
-            .upsert(notes);
-            
+            .insert(newNote)
+            .select()
+            .single();
+        
         if (error) {
-            console.error('Erreur lors de la sauvegarde des notes:', error);
-            return false;
+            console.error('Erreur lors de la création de la note:', error);
+            return null;
         }
         
-        return true;
+        return data;
     } catch (error) {
-        console.error('Exception lors de la sauvegarde des notes:', error);
-        return false;
+        console.error('Erreur lors de la création de la note:', error);
+        return null;
     }
 }
 
 /**
- * Supprime une note de Supabase
- * @param {string} noteId - ID de la note à supprimer
- * @returns {Promise<boolean>} - True si la suppression a réussi
+ * Met à jour une note existante dans Supabase
+ * @param {string} id - ID de la note à mettre à jour
+ * @param {Object} noteData - Nouvelles données de la note
+ * @returns {Promise<Object|null>} - Note mise à jour ou null
  */
-export async function deleteNote(noteId) {
+export async function updateNote(id, noteData) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour mettre à jour la note');
+        return null;
+    }
+    
     try {
-        const client = getClient();
-        if (!client) {
-            console.error('Client Supabase non disponible');
-            return false;
-        }
+        // Préparer les données de mise à jour
+        const updates = {
+            ...noteData,
+            updatedAt: new Date().toISOString(),
+            categories: Array.isArray(noteData.categories) ? noteData.categories : [],
+            hashtags: Array.isArray(noteData.hashtags) ? noteData.hashtags : [],
+            videoUrls: Array.isArray(noteData.videoUrls) ? noteData.videoUrls : []
+        };
         
-        // Supprimer de Supabase
-        const { error } = await client
+        const { data, error } = await client
             .from('notes')
-            .delete()
-            .eq('id', noteId);
-            
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+        
         if (error) {
-            console.error('Erreur lors de la suppression de la note:', error);
-            return false;
+            console.error(`Erreur lors de la mise à jour de la note ${id}:`, error);
+            return null;
         }
         
-        // Marquer comme supprimée dans la session
-        sessionStorage.setItem(`deleted_${noteId}`, 'true');
-        
-        return true;
+        return data;
     } catch (error) {
-        console.error('Exception lors de la suppression de la note:', error);
-        return false;
+        console.error(`Erreur lors de la mise à jour de la note ${id}:`, error);
+        return null;
     }
 }
 
 /**
- * Supprime plusieurs notes de Supabase
- * @param {Array} noteIds - IDs des notes à supprimer
- * @returns {Promise<boolean>} - True si la suppression a réussi
+ * Supprime une note dans Supabase
+ * @param {string} id - ID de la note à supprimer
+ * @returns {Promise<boolean>} - Vrai si la suppression a réussi
  */
-export async function deleteNotes(noteIds) {
+export async function deleteNote(id) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour supprimer la note');
+        return false;
+    }
+    
+    if (!id) {
+        console.error('ID de note invalide pour la suppression');
+        return false;
+    }
+    
     try {
-        if (!Array.isArray(noteIds) || noteIds.length === 0) {
-            return false;
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour supprimer la note...');
+            try {
+                const { error: authError } = await client.auth.signInAnonymously();
+                if (authError) {
+                    console.error('Erreur lors de la connexion anonyme pour la suppression:', authError);
+                    return false;
+                }
+            } catch (authError) {
+                console.error('Exception lors de la connexion anonyme pour la suppression:', authError);
+                return false;
+            }
         }
         
-        const client = getClient();
-        if (!client) {
-            console.error('Client Supabase non disponible');
-            return false;
-        }
+        console.log(`Suppression de la note ${id} dans Supabase...`);
         
-        // Supprimer de Supabase
         const { error } = await client
             .from('notes')
             .delete()
-            .in('id', noteIds);
-            
+            .eq('id', id);
+        
         if (error) {
-            console.error('Erreur lors de la suppression des notes:', error);
+            console.error(`Erreur lors de la suppression de la note ${id}:`, error);
             return false;
         }
         
-        // Marquer comme supprimées dans la session
-        noteIds.forEach(id => sessionStorage.setItem(`deleted_${id}`, 'true'));
-        
+        console.log(`Note ${id} supprimée avec succès dans Supabase.`);
         return true;
     } catch (error) {
-        console.error('Exception lors de la suppression des notes:', error);
+        console.error(`Erreur lors de la suppression de la note ${id}:`, error);
         return false;
     }
 }
 
 /**
  * Recherche des notes dans Supabase
- * @param {string} searchTerm - Terme de recherche
- * @param {Object} options - Options de recherche
+ * @param {string} query - Terme de recherche
  * @returns {Promise<Array>} - Notes correspondant à la recherche
  */
-export async function searchNotes(searchTerm, options = {}) {
+export async function searchNotes(query) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour la recherche');
+        return [];
+    }
+    
+    // Si la requête est vide, retourner un tableau vide
+    if (!query || !query.trim()) {
+        return [];
+    }
+    
     try {
-        if (!searchTerm || searchTerm.trim() === '') {
-            return getAllNotes();
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour la recherche...');
+            try {
+                const { error: authError } = await client.auth.signInAnonymously();
+                if (authError) {
+                    console.error('Erreur lors de la connexion anonyme pour la recherche:', authError);
+                    return [];
+                }
+            } catch (authError) {
+                console.error('Exception lors de la connexion anonyme pour la recherche:', authError);
+                return [];
+            }
         }
         
-        const client = getClient();
-        if (!client) {
-            console.error('Client Supabase non disponible');
+        // Nettoyer la requête pour éviter les problèmes d'injection SQL
+        const cleanQuery = query.trim().replace(/'/g, "''");
+        
+        console.log(`Recherche des notes contenant "${cleanQuery}" dans Supabase...`);
+        
+        // Format de requête pour une recherche avancée (correspondance partielle dans plusieurs champs)
+        // Note: Pour les tableaux comme categories et hashtags, nous devons utiliser une logique différente
+        const { data, error } = await client
+            .from('notes')
+            .select('*')
+            .or(`title.ilike.%${cleanQuery}%,content.ilike.%${cleanQuery}%`)
+            // Nous ne pouvons pas directement rechercher dans les tableaux avec .ilike
+            // Les requêtes avancées sur ces champs seront traitées côté client
+        
+        if (error) {
+            console.error('Erreur lors de la recherche des notes:', error);
+            // Vérifier si l'erreur est liée à la structure de table
+            if (error.code === '42P01') {
+                console.error('Table notes inexistante. Veuillez vérifier votre configuration Supabase.');
+            }
             return [];
         }
         
-        // Récupérer toutes les notes et filtrer côté client
-        // Une implémentation plus avancée ferait la recherche côté serveur
-        const allNotes = await getAllNotes();
+        if (!data || !Array.isArray(data)) {
+            console.warn('Données invalides reçues de Supabase lors de la recherche:', data);
+            return [];
+        }
         
-        const term = searchTerm.toLowerCase().trim();
-        return allNotes.filter(note => {
-            // Recherche dans le titre
-            if ((note.title || '').toLowerCase().includes(term)) {
-                return true;
-            }
+        console.log(`${data.length} notes trouvées dans Supabase pour la recherche "${cleanQuery}".`);
+        
+        // S'assurer que les tableaux sont correctement formatés
+        return data.map(note => {
+            if (!note) return null;
             
-            // Recherche dans le contenu
-            if ((note.content || '').toLowerCase().includes(term)) {
-                return true;
-            }
-            
-            // Recherche dans les catégories
-            if (note.categories && Array.isArray(note.categories)) {
-                for (const category of note.categories) {
-                    if (category.toLowerCase().includes(term)) {
-                        return true;
-                    }
-                }
-            }
-            
-            // Recherche dans les hashtags
-            if (note.hashtags && Array.isArray(note.hashtags)) {
-                for (const tag of note.hashtags) {
-                    if (tag.toLowerCase().includes(term)) {
-                        return true;
-                    }
-                }
-            }
-            
-            return false;
-        });
+            return {
+                ...note,
+                id: note.id || generateUniqueId(),
+                title: note.title || '',
+                content: note.content || '',
+                categories: Array.isArray(note.categories) ? note.categories : 
+                          (typeof note.categories === 'string' ? 
+                           (note.categories ? [note.categories] : []) : []),
+                hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
+                         (typeof note.hashtags === 'string' ? 
+                          (note.hashtags ? [note.hashtags] : []) : []),
+                videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
+                          (typeof note.videoUrls === 'string' ? 
+                           (note.videoUrls ? [note.videoUrls] : []) : [])
+            };
+        }).filter(note => note !== null); // Éliminer les notes nulles
     } catch (error) {
-        console.error('Exception lors de la recherche:', error);
+        console.error('Erreur lors de la recherche des notes:', error);
         return [];
     }
 }
 
 /**
- * Synchronise les notes avec Supabase
- * @returns {Promise<Object>} - Résultat de la synchronisation
+ * Sauvegarde un paramètre dans Supabase
+ * @param {string} key - Clé du paramètre
+ * @param {any} value - Valeur du paramètre
+ * @returns {Promise<boolean>} - Vrai si la sauvegarde a réussi
  */
-export async function syncNotes() {
-    console.log('Démarrage de la synchronisation avec Supabase...');
+export async function saveSettings(key, value) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour sauvegarder les paramètres');
+        return false;
+    }
     
     try {
-        const notes = await getAllNotes();
+        // Vérifier si le paramètre existe déjà
+        const { data, error } = await client
+            .from('settings')
+            .select('*')
+            .eq('key', key)
+            .single();
         
-        console.log(`Synchronisation terminée, ${notes.length} notes récupérées.`);
-        
-        return {
-            success: true,
-            notes,
-            message: 'Synchronisation réussie'
-        };
-    } catch (error) {
-        console.error('Erreur lors de la synchronisation:', error);
-        
-        return {
-            success: false,
-            notes: [],
-            message: 'Erreur lors de la synchronisation: ' + error.message
-        };
-    }
-}
-
-/**
- * Importe des notes depuis un fichier JSON
- * @param {Array} notes - Notes à importer
- * @returns {Promise<boolean>} - True si l'import a réussi
- */
-export async function importNotesFromJson(notes) {
-    try {
-        if (!Array.isArray(notes) || notes.length === 0) {
+        if (error && error.code !== 'PGRST116') { // PGRST116 = "No rows found"
+            console.error(`Erreur lors de la vérification du paramètre ${key}:`, error);
             return false;
         }
         
-        // Sauvegarder toutes les notes dans Supabase
-        return await saveNotes(notes);
-    } catch (error) {
-        console.error('Exception lors de l\'import des notes:', error);
-        return false;
-    }
-}
-
-/**
- * Charge les paramètres de révision
- * @returns {Object} - Paramètres de révision
- */
-export function loadRevisitSettings() {
-    try {
-        // Les paramètres de révision sont stockés dans localStorage
-        // car ils sont spécifiques à l'utilisateur et non aux données
-        const settingsStr = localStorage.getItem('revisitSettings');
-        if (settingsStr) {
-            return JSON.parse(settingsStr);
+        if (!data) {
+            // Le paramètre n'existe pas, le créer
+            const { error: insertError } = await client
+                .from('settings')
+                .insert({ key, value });
+            
+            if (insertError) {
+                console.error(`Erreur lors de la création du paramètre ${key}:`, insertError);
+                return false;
+            }
+        } else {
+            // Le paramètre existe, le mettre à jour
+            const { error: updateError } = await client
+                .from('settings')
+                .update({ value })
+                .eq('key', key);
+            
+            if (updateError) {
+                console.error(`Erreur lors de la mise à jour du paramètre ${key}:`, updateError);
+                return false;
+            }
         }
-    } catch (error) {
-        console.error('Erreur lors du chargement des paramètres de révision:', error);
-    }
-    
-    // Valeurs par défaut
-    return {
-        today: 0,
-        yesterday: 1,
-        week: 7,
-        month: 30,
-        older: 9999
-    };
-}
-
-/**
- * Sauvegarde les paramètres de révision
- * @param {Object} settings - Paramètres de révision
- * @returns {boolean} - True si la sauvegarde a réussi
- */
-export function saveRevisitSettings(settings) {
-    try {
-        // Les paramètres de révision sont stockés dans localStorage
-        // car ils sont spécifiques à l'utilisateur et non aux données
-        localStorage.setItem('revisitSettings', JSON.stringify(settings));
+        
         return true;
     } catch (error) {
-        console.error('Erreur lors de la sauvegarde des paramètres de révision:', error);
+        console.error(`Erreur lors de la sauvegarde du paramètre ${key}:`, error);
         return false;
     }
+}
+
+/**
+ * Récupère un paramètre depuis Supabase
+ * @param {string} key - Clé du paramètre
+ * @param {any} defaultValue - Valeur par défaut si le paramètre n'existe pas
+ * @returns {Promise<any>} - Valeur du paramètre
+ */
+export async function getSettings(key, defaultValue = null) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour récupérer les paramètres');
+        return defaultValue;
+    }
+    
+    try {
+        const { data, error } = await client
+            .from('settings')
+            .select('value')
+            .eq('key', key)
+            .single();
+        
+        if (error) {
+            console.error(`Erreur lors de la récupération du paramètre ${key}:`, error);
+            return defaultValue;
+        }
+        
+        return data.value;
+    } catch (error) {
+        console.error(`Erreur lors de la récupération du paramètre ${key}:`, error);
+        return defaultValue;
+    }
+}
+
+/**
+ * Sauvegarde un tableau de notes dans Supabase
+ * @param {Array} notes - Tableau de notes à sauvegarder
+ * @returns {Promise<boolean>} - Vrai si la sauvegarde a réussi
+ */
+export async function saveNotes(notes) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour sauvegarder les notes');
+        return false;
+    }
+    
+    try {
+        // Préparer toutes les notes pour l'insertion/mise à jour (upsert)
+        const notesWithTimestamps = notes.map(note => ({
+            ...note,
+            categories: Array.isArray(note.categories) ? note.categories : [],
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : [],
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : [],
+            updatedAt: new Date().toISOString(),
+            createdAt: note.createdAt || new Date().toISOString()
+        }));
+        
+        // Suppression de toutes les notes existantes
+        const { error: deleteError } = await client
+            .from('notes')
+            .delete()
+            .neq('id', 'placeholder'); // Supprime toutes les notes
+        
+        if (deleteError) {
+            console.error('Erreur lors de la suppression des notes existantes:', deleteError);
+            return false;
+        }
+        
+        // Si aucune note à sauvegarder, on retourne true (opération réussie)
+        if (notesWithTimestamps.length === 0) {
+            return true;
+        }
+        
+        // Insertion des nouvelles notes
+        const { error: insertError } = await client
+            .from('notes')
+            .insert(notesWithTimestamps);
+        
+        if (insertError) {
+            console.error('Erreur lors de l\'insertion des notes:', insertError);
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde des notes:', error);
+        return false;
+    }
+}
+
+/**
+ * Sauvegarde une seule note dans Supabase (création ou mise à jour)
+ * @param {Object} note - La note à sauvegarder
+ * @returns {Promise<Object|null>} - La note sauvegardée ou null en cas d'erreur
+ */
+export async function saveNote(note) {
+    const client = getClient();
+    
+    if (!client) {
+        console.warn('Client Supabase non disponible pour sauvegarder la note');
+        return null;
+    }
+    
+    try {
+        // Vérifier si l'utilisateur est connecté, sinon se connecter de manière anonyme
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme pour sauvegarder la note...');
+            await client.auth.signInAnonymously();
+        }
+
+        // Préparer la note avec les données correctes
+        const noteToSave = {
+            ...note,
+            // S'assurer que toutes les propriétés sont correctement formatées
+            categories: Array.isArray(note.categories) ? note.categories : 
+                       (note.categories ? [note.categories] : []),
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
+                     (note.hashtags ? [note.hashtags] : []),
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
+                      (note.videoUrls ? [note.videoUrls] : []),
+            updatedAt: new Date().toISOString(),
+            createdAt: note.createdAt || new Date().toISOString()
+        };
+        
+        if (note.id) {
+            // C'est une mise à jour
+            console.log(`Mise à jour de la note ${note.id} dans Supabase...`);
+            const { data, error } = await client
+                .from('notes')
+                .update(noteToSave)
+                .eq('id', note.id)
+                .select()
+                .single();
+            
+            if (error) {
+                console.error(`Erreur lors de la mise à jour de la note ${note.id}:`, error);
+                return null;
+            }
+            
+            console.log(`Note ${note.id} mise à jour avec succès dans Supabase.`);
+            return data;
+        } else {
+            // C'est une création
+            noteToSave.id = generateUniqueId();
+            console.log(`Création d'une nouvelle note dans Supabase avec ID ${noteToSave.id}...`);
+            
+            const { data, error } = await client
+                .from('notes')
+                .insert(noteToSave)
+                .select()
+                .single();
+            
+            if (error) {
+                console.error('Erreur lors de la création de la note:', error);
+                // Vérifier si l'erreur est liée à la structure de table
+                if (error.code === '42P01') {
+                    console.error('Table notes inexistante. Veuillez vérifier votre configuration Supabase.');
+                } else if (error.code === '42703') {
+                    console.error('Colonne inexistante. Vérifiez que votre table a toutes les colonnes nécessaires: id, title, content, categories, hashtags, videoUrls, createdAt, updatedAt');
+                }
+                return null;
+            }
+            
+            console.log(`Note créée avec succès dans Supabase avec ID ${data?.id || noteToSave.id}.`);
+            return data;
+        }
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la note:', error);
+        return null;
+    }
+}
+
+// Paramètres de révision stockés en mémoire puisque la table settings n'existe pas
+const revisitSettingsMemory = {
+    section1: 7,  // valeur par défaut: 7 jours
+    section2: 14  // valeur par défaut: 14 jours
+};
+
+/**
+ * Charge les paramètres de révision 
+ * @returns {Promise<Object>} - Les paramètres de révision (toujours depuis la mémoire)
+ */
+export async function loadRevisitSettings() {
+    // Puisque la table settings n'existe pas, on utilise les valeurs en mémoire
+    console.log('Chargement des paramètres de révision (depuis la mémoire)');
+    return Promise.resolve(revisitSettingsMemory);
+}
+
+/**
+ * Sauvegarde les paramètres de révision en mémoire
+ * @param {Object} settings - Les paramètres de révision à sauvegarder
+ * @returns {Promise<boolean>} - Toujours vrai
+ */
+export async function saveRevisitSettings(settings) {
+    // Stocker les valeurs en mémoire
+    console.log('Sauvegarde des paramètres de révision (en mémoire uniquement)');
+    Object.assign(revisitSettingsMemory, settings);
+    return Promise.resolve(true);
 }
