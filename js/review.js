@@ -61,6 +61,16 @@ function setupEventListeners() {
             await loadNoteForReview();
         });
     }
+    
+    // Bouton pour éditer la note courante
+    const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
+    if (editCurrentNoteBtn) {
+        editCurrentNoteBtn.addEventListener('click', () => {
+            if (appState.currentNote && appState.currentNote.id) {
+                window.location.href = `edit-note.html?id=${appState.currentNote.id}`;
+            }
+        });
+    }
 }
 
 /**
@@ -256,8 +266,14 @@ function displayNote(note) {
     reviewNoteDisplay.innerHTML = '';
     reviewNoteDisplay.appendChild(noteElement);
     
-    // Activer le bouton suivant
+    // Activer les boutons
     nextReviewBtn.disabled = false;
+    
+    // Activer aussi le bouton d'édition
+    const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
+    if (editCurrentNoteBtn) {
+        editCurrentNoteBtn.disabled = false;
+    }
 }
 
 /**
@@ -276,8 +292,14 @@ function displayErrorMessage(message) {
     reviewNoteDisplay.innerHTML = '';
     reviewNoteDisplay.appendChild(errorElement);
     
-    // Désactiver le bouton suivant
+    // Désactiver les boutons
     nextReviewBtn.disabled = true;
+    
+    // Désactiver aussi le bouton d'édition
+    const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
+    if (editCurrentNoteBtn) {
+        editCurrentNoteBtn.disabled = true;
+    }
     
     // Ajouter un gestionnaire pour le bouton "Réessayer"
     const retryBtn = document.getElementById('retry-btn');
@@ -301,8 +323,14 @@ function displayNoNotesMessage() {
     reviewNoteDisplay.innerHTML = '';
     reviewNoteDisplay.appendChild(emptyElement);
     
-    // Désactiver le bouton suivant
+    // Désactiver les boutons
     nextReviewBtn.disabled = true;
+    
+    // Désactiver aussi le bouton d'édition
+    const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
+    if (editCurrentNoteBtn) {
+        editCurrentNoteBtn.disabled = true;
+    }
     
     // Ajouter un gestionnaire pour le bouton "Créer une note"
     const goCreateBtn = document.getElementById('go-create-btn');
