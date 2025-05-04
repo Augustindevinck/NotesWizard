@@ -252,15 +252,18 @@ function displayNote(note) {
     hashtagsContainer.innerHTML = '';
     if (note.hashtags && note.hashtags.length > 0) {
         note.hashtags.forEach(tag => {
-            // Créer l'élément hashtag manuellement pour éviter les comportements indésirables
+            // Créer l'élément hashtag manuellement
             const tagElement = document.createElement('span');
             tagElement.className = 'hashtag-tag';
             tagElement.textContent = '#' + tag;
             tagElement.dataset.value = tag;
-            // Éviter que les hashtags soient cliquables sur la page de visualisation
+            // Rendre les hashtags cliquables pour rediriger vers la recherche
+            tagElement.style.cursor = 'pointer';
             tagElement.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                // Rediriger vers la page de recherche avec ce hashtag comme terme de recherche
+                window.location.href = `search.html?q=${encodeURIComponent(tag)}`;
             });
             hashtagsContainer.appendChild(tagElement);
         });

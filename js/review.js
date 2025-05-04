@@ -245,6 +245,11 @@ function displayNote(note) {
             const hashtagTag = document.createElement('span');
             hashtagTag.className = 'review-hashtag';
             hashtagTag.textContent = `#${tag}`;
+            hashtagTag.style.cursor = 'pointer';
+            // Ajouter un événement de clic pour rediriger vers la page de recherche
+            hashtagTag.addEventListener('click', () => {
+                window.location.href = `search.html?q=${encodeURIComponent(tag)}`;
+            });
             hashtagsContainer.appendChild(hashtagTag);
         });
         
