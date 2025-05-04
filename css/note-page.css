@@ -1,7 +1,8 @@
 /* Styles pour les pages de consultation et d'édition de notes */
 
 .note-page {
-    max-width: 900px;
+    min-width: 95vw;
+    max-width: 98vw;
     margin: 0 auto;
     padding: 20px;
 }
@@ -11,6 +12,8 @@
     padding: 30px;
     border-radius: var(--border-radius);
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Styles de vue de note */
