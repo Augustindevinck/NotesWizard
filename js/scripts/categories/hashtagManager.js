@@ -75,7 +75,7 @@ export function extractImgurImages(content) {
     if (!content) return [];
 
     // Regex pour trouver les liens Imgur entre [[ ]]
-    const regex = /\[\[(https?:\/\/(?:i\.|m\.)?imgur\.com\/(?:a\/|gallery\/)?[a-zA-Z0-9]+(?:\.[a-zA-Z]{3,4})?)\]\]/g;
+    const regex = /\[\[(https?:\/\/(?:i\.|m\.|)imgur\.com\/(?:a\/|gallery\/)?[a-zA-Z0-9]+(?:\.[a-zA-Z]{3,4})?)\]\]/g;
     const matches = content.matchAll(regex);
     const imgurMedia = [];
 
@@ -91,21 +91,24 @@ export function extractImgurImages(content) {
                 const albumIdMatch = imgUrl.match(/\/(?:a|gallery)\/([a-zA-Z0-9]+)/);
                 if (albumIdMatch && albumIdMatch[1]) {
                     const albumId = albumIdMatch[1];
-                    // Créer une liste d'URLs pour cet album
+                    
+                    // Pour les albums, nous allons créer un iframe avec l'URL complète
                     imgurMedia.push({
                         type: 'album',
                         id: albumId,
                         originalUrl: imgUrl,
-                        // Utiliser directement un lien vers l'image représentative de l'album
-                        thumbnailUrl: `https://i.imgur.com/${albumId}.jpg`
+                        embedUrl: `https://imgur.com/a/${albumId}/embed`,
+                        thumbnailUrl: `https://i.imgur.com/a/${albumId}.jpg`
                     });
                 }
             } else {
                 // C'est une image simple
-                // Extraire l'ID de l'image
-                const imgIdMatch = imgUrl.match(/\/([a-zA-Z0-9]+)(?:\.[a-zA-Z]{3,4})?$/);
+                // Extraire l'ID de l'image, qu'il y ait une extension ou non
+                let imageId;
+                const imgIdMatch = imgUrl.match(/imgur\.com\/([a-zA-Z0-9]+)(?:\.[a-zA-Z]{3,4})?$/);
                 if (imgIdMatch && imgIdMatch[1]) {
-                    const imageId = imgIdMatch[1];
+                    imageId = imgIdMatch[1];
+                    
                     // Créer une URL directe vers l'image
                     const directUrl = `https://i.imgur.com/${imageId}.jpg`;
                     

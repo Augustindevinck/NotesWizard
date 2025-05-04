@@ -286,33 +286,28 @@ function displayNote(note) {
                 
                 imgContainer.appendChild(linkElement);
             } else if (imgurItem.type === 'album') {
-                // Créer un conteneur pour l'album
+                // Créer un conteneur pour l'album avec iframe
                 const albumContainer = document.createElement('div');
                 albumContainer.className = 'imgur-album-container';
                 
-                // Afficher l'image de couverture de l'album
-                const albumCover = document.createElement('img');
-                albumCover.src = imgurItem.thumbnailUrl;
-                albumCover.className = 'imgur-album-cover';
-                albumCover.alt = 'Album Imgur';
-                albumCover.loading = 'lazy';
+                // Créer un iframe pour l'album
+                const iframe = document.createElement('iframe');
+                iframe.className = 'imgur-album-iframe';
+                iframe.src = imgurItem.embedUrl;
+                iframe.width = '100%';
+                iframe.height = '500px';
+                iframe.frameBorder = '0';
+                iframe.allowFullscreen = true;
+                iframe.loading = 'lazy';
                 
-                // Ajouter un bouton pour ouvrir l'album dans Imgur
-                const albumLink = document.createElement('a');
-                albumLink.href = imgurItem.originalUrl;
-                albumLink.target = '_blank';
-                albumLink.rel = 'noopener noreferrer';
-                albumLink.className = 'imgur-album-link';
-                
-                // Texte informatif
+                // Ajouter un texte informatif
                 const albumInfo = document.createElement('div');
                 albumInfo.className = 'imgur-album-info';
-                albumInfo.textContent = 'Cliquez pour voir l\'album complet sur Imgur';
+                albumInfo.textContent = 'Album Imgur';
                 
                 // Assembler les éléments
-                albumLink.appendChild(albumCover);
-                albumLink.appendChild(albumInfo);
-                albumContainer.appendChild(albumLink);
+                albumContainer.appendChild(iframe);
+                albumContainer.appendChild(albumInfo);
                 imgContainer.appendChild(albumContainer);
             }
         });
