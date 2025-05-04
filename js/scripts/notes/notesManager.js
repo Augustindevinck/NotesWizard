@@ -109,22 +109,28 @@ export function createNoteElement(note, currentSearchTerms) {
         <div class="note-date">Créée le ${formattedDate}</div>
     `;
 
-    // Add click event to open the note for editing
+    // Add click event to redirect to note view page
     noteDiv.addEventListener('click', (event) => {
-        // If clicking on the delete button, don't open the modal
+        // If clicking on the delete button, don't navigate
         if (event.target.classList.contains('delete-note')) {
             event.stopPropagation();
             deleteNote(note.id);
             return;
         }
 
-        // Vérifier si on vient d'une recherche (si des termes de recherche sont actifs)
+        // Créer l'URL avec les paramètres nécessaires
+        const params = new URLSearchParams();
+        params.append('id', note.id);
+        
+        // Ajouter les paramètres de recherche si nécessaire
         const fromSearch = currentSearchTerms && currentSearchTerms.length > 0;
-        if (openNoteModalFn) {
-            openNoteModalFn(note, fromSearch, currentSearchTerms);
-        } else {
-            console.error('openNoteModal n\'est pas initialisé');
+        if (fromSearch) {
+            params.append('fromSearch', 'true');
+            params.append('searchTerms', encodeURIComponent(JSON.stringify(currentSearchTerms)));
         }
+        
+        // Rediriger vers la page d'affichage de note
+        window.location.href = `view-note.html?${params.toString()}`;
     });
 
     // Add specific click handler for delete button

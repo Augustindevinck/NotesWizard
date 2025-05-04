@@ -367,8 +367,10 @@ document.addEventListener('DOMContentLoaded', async () => {
      * Configure tous les écouteurs d'événements
      */
     function setupEventListeners() {
-        // Bouton d'ajout de note
-        addNoteBtn.addEventListener('click', () => openNoteModal());
+        // Bouton d'ajout de note - redirection vers la page d'édition
+        addNoteBtn.addEventListener('click', () => {
+            window.location.href = 'edit-note.html';
+        });
 
         // Bouton de configuration Supabase
         if (supabaseConfigBtn) {
@@ -554,9 +556,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <div class="suggestion-title">${title}</div>
                         `;
                         
-                        // Ajouter l'écouteur d'événement pour le clic
+                        // Ajouter l'écouteur d'événement pour le clic - redirection vers la page de vue
                         suggestionItem.addEventListener('click', () => {
-                            openNoteModal(result, true, appState.currentSearchTerms);
+                            // Créer l'URL avec les paramètres nécessaires
+                            const params = new URLSearchParams();
+                            params.append('id', result.id);
+                            params.append('fromSearch', 'true');
+                            params.append('searchTerms', encodeURIComponent(JSON.stringify(appState.currentSearchTerms)));
+                            
+                            // Rediriger vers la page d'affichage
+                            window.location.href = `view-note.html?${params.toString()}`;
+                            
                             searchInput.value = '';
                             searchResults.innerHTML = '';
                             searchResults.style.display = 'none';
