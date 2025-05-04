@@ -105,41 +105,31 @@
             padding-top: 8px;
             border-top: 1px dashed var(--border-color-light, rgba(0, 0, 0, 0.05));
         }
-        
+
         /* Vidéos YouTube */
         .note-videos {
             margin-top: 20px;
             margin-bottom: 20px;
             width: 100%;
         }
-        
+
         .note-videos iframe {
             border-radius: 8px;
             max-width: 100%;
             margin-bottom: 15px;
             box-shadow: var(--shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
         }
-        
+
         /* Images Imgur */
         .note-images {
             margin-top: 20px;
             margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .imgur-image {
-            max-width: 100%;
-            border-radius: 8px;
-            box-shadow: var(--shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
-            margin-bottom: 20px;
             width: 100%;
         }
-        
-        .note-videos iframe {
-            border-radius: 8px;
+
+        .note-images .imgur-image {
             max-width: 100%;
+            border-radius: 8px;
             margin-bottom: 15px;
             box-shadow: var(--shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
         }
@@ -201,7 +191,7 @@
             cursor: not-allowed;
             transform: none;
         }
-        
+
         .edit-button {
             background-color: var(--primary-color, #4a6fa5);
             color: white;
@@ -215,13 +205,13 @@
             transition: all 0.2s ease;
             margin-left: 10px;
         }
-        
+
         .edit-button:hover {
             background-color: var(--primary-hover, #3a5a8f);
             transform: translateY(-2px);
             box-shadow: var(--shadow-hover, 0 4px 8px rgba(0, 0, 0, 0.15));
         }
-        
+
         .edit-button:disabled {
             background-color: var(--disabled-color, #a0a0a0);
             cursor: not-allowed;

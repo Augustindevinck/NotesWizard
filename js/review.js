@@ -22,20 +22,20 @@ document.addEventListener('DOMContentLoaded', init);
  */
 async function init() {
     console.log('Initialisation de la page de révision...');
-    
+
     // Initialiser les références DOM
     reviewNoteDisplay = document.getElementById('review-note-display');
     nextReviewBtn = document.getElementById('next-review-btn');
     backToHomeBtn = document.getElementById('back-to-home');
-    
+
     // Afficher un message de chargement
     if (reviewNoteDisplay) {
         reviewNoteDisplay.innerHTML = '<div class="loading">Chargement de la note à réviser...</div>';
     }
-    
+
     // Configurer les écouteurs d'événements
     setupEventListeners();
-    
+
     try {
         // Charger la note à réviser
         await loadNoteForReview();
@@ -55,7 +55,7 @@ function setupEventListeners() {
             window.location.href = 'index.html';
         });
     }
-    
+
     // Bouton pour passer à la note suivante
     if (nextReviewBtn) {
         nextReviewBtn.addEventListener('click', async () => {
@@ -63,7 +63,7 @@ function setupEventListeners() {
             await loadNoteForReview();
         });
     }
-    
+
     // Bouton pour éditer la note courante
     const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
     if (editCurrentNoteBtn) {
@@ -81,16 +81,16 @@ function setupEventListeners() {
 async function loadNoteForReview() {
     try {
         console.log('Récupération de la note la plus ancienne à réviser...');
-        
+
         // Obtenir un client Supabase
         const supabase = await getSupabaseClient();
-        
+
         if (!supabase) {
             console.error('Client Supabase non disponible');
             displayErrorMessage('Client Supabase non disponible. Veuillez configurer la connexion Supabase dans la page d\'accueil.');
             return;
         }
-        
+
         // D'abord, essayer de récupérer une note où lastReviewedViaButton est NULL
         let { data: nullData, error: nullError } = await supabase
             .from('notes')
@@ -98,20 +98,20 @@ async function loadNoteForReview() {
             .is('lastReviewedViaButton', null)
             .order('createdAt', { ascending: true })
             .limit(1);
-        
+
         // Si aucune note avec lastReviewedViaButton NULL n'est trouvée, récupérer celle avec la date la plus ancienne
         if ((!nullData || nullData.length === 0) && !nullError) {
             console.log('Aucune note avec lastReviewedViaButton NULL trouvée, recherche de la plus ancienne...');
-            
+
             const { data: oldestData, error: oldestError } = await supabase
                 .from('notes')
                 .select('*')
                 .order('lastReviewedViaButton', { ascending: true })
                 .limit(1);
-                
+
             if (oldestError) {
                 console.error('Erreur lors de la récupération de la note la plus ancienne:', oldestError);
-                
+
                 // Si l'erreur persiste, récupérer simplement la note la plus ancienne par date de création
                 console.log('Récupération de la note la plus ancienne par date de création...');
                 const { data: fallbackData, error: fallbackError } = await supabase
@@ -119,13 +119,13 @@ async function loadNoteForReview() {
                     .select('*')
                     .order('createdAt', { ascending: true })
                     .limit(1);
-                    
+
                 if (fallbackError) {
                     console.error('Erreur lors de la récupération de secours:', fallbackError);
                     displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
                     return;
                 }
-                
+
                 nullData = fallbackData;
             } else {
                 nullData = oldestData;
@@ -135,18 +135,18 @@ async function loadNoteForReview() {
             displayErrorMessage('Erreur lors de la récupération des notes. Veuillez réessayer.');
             return;
         }
-        
+
         // Afficher la note récupérée ou un message si aucune note n'est disponible
         if (nullData && nullData.length > 0) {
             console.log('Note trouvée pour révision:', nullData[0].title);
             appState.currentNote = nullData[0];
-            
+
             // Extraire les URLs YouTube et Imgur du contenu de la note
             if (appState.currentNote.content) {
                 appState.currentNote.videoUrls = extractYoutubeUrls(appState.currentNote.content);
                 appState.currentNote.imgurUrls = extractImgurImages(appState.currentNote.content);
             }
-            
+
             displayNote(appState.currentNote);
         } else {
             console.log('Aucune note disponible pour révision');
@@ -166,31 +166,31 @@ async function updateCurrentNoteReviewTimestamp() {
         console.warn('Aucune note courante à mettre à jour');
         return false;
     }
-    
+
     try {
         const supabase = await getSupabaseClient();
-        
+
         if (!supabase) {
             console.warn('Client Supabase non disponible pour la mise à jour');
             return false;
         }
-        
+
         // Mettre à jour le timestamp de dernière révision
         const now = new Date().toISOString();
         console.log(`Mise à jour du timestamp de révision pour la note ${appState.currentNote.id} à ${now}`);
-        
+
         const { data, error } = await supabase
             .from('notes')
             .update({ lastReviewedViaButton: now })
             .eq('id', appState.currentNote.id)
             .select()
             .single();
-        
+
         if (error) {
             console.error('Erreur lors de la mise à jour du timestamp de révision:', error);
             return false;
         }
-        
+
         console.log(`Note ${appState.currentNote.id} marquée comme révisée à ${now}`);
         return true;
     } catch (error) {
@@ -208,22 +208,22 @@ function displayNote(note) {
         displayNoNotesMessage();
         return;
     }
-    
+
     // Créer l'élément HTML pour la note
     const noteElement = document.createElement('div');
     noteElement.className = 'review-note-container';
-    
+
     // Ajouter le titre
     const titleElement = document.createElement('h2');
     titleElement.className = 'review-note-title';
     titleElement.textContent = note.title || 'Sans titre';
     noteElement.appendChild(titleElement);
-    
+
     // Ajouter les catégories
     if (note.categories && note.categories.length > 0) {
         const categoriesContainer = document.createElement('div');
         categoriesContainer.className = 'review-categories';
-        
+
         note.categories.forEach(category => {
             const categoryTag = document.createElement('span');
             categoryTag.className = 'review-category';
@@ -235,10 +235,10 @@ function displayNote(note) {
             });
             categoriesContainer.appendChild(categoryTag);
         });
-        
+
         noteElement.appendChild(categoriesContainer);
     }
-    
+
     // Ajouter le contenu (en masquant les liens [[...]])
     const contentElement = document.createElement('div');
     contentElement.className = 'review-note-content';
@@ -246,7 +246,7 @@ function displayNote(note) {
     const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
     contentElement.textContent = displayContent;
     noteElement.appendChild(contentElement);
-    
+
     // Ajouter les vidéos YouTube si présentes
     if (note.videoUrls && note.videoUrls.length > 0) {
         const videoContainer = document.createElement('div');
@@ -262,7 +262,7 @@ function displayNote(note) {
         });
         noteElement.appendChild(videoContainer);
     }
-    
+
     // Ajouter les images Imgur si présentes
     if (note.imgurUrls && note.imgurUrls.length > 0) {
         const imgContainer = document.createElement('div');
@@ -277,12 +277,12 @@ function displayNote(note) {
         });
         noteElement.appendChild(imgContainer);
     }
-    
+
     // Ajouter les hashtags en bas du contenu, après le texte
     if (note.hashtags && note.hashtags.length > 0) {
         const hashtagsContainer = document.createElement('div');
         hashtagsContainer.className = 'review-hashtags';
-        
+
         note.hashtags.forEach(tag => {
             const hashtagTag = document.createElement('span');
             hashtagTag.className = 'review-hashtag';
@@ -294,33 +294,33 @@ function displayNote(note) {
             });
             hashtagsContainer.appendChild(hashtagTag);
         });
-        
+
         noteElement.appendChild(hashtagsContainer);
     }
-    
+
     // Ajouter les dates de création et dernière révision
     const datesElement = document.createElement('div');
     datesElement.className = 'review-note-dates';
-    
+
     const createdDate = new Date(note.createdAt).toLocaleDateString();
     datesElement.innerHTML = `Créé le: ${createdDate}`;
-    
+
     if (note.lastReviewedViaButton) {
         const reviewedDate = new Date(note.lastReviewedViaButton).toLocaleDateString();
         datesElement.innerHTML += `<br>Dernière révision: ${reviewedDate}`;
     } else {
         datesElement.innerHTML += '<br>Jamais révisée';
     }
-    
+
     noteElement.appendChild(datesElement);
-    
+
     // Remplacer le contenu actuel par la nouvelle note
     reviewNoteDisplay.innerHTML = '';
     reviewNoteDisplay.appendChild(noteElement);
-    
+
     // Activer les boutons
     nextReviewBtn.disabled = false;
-    
+
     // Activer aussi le bouton d'édition
     const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
     if (editCurrentNoteBtn) {
@@ -340,19 +340,19 @@ function displayErrorMessage(message) {
         <p>${message}</p>
         <button id="retry-btn" class="review-next-btn">Réessayer</button>
     `;
-    
+
     reviewNoteDisplay.innerHTML = '';
     reviewNoteDisplay.appendChild(errorElement);
-    
+
     // Désactiver les boutons
     nextReviewBtn.disabled = true;
-    
+
     // Désactiver aussi le bouton d'édition
     const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
     if (editCurrentNoteBtn) {
         editCurrentNoteBtn.disabled = true;
     }
-    
+
     // Ajouter un gestionnaire pour le bouton "Réessayer"
     const retryBtn = document.getElementById('retry-btn');
     if (retryBtn) {
@@ -371,19 +371,19 @@ function displayNoNotesMessage() {
         <p>Toutes vos notes ont été révisées récemment ou vous n'avez pas encore créé de notes.</p>
         <button id="go-create-btn" class="review-next-btn">Créer une note</button>
     `;
-    
+
     reviewNoteDisplay.innerHTML = '';
     reviewNoteDisplay.appendChild(emptyElement);
-    
+
     // Désactiver les boutons
     nextReviewBtn.disabled = true;
-    
+
     // Désactiver aussi le bouton d'édition
     const editCurrentNoteBtn = document.getElementById('edit-current-note-btn');
     if (editCurrentNoteBtn) {
         editCurrentNoteBtn.disabled = true;
     }
-    
+
     // Ajouter un gestionnaire pour le bouton "Créer une note"
     const goCreateBtn = document.getElementById('go-create-btn');
     if (goCreateBtn) {
@@ -403,12 +403,12 @@ async function getSupabaseClient() {
         if (typeof supabase !== 'undefined' && supabase.createClient) {
             const url = localStorage.getItem('supabase_url');
             const key = localStorage.getItem('supabase_key');
-            
+
             if (url && key) {
                 return supabase.createClient(url, key);
             }
         }
-        
+
         console.error('Client Supabase ou paramètres de connexion non disponibles');
         return null;
     } catch (error) {
