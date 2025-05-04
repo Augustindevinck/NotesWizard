@@ -5,7 +5,7 @@
 // Imports des modules
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { createNoteElement, initNotesManager } from './scripts/notes/notesManager.js';
-import { initNoteModal, openNoteModal, initModalFunctions, cleanupNoteModal } from './scripts/notes/noteModal.js';
+import { initNoteModal, openNoteModal, initModalFunctions } from './scripts/notes/noteModal.js';
 import { initCategoryManager, handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls, addHashtagTag } from './scripts/categories/hashtagManager.js';
 import { getCurrentSearchTerms, cleanText, initSearchManager, performSearch } from './scripts/search/searchManager.js';
@@ -560,7 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const currentNoteId = deleteNoteBtn.dataset.currentNoteId;
                     if (currentNoteId) {
                         deleteNote(currentNoteId, appState.notes, () => {});
-                        cleanupNoteModal();
+                        cleanupHighlightedElements();
                         noteModal.style.display = 'none';
                         
                         // Rafraîchir les résultats de recherche
@@ -612,13 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalCloseButtons && modalCloseButtons.length > 0) {
             modalCloseButtons.forEach(button => {
                 button.addEventListener('click', () => {
-                    // Déterminer quelle modale est en cours de fermeture
-                    const modal = button.closest('.modal');
-                    if (modal && modal.id === 'note-modal') {
-                        cleanupNoteModal();
-                    } else {
-                        cleanupHighlightedElements();
-                    }
+                    cleanupHighlightedElements();
                     if (noteModal) noteModal.style.display = 'none';
                     if (importExportModal) importExportModal.style.display = 'none';
                 });
@@ -627,7 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.addEventListener('click', (event) => {
             if (hasNoteModal && event.target === noteModal) {
-                cleanupNoteModal();
+                cleanupHighlightedElements();
                 noteModal.style.display = 'none';
             }
             if (importExportModal && event.target === importExportModal) {
