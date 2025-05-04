@@ -1,5 +1,5 @@
 /**
- * Script principal pour la page de recherche avec intégration Supabase
+ * Script principal pour la page de recherche avec intégration Supabase et synchronisation entre onglets
  */
 
 // Imports des modules
@@ -17,6 +17,7 @@ import {
     deleteNote, 
     searchNotes 
 } from './scripts/utils/supabaseService.js';
+import { setOnStorageUpdateCallback } from './scripts/utils/localStorage.js';
 
 // Initialisation de l'application lorsque le DOM est complètement chargé
 document.addEventListener('DOMContentLoaded', () => {
@@ -97,6 +98,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
     
+            // Configurer la synchronisation entre les onglets
+            setOnStorageUpdateCallback((updatedNotes) => {
+                console.log('Mise à jour des notes détectée dans un autre onglet, rechargement...');
+                // Mettre à jour l'état local
+                appState.notes = updatedNotes;
+                
+                // Extraire les catégories des notes mises à jour
+                appState.allCategories.clear();
+                updatedNotes.forEach(note => {
+                    if (note.categories) {
+                        note.categories.forEach(category => appState.allCategories.add(category));
+                    }
+                });
+                
+                // Mettre à jour le filtre de catégories
+                populateCategoryFilter();
+                
+                // Rafraîchir les résultats de recherche si nécessaire
+                if (appState.lastQuery) {
+                    executeSearch(appState.lastQuery);
+                }
+            });
+            
             // Initialisation des modules
             initCategoryManager(appState.allCategories);
             

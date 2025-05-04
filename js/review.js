@@ -1,6 +1,10 @@
 /**
  * Script pour la page de révision des notes les plus anciennes
+ * Avec synchronisation entre onglets
  */
+
+// Importation des modules requis
+import { setOnStorageUpdateCallback } from './scripts/utils/localStorage.js';
 
 // État de l'application
 const appState = {
@@ -30,6 +34,13 @@ async function init() {
     if (reviewNoteDisplay) {
         reviewNoteDisplay.innerHTML = '<div class="loading">Chargement de la note à réviser...</div>';
     }
+    
+    // Configurer la synchronisation entre les onglets
+    setOnStorageUpdateCallback((updatedNotes) => {
+        console.log('Mise à jour des notes détectée dans un autre onglet, rechargement...');
+        // Recharger la note actuelle pour révision
+        loadNoteForReview();
+    });
     
     // Configurer les écouteurs d'événements
     setupEventListeners();

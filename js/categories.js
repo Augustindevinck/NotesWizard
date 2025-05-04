@@ -1,9 +1,9 @@
 /**
- * Script principal pour la page des catégories
+ * Script principal pour la page des catégories avec synchronisation entre onglets
  */
 
 // Imports des modules
-import { loadNotes, saveNotes } from './scripts/utils/localStorage.js';
+import { loadNotes, saveNotes, setOnStorageUpdateCallback } from './scripts/utils/localStorage.js';
 import { exportNotes, importNotes } from './scripts/utils/exportImport.js';
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { createNoteElement, deleteNote, saveNote, initNotesManager } from './scripts/notes/notesManager.js';
@@ -73,6 +73,23 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.notes.forEach(note => {
             if (note.categories) {
                 note.categories.forEach(category => appState.allCategories.add(category));
+            }
+        });
+        
+        // Configurer la synchronisation entre les onglets
+        setOnStorageUpdateCallback((updatedNotes) => {
+            console.log('Mise à jour des notes détectée dans un autre onglet, rechargement...');
+            // Mettre à jour l'état local
+            appState.notes = updatedNotes;
+            
+            // Mettre à jour l'arborescence des catégories
+            renderCategoryTree();
+            
+            // Si une catégorie est actuellement sélectionnée, rafraîchir son affichage
+            const selectedCategoryItem = document.querySelector('.category-tree-item.selected');
+            if (selectedCategoryItem) {
+                const categoryPath = selectedCategoryItem.dataset.category;
+                showNotesForCategory(categoryPath);
             }
         });
 
