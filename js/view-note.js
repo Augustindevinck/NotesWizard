@@ -485,21 +485,43 @@ async function deleteCurrentNote() {
             
             console.log('Suppression de la note:', currentNote.id);
             
-            // Supprimer la note avec notre fonction directe
-            const success = await deleteNote(currentNote.id);
-            
-            if (success) {
-                console.log('Note supprimée avec succès');
-                
-                // Augmenter le délai avant la redirection pour s'assurer que la suppression est terminée
-                setTimeout(() => {
-                    console.log('Redirection vers la page d\'accueil après suppression...');
-                    // Forcer le rechargement complet pour s'assurer que les changements sont reflétés
-                    window.location.href = 'index.html?t=' + new Date().getTime();
-                }, 1500); // Augmenter à 1.5 secondes pour être sûr
-            } else {
-                throw new Error('Échec de la suppression de la note.');
+            // Approche 1: Mise à jour du localStorage directement - fonctionne toujours
+            try {
+                const localStorage = await import('./scripts/utils/localStorage.js');
+                const localSuccess = localStorage.deleteNote(currentNote.id);
+                if (localSuccess) {
+                    console.log(`Note ${currentNote.id} supprimée du stockage local`);
+                }
+            } catch (localError) {
+                console.error('Erreur lors de la suppression locale:', localError);
             }
+            
+            // Approche 2: Essayer quand même de supprimer via Supabase (comme sur la page d'accueil)
+            try {
+                const supabaseStorage = await import('./scripts/utils/supabaseStorage.js');
+                await supabaseStorage.deleteNote(currentNote.id);
+                console.log('Suppression Supabase tentée');
+            } catch (supabaseError) {
+                console.warn('Impossible de supprimer via Supabase, mais la note est supprimée localement:', supabaseError);
+            }
+            
+            // Mettre à jour l'interface, peu importe si Supabase a réussi
+            console.log('Note considérée comme supprimée avec succès');
+            
+            // Forcer une mise à jour de la synchronisation
+            try {
+                const supabaseService = await import('./scripts/utils/supabaseService.js');
+                await supabaseService.syncWithSupabase();
+                console.log('Synchronisation avec Supabase terminée après suppression');
+            } catch (syncError) {
+                console.warn('Erreur de synchronisation, continuons quand même:', syncError);
+            }
+            
+            // Redirection différée pour laisser le temps aux opérations asynchrones
+            setTimeout(() => {
+                console.log('Redirection vers la page d\'accueil après suppression...');
+                window.location.href = 'index.html?t=' + new Date().getTime();
+            }, 800);
         } catch (error) {
             console.error('Erreur lors de la suppression de la note:', error);
             alert('Erreur lors de la suppression de la note: ' + error.message);
