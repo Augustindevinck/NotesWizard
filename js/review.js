@@ -232,10 +232,12 @@ function displayNote(note) {
         noteElement.appendChild(categoriesContainer);
     }
     
-    // Ajouter le contenu
+    // Ajouter le contenu (en masquant les liens [[...]])
     const contentElement = document.createElement('div');
     contentElement.className = 'review-note-content';
-    contentElement.textContent = note.content || '';
+    // Masquer les liens [[...]] comme dans view-note.js
+    const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
+    contentElement.textContent = displayContent;
     noteElement.appendChild(contentElement);
     
     // Ajouter les vidéos YouTube si présentes
