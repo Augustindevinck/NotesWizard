@@ -1,25 +1,156 @@
 /**
  * Script pour la page d'édition d'une note
+ * Implémentation directe avec Supabase, indépendante des autres modules
  */
 
-import { detectHashtags, extractHashtags, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
-import { handleCategoryInput, handleCategoryKeydown, addCategoryTag, initCategoryManager } from './scripts/categories/categoryManager.js';
-import { fetchAllNotes, syncWithSupabase } from './scripts/utils/supabaseService.js';
-import { getClient } from './scripts/utils/supabaseClient.js';
-import { generateUniqueId } from './scripts/utils/domHelpers.js';
-import * as localStorage from './scripts/utils/localStorage.js';
+import { detectHashtags, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
+import { handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // Variables globales
 let currentNoteId = null;
 let notes = [];
 let allCategories = new Set();
+let supabaseClient = null;
+
+/**
+ * Initialise Supabase avec les informations stockées dans localStorage
+ */
+async function initSupabase() {
+    try {
+        const url = localStorage.getItem('supabase_url');
+        const key = localStorage.getItem('supabase_key');
+        
+        if (!url || !key) {
+            console.warn('Paramètres Supabase non configurés. Continuant sans Supabase.');
+            return null;
+        }
+        
+        console.log('Initialisation de Supabase...');
+        supabaseClient = createClient(url, key);
+        
+        // Vérifier la session
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+            console.log('Connecté en tant qu\'utilisateur anonyme...');
+            await supabaseClient.auth.signInAnonymously();
+        } else {
+            console.log('Session existante trouvée');
+        }
+        
+        // Vérifier l'accès à la table notes
+        const { error } = await supabaseClient
+            .from('notes')
+            .select('id')
+            .limit(1);
+            
+        if (error && error.code !== 'PGRST116') { // PGRST116 = pas de lignes trouvées
+            console.error('Erreur lors de l\'accès à la table notes:', error);
+            return null;
+        }
+        
+        console.log('Client Supabase initialisé avec succès');
+        return supabaseClient;
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation de Supabase:', error);
+        return null;
+    }
+}
+
+/**
+ * Génère un identifiant unique pour une note
+ * @returns {string} - ID unique
+ */
+function generateUniqueId() {
+    return Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+}
+
+/**
+ * Récupère toutes les notes depuis Supabase et le stockage local
+ * @returns {Promise<Array>} - Tableau de notes
+ */
+async function fetchAllNotes() {
+    try {
+        // Récupérer les notes du stockage local
+        const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+        
+        // Récupérer les notes de Supabase si disponible
+        if (supabaseClient) {
+            console.log('Récupération des notes depuis Supabase...');
+            const { data, error } = await supabaseClient
+                .from('notes')
+                .select('*');
+                
+            if (error) {
+                console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
+                return localNotes;
+            }
+            
+            console.log(`${data.length} notes récupérées depuis Supabase.`);
+            
+            // Traiter les données pour s'assurer que les tableaux sont correctement formatés
+            const processedNotes = data.map(note => ({
+                ...note,
+                categories: ensureArray(note.categories),
+                hashtags: ensureArray(note.hashtags),
+                videoUrls: ensureArray(note.videoUrls)
+            }));
+            
+            // Mettre à jour le stockage local avec les notes Supabase
+            localStorage.setItem('notes', JSON.stringify(processedNotes));
+            
+            return processedNotes;
+        }
+        
+        return localNotes;
+    } catch (error) {
+        console.error('Erreur lors de la récupération des notes:', error);
+        return [];
+    }
+}
+
+/**
+ * S'assure qu'une valeur est un tableau
+ * @param {any} value - Valeur à vérifier/convertir
+ * @returns {Array} - Tableau résultant
+ */
+function ensureArray(value) {
+    if (!value) return [];
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed : [value];
+        } catch {
+            return [value];
+        }
+    }
+    return [value];
+}
+
+/**
+ * Initialise le gestionnaire de catégories
+ * @param {Set} categorySet - Ensemble des catégories
+ */
+function initCategoryManager(categorySet) {
+    // Fonction simple pour l'autocomplétion des catégories
+    const categorySuggestions = document.getElementById('category-suggestions');
+    if (!categorySuggestions) return;
+    
+    // Afficher des suggestions basées sur les catégories existantes
+    allCategories = categorySet;
+}
 
 /**
  * Initialise l'application
  */
-function init() {
-    // Récupérer toutes les notes de manière asynchrone
-    fetchAllNotes().then(fetchedNotes => {
+async function init() {
+    try {
+        // Initialiser Supabase
+        await initSupabase();
+        
+        // Récupérer toutes les notes
+        const fetchedNotes = await fetchAllNotes();
         notes = fetchedNotes;
         
         // Extraire toutes les catégories des notes
@@ -35,15 +166,14 @@ function init() {
         // Initialiser le gestionnaire de catégories
         initCategoryManager(allCategories);
         
-        // Continuer l'initialisation avec les données chargées
+        // Continuer l'initialisation
         continueInit();
-    }).catch(error => {
-        console.error("Erreur lors de la récupération des notes:", error);
-        // Initialiser avec des tableaux vides en cas d'erreur
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation:', error);
         notes = [];
         allCategories = new Set();
         continueInit();
-    });
+    }
 }
 
 /**
@@ -139,12 +269,9 @@ async function saveNote(note) {
             ...note,
             title: note.title || '',
             content: note.content || '',
-            categories: Array.isArray(note.categories) ? note.categories : 
-                      (note.categories ? [note.categories] : []),
-            hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
-                     (note.hashtags ? [note.hashtags] : []),
-            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
-                      (note.videoUrls ? [note.videoUrls] : [])
+            categories: ensureArray(note.categories),
+            hashtags: ensureArray(note.hashtags),
+            videoUrls: ensureArray(note.videoUrls)
         };
         
         // Si la note a un ID, la mettre à jour, sinon la créer
@@ -152,67 +279,63 @@ async function saveNote(note) {
             console.log(`Mise à jour de la note existante avec ID: ${processedNote.id}`);
             
             // Mettre à jour la note dans le stockage local
-            const localNote = localStorage.updateNote(processedNote.id, processedNote);
+            const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+            const noteIndex = localNotes.findIndex(n => n.id === processedNote.id);
+            
+            if (noteIndex !== -1) {
+                localNotes[noteIndex] = {
+                    ...processedNote,
+                    updatedAt: new Date().toISOString()
+                };
+            } else {
+                localNotes.push({
+                    ...processedNote,
+                    updatedAt: new Date().toISOString()
+                });
+            }
+            
+            localStorage.setItem('notes', JSON.stringify(localNotes));
             
             // Mettre à jour la note dans Supabase (si configuré)
-            const client = getClient();
-            if (client) {
-                const { data: { session } } = await client.auth.getSession();
-                if (!session) {
-                    console.log('Connexion anonyme pour mettre à jour la note...');
-                    await client.auth.signInAnonymously();
-                }
-                
-                const now = new Date().toISOString();
-                const noteUpdate = {
-                    ...processedNote,
-                    updatedAt: now
-                };
-                
-                console.log('Mise à jour dans Supabase:', noteUpdate);
-                
-                console.log('Utilisation de la méthode upsert Supabase pour garantir la mise à jour:', processedNote.id);
-                
-                // Utiliser upsert qui tente de mettre à jour si l'entrée existe, ou de l'insérer si elle n'existe pas
-                const { data, error } = await client
-                    .from('notes')
-                    .upsert(noteUpdate)
-                    .select()
-                    .single();
-                
-                if (error) {
-                    console.error('Erreur lors de l\'upsert dans Supabase:', error);
+            if (supabaseClient) {
+                try {
+                    const now = new Date().toISOString();
+                    const noteUpdate = {
+                        ...processedNote,
+                        updatedAt: now
+                    };
                     
-                    // Essayer explicitement une mise à jour puis une insertion en cas d'échec
-                    console.log('Tentative de mise à jour explicite...');
-                    const { data: updateData, error: updateError } = await client
+                    console.log('Mise à jour directe dans Supabase:', noteUpdate);
+                    
+                    // Utiliser upsert pour garantir la mise à jour
+                    const { data, error } = await supabaseClient
                         .from('notes')
-                        .update(noteUpdate)
-                        .eq('id', processedNote.id)
-                        .select()
-                        .single();
+                        .upsert(noteUpdate)
+                        .select();
                     
-                    if (updateError) {
-                        console.error('Échec de la mise à jour explicite:', updateError);
+                    if (error) {
+                        console.error('Erreur lors de l\'upsert dans Supabase:', error);
                         
-                        console.log('Tentative d\'insertion explicite...');
-                        const { data: insertData, error: insertError } = await client
+                        // Essayer explicitement une mise à jour
+                        console.log('Tentative de mise à jour explicite...');
+                        const { error: updateError } = await supabaseClient
                             .from('notes')
-                            .insert(noteUpdate)
-                            .select()
-                            .single();
+                            .update(noteUpdate)
+                            .eq('id', processedNote.id);
                         
-                        if (insertError) {
-                            console.error('Échec de l\'insertion explicite:', insertError);
+                        if (updateError) {
+                            console.error('Échec de la mise à jour explicite:', updateError);
                         } else {
-                            console.log('Note insérée explicitement dans Supabase:', insertData);
+                            console.log('Note mise à jour explicitement dans Supabase');
                         }
                     } else {
-                        console.log('Note mise à jour explicitement dans Supabase:', updateData);
+                        console.log('Note mise à jour avec succès dans Supabase:', data);
                     }
-                } else {
-                    console.log('Note upsert réussie dans Supabase:', data);
+                } catch (supabaseError) {
+                    console.error('Exception lors de la mise à jour dans Supabase:', supabaseError);
                 }
+            } else {
+                console.warn('Client Supabase non disponible pour mettre à jour la note');
             }
             
             return processedNote.id;
@@ -231,48 +354,45 @@ async function saveNote(note) {
             console.log(`Création d'une nouvelle note avec ID: ${newId}`);
             
             // Créer la note dans le stockage local
-            localStorage.createNote(newNote);
+            const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+            localNotes.push(newNote);
+            localStorage.setItem('notes', JSON.stringify(localNotes));
+            
+            // Ajouter à la liste en mémoire
             notes.push(newNote);
             
             // Créer la note dans Supabase (si configuré)
-            const client = getClient();
-            if (client) {
-                const { data: { session } } = await client.auth.getSession();
-                if (!session) {
-                    console.log('Connexion anonyme pour créer la note...');
-                    await client.auth.signInAnonymously();
-                }
-                
-                console.log('Création dans Supabase:', newNote);
-                
-                console.log(`Utilisation directe d'upsert pour nouvelle note avec ID: ${newId}`);
-                
-                // Utiliser directement upsert pour éviter les problèmes de conflit
-                const { data, error } = await client
-                    .from('notes')
-                    .upsert(newNote)
-                    .select()
-                    .single();
-                
-                if (error) {
-                    console.error('Erreur lors de l\'upsert dans Supabase:', error);
+            if (supabaseClient) {
+                try {
+                    console.log('Création directe dans Supabase:', newNote);
                     
-                    // Tenter explicitement une insertion en cas d'échec
-                    console.log('Tentative d\'insertion explicite...');
-                    const { data: insertData, error: insertError } = await client
+                    // Insérer la nouvelle note
+                    const { error } = await supabaseClient
                         .from('notes')
-                        .insert(newNote)
-                        .select()
-                        .single();
+                        .insert(newNote);
                     
-                    if (insertError) {
-                        console.error('Échec de l\'insertion explicite:', insertError);
+                    if (error) {
+                        console.error('Erreur lors de l\'insertion dans Supabase:', error);
+                        
+                        // Essayer avec upsert comme alternative
+                        console.log('Tentative d\'upsert comme alternative...');
+                        const { error: upsertError } = await supabaseClient
+                            .from('notes')
+                            .upsert(newNote);
+                        
+                        if (upsertError) {
+                            console.error('Échec de l\'upsert alternatif:', upsertError);
+                        } else {
+                            console.log('Note créée via upsert dans Supabase');
+                        }
                     } else {
-                        console.log('Note insérée explicitement dans Supabase:', insertData);
+                        console.log('Note créée avec succès dans Supabase');
                     }
-                } else {
-                    console.log('Note créée dans Supabase avec succès via upsert:', data);
+                } catch (supabaseError) {
+                    console.error('Exception lors de la création dans Supabase:', supabaseError);
                 }
+            } else {
+                console.warn('Client Supabase non disponible pour créer la note');
             }
             
             return newId;
@@ -346,7 +466,7 @@ async function saveCurrentNote() {
             videoUrls: noteData.videoUrls
         });
         
-        // Sauvegarder la note directement, sans passer par notesManager
+        // Sauvegarder la note avec notre fonction directe
         const savedNoteId = await saveNote(noteData);
         
         console.log('ID de la note sauvegardée:', savedNoteId);
@@ -354,15 +474,8 @@ async function saveCurrentNote() {
         if (savedNoteId) {
             console.log('Note sauvegardée avec succès, ID:', savedNoteId);
             
-            // Synchroniser avec Supabase pour s'assurer que toutes les notes sont à jour
-            try {
-                console.log('Synchronisation avec Supabase après sauvegarde...');
-                await syncWithSupabase();
-                console.log('Synchronisation terminée.');
-            } catch (syncError) {
-                console.error('Erreur lors de la synchronisation après sauvegarde:', syncError);
-                // Continuer malgré l'erreur de synchronisation
-            }
+            // Notre fonction saveNote gère déjà la synchronisation directe avec Supabase
+            // Pas besoin d'appeler syncWithSupabase
             
             // Rediriger vers la page d'affichage de la note
             const params = new URLSearchParams();
