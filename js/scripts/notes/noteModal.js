@@ -383,27 +383,7 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         viewMode.classList.add('hidden');
         editMode.classList.remove('hidden');
         
-        // Nettoyer tous les conteneurs et champs
-        noteTitle.value = '';
-        noteContent.value = '';
-        selectedCategories.innerHTML = '';
-        detectedHashtags.innerHTML = '';
-        
-        // Nettoyer les éléments du mode consultation
-        const existingCategoriesContainer = viewMode.querySelector('.view-categories');
-        if (existingCategoriesContainer) {
-            existingCategoriesContainer.remove();
-        }
-        
-        const existingHashtagsContainer = viewMode.querySelector('.view-hashtags');
-        if (existingHashtagsContainer) {
-            existingHashtagsContainer.remove();
-        }
-        
-        const existingVideoContainer = viewContent.querySelector('.note-videos');
-        if (existingVideoContainer) {
-            existingVideoContainer.remove();
-        }
+        // cleanupCompleteModal a déjà nettoyé tous les éléments
         
         noteTitle.focus();
     }

@@ -1,5 +1,6 @@
 /**
  * Gestion du stockage local pour les notes
+ * Avec mécanisme de synchronisation entre onglets
  */
 
 import { generateUniqueId } from './domHelpers.js';
@@ -7,6 +8,43 @@ import { generateUniqueId } from './domHelpers.js';
 // Clés de stockage local
 const NOTES_STORAGE_KEY = 'notes';
 const SETTINGS_STORAGE_KEY = 'settings_';
+const SYNC_TIMESTAMP_KEY = 'sync_timestamp';
+
+// Callback pour les mises à jour entre onglets
+let onStorageUpdateCallback = null;
+
+/**
+ * Définit une fonction de callback à exécuter quand le stockage est mis à jour dans un autre onglet
+ * @param {Function} callback - Fonction à appeler quand des notes sont mises à jour
+ */
+export function setOnStorageUpdateCallback(callback) {
+    onStorageUpdateCallback = callback;
+    
+    // Configurer l'écouteur d'événements pour localStorage
+    window.addEventListener('storage', (event) => {
+        if (event.key === NOTES_STORAGE_KEY && onStorageUpdateCallback) {
+            console.log('Mise à jour du stockage détectée dans un autre onglet');
+            try {
+                const updatedNotes = JSON.parse(event.newValue || '[]');
+                onStorageUpdateCallback(updatedNotes);
+            } catch (error) {
+                console.error('Erreur lors de la synchronisation entre onglets:', error);
+            }
+        }
+    });
+}
+
+/**
+ * Met à jour le timestamp de synchronisation
+ * @private
+ */
+function updateSyncTimestamp() {
+    try {
+        localStorage.setItem(SYNC_TIMESTAMP_KEY, Date.now().toString());
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour du timestamp de synchronisation:', error);
+    }
+}
 
 /**
  * Récupère toutes les notes depuis le stockage local
@@ -45,6 +83,8 @@ export function getNote(id) {
 export function saveAllNotes(notes) {
     try {
         localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
+        // Mettre à jour le timestamp de synchronisation pour informer les autres onglets
+        updateSyncTimestamp();
         return true;
     } catch (error) {
         console.error('Erreur lors de la sauvegarde des notes dans le localStorage:', error);
