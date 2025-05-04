@@ -125,6 +125,8 @@
             margin-top: 20px;
             margin-bottom: 20px;
             width: 100%;
+            max-width: 100%;
+            overflow: hidden;
         }
 
         .note-images .imgur-image {
@@ -141,6 +143,7 @@
             overflow: hidden;
             box-shadow: var(--shadow, 0 2px 8px rgba(0, 0, 0, 0.1));
             position: relative;
+            max-width: 100%;
         }
         
         .imgur-album-cover {
@@ -160,6 +163,17 @@
         
         .imgur-album-link:hover .imgur-album-cover {
             transform: scale(1.02);
+        }
+        
+        .imgur-album-iframe {
+            width: 100%;
+            height: auto;
+            min-height: 600px;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
         }
         
         .imgur-album-info {
