@@ -4,7 +4,7 @@
  */
 
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
-import { addHashtagTag, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
+import { addHashtagTag, extractYoutubeUrls, extractImgurImages } from './scripts/categories/hashtagManager.js';
 import { addCategoryTag } from './scripts/categories/categoryManager.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { initNavHeader } from './scripts/navigation/nav-header.js';
@@ -177,6 +177,12 @@ async function init() {
             window.location.href = 'index.html';
             return;
         }
+        
+        // Extraire les URLs YouTube et Imgur du contenu de la note
+        if (currentNote.content) {
+            currentNote.videoUrls = extractYoutubeUrls(currentNote.content);
+            currentNote.imgurUrls = extractImgurImages(currentNote.content);
+        }
 
         // Afficher la note
         displayNote(currentNote);
@@ -289,6 +295,21 @@ function displayNote(note) {
             videoContainer.appendChild(iframe);
         });
         viewContent.appendChild(videoContainer);
+    }
+    
+    // Afficher les images Imgur si présentes
+    if (note.imgurUrls && note.imgurUrls.length > 0) {
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'note-images';
+        note.imgurUrls.forEach(url => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = 'imgur-image';
+            img.alt = 'Image Imgur';
+            img.loading = 'lazy';
+            imgContainer.appendChild(img);
+        });
+        viewContent.appendChild(imgContainer);
     }
 }
 

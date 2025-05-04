@@ -2,7 +2,7 @@
  * Script pour la page de révision des notes les plus anciennes
  */
 
-import { extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
+import { extractYoutubeUrls, extractImgurImages } from './scripts/categories/hashtagManager.js';
 
 // État de l'application
 const appState = {
@@ -140,6 +140,13 @@ async function loadNoteForReview() {
         if (nullData && nullData.length > 0) {
             console.log('Note trouvée pour révision:', nullData[0].title);
             appState.currentNote = nullData[0];
+            
+            // Extraire les URLs YouTube et Imgur du contenu de la note
+            if (appState.currentNote.content) {
+                appState.currentNote.videoUrls = extractYoutubeUrls(appState.currentNote.content);
+                appState.currentNote.imgurUrls = extractImgurImages(appState.currentNote.content);
+            }
+            
             displayNote(appState.currentNote);
         } else {
             console.log('Aucune note disponible pour révision');
@@ -254,6 +261,21 @@ function displayNote(note) {
             videoContainer.appendChild(iframe);
         });
         noteElement.appendChild(videoContainer);
+    }
+    
+    // Ajouter les images Imgur si présentes
+    if (note.imgurUrls && note.imgurUrls.length > 0) {
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'note-images';
+        note.imgurUrls.forEach(url => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.className = 'imgur-image';
+            img.alt = 'Image Imgur';
+            img.loading = 'lazy';
+            imgContainer.appendChild(img);
+        });
+        noteElement.appendChild(imgContainer);
     }
     
     // Ajouter les hashtags en bas du contenu, après le texte

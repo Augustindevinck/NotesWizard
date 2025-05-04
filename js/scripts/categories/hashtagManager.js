@@ -9,13 +9,13 @@
  */
 export function detectHashtags(content, detectedHashtags) {
     if (!content || !detectedHashtags) return;
-    
+
     // Extraire les hashtags du contenu
     const hashtags = extractHashtags(content);
-    
+
     // Vider le conteneur des hashtags détectés
     detectedHashtags.innerHTML = '';
-    
+
     // Ajouter chaque hashtag comme un tag
     if (hashtags.length > 0) {
         hashtags.forEach(tag => {
@@ -31,12 +31,12 @@ export function detectHashtags(content, detectedHashtags) {
  */
 export function extractHashtags(content) {
     if (!content) return [];
-    
+
     // Utiliser une regex pour trouver tous les hashtags
     // un hashtag commence par # et est suivi d'un ou plusieurs caractères qui ne sont pas des espaces ou des ponctuations
     const regex = /#([a-zA-Z0-9_\u00C0-\u017F]+)/g;
     const matches = content.match(regex) || [];
-    
+
     // Retirer le # et éliminer les doublons
     return [...new Set(matches.map(tag => tag.substring(1)))];
 }
@@ -48,12 +48,12 @@ export function extractHashtags(content) {
  */
 export function extractYoutubeUrls(content) {
     if (!content) return [];
-    
+
     // Regex pour trouver les URLs YouTube (supporte les formats courts et longs)
     const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/g;
     const matches = content.matchAll(regex);
     const urls = [];
-    
+
     // Extraire les IDs vidéo et créer des URLs intégrables
     for (const match of matches) {
         const videoId = match[1];
@@ -61,7 +61,40 @@ export function extractYoutubeUrls(content) {
             urls.push(`https://www.youtube.com/embed/${videoId}`);
         }
     }
-    
+
+    // Éliminer les doublons
+    return [... new Set(urls)];
+}
+
+/**
+ * Extrait les liens d'images Imgur du contenu entre [[ ]]
+ * @param {string} content - Le contenu où chercher les liens Imgur
+ * @returns {Array} - Tableau des URLs d'images Imgur trouvées
+ */
+export function extractImgurImages(content) {
+    if (!content) return [];
+
+    // Regex pour trouver les liens Imgur entre [[ ]]
+    const regex = /\[\[(https?:\/\/(?:i\.)?imgur\.com\/[a-zA-Z0-9]+(?:\.[a-zA-Z]{3,4})?)\]\]/g;
+    const matches = content.matchAll(regex);
+    const urls = [];
+
+    // Extraire les URLs des images
+    for (const match of matches) {
+        const imgUrl = match[1];
+        if (imgUrl) {
+            // Standardiser le format d'URL et s'assurer que c'est bien une image
+            let standardUrl = imgUrl;
+            if (!standardUrl.includes('i.imgur.com')) {
+                standardUrl = standardUrl.replace('imgur.com', 'i.imgur.com');
+            }
+            if (!standardUrl.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                standardUrl += '.jpg';
+            }
+            urls.push(standardUrl);
+        }
+    }
+
     // Éliminer les doublons
     return [...new Set(urls)];
 }
@@ -80,12 +113,12 @@ export function addHashtagTag(tag, container) {
             return; // Éviter les doublons
         }
     }
-    
+
     // Créer un span pour le tag (structure simplifiée)
     const hashtagTag = document.createElement('span');
     hashtagTag.className = 'hashtag-tag';
     hashtagTag.dataset.value = tag; // Stocker la valeur dans un attribut data
     hashtagTag.textContent = `#${tag}`;
-    
+
     container.appendChild(hashtagTag);
 }
