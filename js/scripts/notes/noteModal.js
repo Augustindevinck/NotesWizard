@@ -302,18 +302,6 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
 }
 
 /**
- * Nettoie les conteneurs de catégories et hashtags
- */
-export function cleanupContainers() {
-    if (selectedCategories) {
-        selectedCategories.innerHTML = '';
-    }
-    if (detectedHashtags) {
-        detectedHashtags.innerHTML = '';
-    }
-}
-
-/**
  * Sauvegarde la note actuelle
  * @param {Array} notes - Tableau des notes
  * @param {Function} callback - Fonction à appeler après sauvegarde
@@ -400,7 +388,6 @@ export function saveCurrentNote(notes, callback) {
     
     // Hide the modal (seulement si nous n'avons pas exécuté de promesse)
     cleanupHighlightedElements();
-    cleanupContainers();
     noteModal.style.display = 'none';
     
     return savedNoteId;
