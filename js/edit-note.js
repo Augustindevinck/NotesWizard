@@ -2,11 +2,10 @@
  * Script pour la page d'édition d'une note
  */
 
-import { getAllNotes, getAllCategories } from './scripts/utils/storageManager.js';
 import { saveNote } from './scripts/notes/notesManager.js';
-import { detectHashtags } from './scripts/categories/hashtagManager.js';
-import { handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
-import { extractHashtags, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
+import { detectHashtags, extractHashtags, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
+import { handleCategoryInput, handleCategoryKeydown, addCategoryTag, initCategoryManager } from './scripts/categories/categoryManager.js';
+import { fetchAllNotes } from './scripts/utils/supabaseService.js';
 
 // Variables globales
 let currentNoteId = null;
@@ -17,10 +16,38 @@ let allCategories = new Set();
  * Initialise l'application
  */
 function init() {
-    // Récupérer toutes les notes et catégories
-    notes = getAllNotes();
-    allCategories = getAllCategories();
-    
+    // Récupérer toutes les notes de manière asynchrone
+    fetchAllNotes().then(fetchedNotes => {
+        notes = fetchedNotes;
+        
+        // Extraire toutes les catégories des notes
+        allCategories = new Set();
+        notes.forEach(note => {
+            if (note.categories && Array.isArray(note.categories)) {
+                note.categories.forEach(category => {
+                    allCategories.add(category);
+                });
+            }
+        });
+        
+        // Initialiser le gestionnaire de catégories
+        initCategoryManager(allCategories);
+        
+        // Continuer l'initialisation avec les données chargées
+        continueInit();
+    }).catch(error => {
+        console.error("Erreur lors de la récupération des notes:", error);
+        // Initialiser avec des tableaux vides en cas d'erreur
+        notes = [];
+        allCategories = new Set();
+        continueInit();
+    });
+}
+
+/**
+ * Continue l'initialisation après le chargement des notes
+ */
+function continueInit() {
     // Récupérer l'ID de la note depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const noteId = urlParams.get('id');
@@ -43,7 +70,6 @@ function init() {
     const categorySuggestions = document.getElementById('category-suggestions');
     
     if (categoryInput && categorySuggestions && selectedCategories) {
-        // Initialiser le gestionnaire de catégories avec toutes les catégories connues
         categoryInput.addEventListener('input', (event) => {
             handleCategoryInput(event, categoryInput, categorySuggestions);
         });

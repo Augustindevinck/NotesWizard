@@ -2,11 +2,11 @@
  * Script pour la page d'affichage d'une note
  */
 
-import { getAllNotes } from './scripts/utils/storageManager.js';
-import { addHashtagTag } from './scripts/categories/hashtagManager.js';
-import { addCategoryTag } from './scripts/categories/categoryManager.js';
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { deleteNote as deleteStorageNote } from './scripts/notes/notesManager.js';
+import { addHashtagTag } from './scripts/categories/hashtagManager.js';
+import { addCategoryTag } from './scripts/categories/categoryManager.js';
+import { fetchAllNotes } from './scripts/utils/supabaseService.js';
 
 // Variables globales
 let currentNote = null;
@@ -39,23 +39,25 @@ function init() {
         return;
     }
 
-    // Récupérer toutes les notes
-    const notes = getAllNotes();
-    
-    // Trouver la note avec l'ID spécifié
-    currentNote = notes.find(note => note.id === noteId);
-    
-    if (!currentNote) {
-        // Rediriger vers la page d'accueil si la note n'existe pas
-        window.location.href = 'index.html';
-        return;
-    }
+    // Récupérer toutes les notes de manière asynchrone
+    fetchAllNotes().then(notes => {
+        // Trouver la note avec l'ID spécifié
+        currentNote = notes.find(note => note.id === noteId);
+        
+        if (!currentNote) {
+            // Rediriger vers la page d'accueil si la note n'existe pas
+            window.location.href = 'index.html';
+            return;
+        }
 
-    // Afficher la note
-    displayNote(currentNote);
-    
-    // Configuration des écouteurs d'événements
-    setupEventListeners();
+        // Afficher la note
+        displayNote(currentNote);
+        // Configuration des écouteurs d'événements
+        setupEventListeners();
+    }).catch(error => {
+        console.error('Erreur lors de la récupération des notes:', error);
+        window.location.href = 'index.html';
+    });
 }
 
 /**
