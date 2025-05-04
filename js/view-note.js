@@ -7,6 +7,7 @@ import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { addHashtagTag, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { addCategoryTag } from './scripts/categories/categoryManager.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { initNavHeader } from './scripts/navigation/nav-header.js';
 
 // Variables globales
 let currentNote = null;
