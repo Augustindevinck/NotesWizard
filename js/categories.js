@@ -559,8 +559,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // Bouton d'ajout de note
-        addNoteBtn.addEventListener('click', () => openNoteModal());
+        // Bouton d'ajout de note - redirection vers la page d'édition
+        addNoteBtn.addEventListener('click', () => {
+            window.location.href = 'edit-note.html';
+        });
 
         // Bouton de sauvegarde de note
         saveNoteBtn.addEventListener('click', () => {
@@ -619,7 +621,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.className = 'search-result-item';
                     item.textContent = note.title || 'Sans titre';
                     item.addEventListener('click', () => {
-                        openNoteModal(note, true, getCurrentSearchTerms(query));
+                        // Créer l'URL avec les paramètres nécessaires
+                        const params = new URLSearchParams();
+                        params.append('id', note.id);
+                        params.append('fromSearch', 'true');
+                        params.append('searchTerms', encodeURIComponent(JSON.stringify(getCurrentSearchTerms(query))));
+                        
+                        // Rediriger vers la page d'affichage
+                        window.location.href = `view-note.html?${params.toString()}`;
+                        
                         searchInput.value = '';
                         searchResults.style.display = 'none';
                     });

@@ -324,11 +324,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Initialiser les fonctions notesManager
         initNotesManager(
-            // Fonction d'ouverture du modal
+            // Fonction d'ouverture de note (redirection au lieu de modal)
             (note, fromSearch, searchTerms) => {
-                appState.currentNote = note;
-                appState.currentSearchTerms = searchTerms || [];
-                openNoteModal(note, fromSearch, searchTerms);
+                // Créer l'URL avec les paramètres nécessaires
+                const params = new URLSearchParams();
+                params.append('id', note.id);
+                
+                if (fromSearch) {
+                    params.append('fromSearch', 'true');
+                    if (searchTerms && searchTerms.length > 0) {
+                        params.append('searchTerms', encodeURIComponent(JSON.stringify(searchTerms)));
+                    }
+                }
+                
+                // Rediriger vers la page d'affichage de note
+                window.location.href = `view-note.html?${params.toString()}`;
             },
             // Fonction de rendu des sections de révision
             async () => await renderRevisitSections(appState.notes)

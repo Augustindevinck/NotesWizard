@@ -539,9 +539,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Écouteurs d'événements pour les éléments de notes (seulement s'ils existent)
         if (hasNoteModal) {
-            // Bouton d'ajout de note
+            // Bouton d'ajout de note - redirection vers la page d'édition
             if (addNoteBtn) {
-                addNoteBtn.addEventListener('click', () => openNoteModal());
+                addNoteBtn.addEventListener('click', () => {
+                    window.location.href = 'edit-note.html';
+                });
             }
             
             // Bouton de sauvegarde de note
