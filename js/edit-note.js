@@ -6,6 +6,7 @@
 import { detectHashtags, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { handleCategoryInput, handleCategoryKeydown, addCategoryTag } from './scripts/categories/categoryManager.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { initNavHeader } from './scripts/navigation/nav-header.js';
 
 // Variables globales
 let currentNoteId = null;
@@ -146,6 +147,9 @@ function initCategoryManager(categorySet) {
  */
 async function init() {
     try {
+        // Initialiser la barre de navigation commune
+        initNavHeader();
+        
         // Initialiser Supabase
         await initSupabase();
         
@@ -498,16 +502,6 @@ async function saveCurrentNote() {
  * Configure tous les écouteurs d'événements
  */
 function setupEventListeners() {
-    // Bouton de retour à l'accueil
-    const backButton = document.getElementById('back-to-home');
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            if (confirm('Abandonner les modifications ?')) {
-                window.location.href = 'index.html';
-            }
-        });
-    }
-
     // Bouton de sauvegarde
     const saveButton = document.getElementById('save-note-btn');
     if (saveButton) {
@@ -518,14 +512,16 @@ function setupEventListeners() {
     const cancelButton = document.getElementById('cancel-edit-btn');
     if (cancelButton) {
         cancelButton.addEventListener('click', () => {
-            if (currentNoteId) {
-                // Retourner à la page d'affichage de la note
-                const params = new URLSearchParams();
-                params.append('id', currentNoteId);
-                window.location.href = `view-note.html?${params.toString()}`;
-            } else {
-                // Retourner à l'accueil
-                window.location.href = 'index.html';
+            if (confirm('Abandonner les modifications ?')) {
+                if (currentNoteId) {
+                    // Retourner à la page d'affichage de la note
+                    const params = new URLSearchParams();
+                    params.append('id', currentNoteId);
+                    window.location.href = `view-note.html?${params.toString()}`;
+                } else {
+                    // Retourner à l'accueil
+                    window.location.href = 'index.html';
+                }
             }
         });
     }

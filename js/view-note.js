@@ -136,6 +136,9 @@ async function fetchAllNotes() {
  * Initialise l'application
  */
 async function init() {
+    // Initialiser la barre de navigation commune
+    initNavHeader();
+    
     // Initialiser Supabase
     supabaseClient = await initSupabase();
     
@@ -417,14 +420,6 @@ async function deleteCurrentNote() {
  * Configure tous les écouteurs d'événements
  */
 function setupEventListeners() {
-    // Bouton de retour à l'accueil
-    const backButton = document.getElementById('back-to-home');
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            window.location.href = 'index.html';
-        });
-    }
-
     // Bouton d'édition
     const editButton = document.getElementById('edit-note-btn');
     if (editButton) {
