@@ -5,7 +5,7 @@
 import { saveNote } from './scripts/notes/notesManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { handleCategoryInput, handleCategoryKeydown, addCategoryTag, initCategoryManager } from './scripts/categories/categoryManager.js';
-import { fetchAllNotes } from './scripts/utils/supabaseService.js';
+import { fetchAllNotes, syncWithSupabase } from './scripts/utils/supabaseService.js';
 
 // Variables globales
 let currentNoteId = null;
@@ -193,6 +193,17 @@ async function saveCurrentNote() {
         
         if (savedNoteId) {
             console.log('Note sauvegardée avec succès, ID:', savedNoteId);
+            
+            // Synchroniser avec Supabase pour s'assurer que toutes les notes sont à jour
+            try {
+                console.log('Synchronisation avec Supabase après sauvegarde...');
+                await syncWithSupabase();
+                console.log('Synchronisation terminée.');
+            } catch (syncError) {
+                console.error('Erreur lors de la synchronisation après sauvegarde:', syncError);
+                // Continuer malgré l'erreur de synchronisation
+            }
+            
             // Rediriger vers la page d'affichage de la note
             const params = new URLSearchParams();
             params.append('id', savedNoteId);

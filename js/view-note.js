@@ -6,7 +6,7 @@ import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { deleteNote as deleteStorageNote } from './scripts/notes/notesManager.js';
 import { addHashtagTag, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { addCategoryTag } from './scripts/categories/categoryManager.js';
-import { fetchAllNotes } from './scripts/utils/supabaseService.js';
+import { fetchAllNotes, syncWithSupabase } from './scripts/utils/supabaseService.js';
 
 // Variables globales
 let currentNote = null;
@@ -200,11 +200,29 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 async function deleteCurrentNote() {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         try {
-            await deleteStorageNote(currentNote.id);
-            window.location.href = 'index.html';
+            console.log('Suppression de la note:', currentNote.id);
+            
+            // Supprimer la note dans le stockage
+            const success = await deleteStorageNote(currentNote.id);
+            
+            if (success) {
+                console.log('Note supprimée avec succès, synchronisation avec Supabase...');
+                
+                // Synchroniser avec Supabase pour s'assurer que toutes les notes sont à jour
+                try {
+                    await syncWithSupabase();
+                    console.log('Synchronisation terminée après suppression.');
+                } catch (syncError) {
+                    console.error('Erreur lors de la synchronisation après suppression:', syncError);
+                }
+                
+                window.location.href = 'index.html';
+            } else {
+                throw new Error('Échec de la suppression de la note.');
+            }
         } catch (error) {
             console.error('Erreur lors de la suppression de la note:', error);
-            alert('Erreur lors de la suppression de la note. Veuillez réessayer.');
+            alert('Erreur lors de la suppression de la note: ' + error.message);
         }
     }
 }
