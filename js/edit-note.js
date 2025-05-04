@@ -2,10 +2,12 @@
  * Script pour la page d'édition d'une note
  */
 
-import { saveNote } from './scripts/notes/notesManager.js';
 import { detectHashtags, extractHashtags, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { handleCategoryInput, handleCategoryKeydown, addCategoryTag, initCategoryManager } from './scripts/categories/categoryManager.js';
 import { fetchAllNotes, syncWithSupabase } from './scripts/utils/supabaseService.js';
+import { getClient } from './scripts/utils/supabaseClient.js';
+import { generateUniqueId } from './scripts/utils/domHelpers.js';
+import * as localStorage from './scripts/utils/localStorage.js';
 
 // Variables globales
 let currentNoteId = null;
@@ -124,6 +126,117 @@ function continueInit() {
 }
 
 /**
+ * Sauvegarde une note dans Supabase et dans le stockage local
+ * @param {Object} note - La note à sauvegarder
+ * @returns {Promise<string|null>} - ID de la note ou null en cas d'erreur
+ */
+async function saveNote(note) {
+    try {
+        console.log('Début de la sauvegarde de la note (implémentation directe)...');
+        
+        // S'assurer que toutes les propriétés sont correctement formatées
+        const processedNote = {
+            ...note,
+            title: note.title || '',
+            content: note.content || '',
+            categories: Array.isArray(note.categories) ? note.categories : 
+                      (note.categories ? [note.categories] : []),
+            hashtags: Array.isArray(note.hashtags) ? note.hashtags : 
+                     (note.hashtags ? [note.hashtags] : []),
+            videoUrls: Array.isArray(note.videoUrls) ? note.videoUrls : 
+                      (note.videoUrls ? [note.videoUrls] : [])
+        };
+        
+        // Si la note a un ID, la mettre à jour, sinon la créer
+        if (processedNote.id) {
+            console.log(`Mise à jour de la note existante avec ID: ${processedNote.id}`);
+            
+            // Mettre à jour la note dans le stockage local
+            const localNote = localStorage.updateNote(processedNote.id, processedNote);
+            
+            // Mettre à jour la note dans Supabase (si configuré)
+            const client = getClient();
+            if (client) {
+                const { data: { session } } = await client.auth.getSession();
+                if (!session) {
+                    console.log('Connexion anonyme pour mettre à jour la note...');
+                    await client.auth.signInAnonymously();
+                }
+                
+                const now = new Date().toISOString();
+                const noteUpdate = {
+                    ...processedNote,
+                    updatedAt: now
+                };
+                
+                console.log('Mise à jour dans Supabase:', noteUpdate);
+                
+                const { data, error } = await client
+                    .from('notes')
+                    .update(noteUpdate)
+                    .eq('id', processedNote.id)
+                    .select()
+                    .single();
+                
+                if (error) {
+                    console.error('Erreur lors de la mise à jour dans Supabase:', error);
+                } else {
+                    console.log('Note mise à jour dans Supabase:', data);
+                }
+            }
+            
+            return processedNote.id;
+        } else {
+            // Création d'une nouvelle note
+            const newId = generateUniqueId();
+            const now = new Date().toISOString();
+            
+            const newNote = {
+                ...processedNote,
+                id: newId,
+                createdAt: now,
+                updatedAt: now
+            };
+            
+            console.log(`Création d'une nouvelle note avec ID: ${newId}`);
+            
+            // Créer la note dans le stockage local
+            localStorage.createNote(newNote);
+            notes.push(newNote);
+            
+            // Créer la note dans Supabase (si configuré)
+            const client = getClient();
+            if (client) {
+                const { data: { session } } = await client.auth.getSession();
+                if (!session) {
+                    console.log('Connexion anonyme pour créer la note...');
+                    await client.auth.signInAnonymously();
+                }
+                
+                console.log('Création dans Supabase:', newNote);
+                
+                const { data, error } = await client
+                    .from('notes')
+                    .insert(newNote)
+                    .select()
+                    .single();
+                
+                if (error) {
+                    console.error('Erreur lors de la création dans Supabase:', error);
+                } else {
+                    console.log('Note créée dans Supabase:', data);
+                }
+            }
+            
+            return newId;
+        }
+    } catch (error) {
+        console.error('Erreur lors de la sauvegarde de la note:', error);
+        return null;
+    }
+}
+
+/**
  * Sauvegarde la note actuelle
  * @returns {Promise<boolean>} - Indique si la sauvegarde a réussi
  */
@@ -186,10 +299,10 @@ async function saveCurrentNote() {
             videoUrls: noteData.videoUrls
         });
         
-        // Sauvegarder la note
-        const savedNoteId = await saveNote(noteData, notes);
+        // Sauvegarder la note directement, sans passer par notesManager
+        const savedNoteId = await saveNote(noteData);
         
-        console.log('Résultat de saveNote:', savedNoteId);
+        console.log('ID de la note sauvegardée:', savedNoteId);
         
         if (savedNoteId) {
             console.log('Note sauvegardée avec succès, ID:', savedNoteId);
@@ -210,7 +323,7 @@ async function saveCurrentNote() {
             window.location.href = `view-note.html?${params.toString()}`;
             return true;
         } else {
-            console.error('saveNote a retourné null ou undefined');
+            console.error('Sauvegarde échouée: ID null ou undefined');
             alert('Erreur lors de la sauvegarde de la note.');
             return false;
         }

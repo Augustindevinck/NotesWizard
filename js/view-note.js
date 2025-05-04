@@ -3,10 +3,11 @@
  */
 
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
-import { deleteNote as deleteStorageNote } from './scripts/notes/notesManager.js';
 import { addHashtagTag, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { addCategoryTag } from './scripts/categories/categoryManager.js';
 import { fetchAllNotes, syncWithSupabase } from './scripts/utils/supabaseService.js';
+import { getClient } from './scripts/utils/supabaseClient.js';
+import * as localStorage from './scripts/utils/localStorage.js';
 
 // Variables globales
 let currentNote = null;
@@ -195,15 +196,70 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 }
 
 /**
+ * Supprime une note par son ID
+ * @param {string} noteId - ID de la note à supprimer 
+ * @returns {Promise<boolean>} True si la suppression a réussi
+ */
+async function deleteNote(noteId) {
+    try {
+        console.log(`Suppression de la note ${noteId}...`);
+        
+        // Supprimer la note du stockage local
+        localStorage.deleteNote(noteId);
+        console.log(`Note ${noteId} supprimée du stockage local`);
+        
+        // Supprimer la note de Supabase si configuré
+        const client = getClient();
+        if (client) {
+            try {
+                // Vérifier la session
+                const { data: { session } } = await client.auth.getSession();
+                if (!session) {
+                    console.log('Connexion anonyme pour la suppression...');
+                    await client.auth.signInAnonymously();
+                }
+                
+                // Supprimer dans Supabase
+                console.log(`Suppression de la note ${noteId} dans Supabase...`);
+                const { error } = await client
+                    .from('notes')
+                    .delete()
+                    .eq('id', noteId);
+                
+                if (error) {
+                    console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
+                    // Continuer quand même - la note est déjà supprimée localement
+                } else {
+                    console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
+                }
+            } catch (clientError) {
+                console.error('Erreur lors de la suppression dans Supabase:', clientError);
+                // Continuer quand même - la note est déjà supprimée localement
+            }
+        }
+        
+        return true;
+    } catch (error) {
+        console.error(`Erreur lors de la suppression de la note ${noteId}:`, error);
+        return false;
+    }
+}
+
+/**
  * Supprime la note actuelle et redirection vers l'accueil
  */
 async function deleteCurrentNote() {
+    if (!currentNote || !currentNote.id) {
+        alert("Aucune note à supprimer.");
+        return;
+    }
+    
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         try {
             console.log('Suppression de la note:', currentNote.id);
             
-            // Supprimer la note dans le stockage
-            const success = await deleteStorageNote(currentNote.id);
+            // Supprimer la note avec notre propre fonction
+            const success = await deleteNote(currentNote.id);
             
             if (success) {
                 console.log('Note supprimée avec succès, synchronisation avec Supabase...');
