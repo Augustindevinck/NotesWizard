@@ -1,23 +1,143 @@
 /**
  * Script pour la page d'affichage d'une note
+ * Implémentation directe avec Supabase, indépendante des autres modules
  */
 
 import { cleanupHighlightedElements } from './scripts/utils/domHelpers.js';
 import { addHashtagTag, extractYoutubeUrls } from './scripts/categories/hashtagManager.js';
 import { addCategoryTag } from './scripts/categories/categoryManager.js';
-import { fetchAllNotes, syncWithSupabase } from './scripts/utils/supabaseService.js';
-import { getClient } from './scripts/utils/supabaseClient.js';
-import * as localStorage from './scripts/utils/localStorage.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 // Variables globales
 let currentNote = null;
 let currentSearchTerms = [];
 let fromSearch = false;
+let supabaseClient = null;
+
+/**
+ * Initialise Supabase avec les informations stockées dans localStorage
+ */
+async function initSupabase() {
+    try {
+        const supabaseUrl = localStorage.getItem('supabaseUrl');
+        const supabaseKey = localStorage.getItem('supabaseKey');
+        
+        if (!supabaseUrl || !supabaseKey) {
+            console.log('Configuration Supabase non trouvée dans localStorage');
+            return null;
+        }
+        
+        console.log('Initialisation du client Supabase...');
+        const client = createClient(supabaseUrl, supabaseKey);
+        
+        // Vérifier que le client est bien créé
+        if (!client) {
+            console.error('Erreur: Client Supabase non créé');
+            return null;
+        }
+        
+        // Vérifier la session
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) {
+            console.log('Connexion anonyme...');
+            await client.auth.signInAnonymously();
+        }
+        
+        console.log('Client Supabase initialisé avec succès');
+        return client;
+    } catch (error) {
+        console.error('Erreur lors de l\'initialisation de Supabase:', error);
+        return null;
+    }
+}
+
+/**
+ * Récupère toutes les notes depuis Supabase et le stockage local
+ * @returns {Promise<Array>} - Tableau de notes
+ */
+async function fetchAllNotes() {
+    try {
+        console.log('Récupération de toutes les notes...');
+        
+        // Récupérer les notes du stockage local
+        const localNotesStr = localStorage.getItem('notes');
+        const localNotes = localNotesStr ? JSON.parse(localNotesStr) : [];
+        
+        console.log(`${localNotes.length} notes trouvées dans le stockage local.`);
+        
+        // Si Supabase n'est pas configuré, retourner uniquement les notes locales
+        if (!supabaseClient) {
+            console.log('Client Supabase non disponible, retour des notes locales uniquement.');
+            return localNotes;
+        }
+        
+        // Récupérer les notes depuis Supabase
+        try {
+            console.log('Récupération des notes depuis Supabase...');
+            const { data: supabaseNotes, error } = await supabaseClient
+                .from('notes')
+                .select('*');
+            
+            if (error) {
+                console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
+                return localNotes;
+            }
+            
+            if (!supabaseNotes || !Array.isArray(supabaseNotes)) {
+                console.error('Format de données invalide depuis Supabase:', supabaseNotes);
+                return localNotes;
+            }
+            
+            console.log(`${supabaseNotes.length} notes récupérées depuis Supabase.`);
+            
+            // Créer un ensemble pour éliminer les doublons (par ID)
+            const notesSet = new Map();
+            
+            // D'abord ajouter les notes Supabase (priorité)
+            supabaseNotes.forEach(note => {
+                notesSet.set(note.id, note);
+            });
+            
+            // Ensuite ajouter les notes locales (si elles n'existent pas déjà)
+            localNotes.forEach(note => {
+                if (!notesSet.has(note.id)) {
+                    notesSet.set(note.id, note);
+                }
+            });
+            
+            // Convertir la Map en tableau
+            const mergedNotes = Array.from(notesSet.values());
+            console.log(`Total: ${mergedNotes.length} notes uniques après fusion.`);
+            
+            // Mettre à jour les notes locales pour qu'elles soient synchronisées
+            localStorage.setItem('notes', JSON.stringify(mergedNotes));
+            
+            return mergedNotes;
+        } catch (supabaseError) {
+            console.error('Exception lors de la récupération des notes depuis Supabase:', supabaseError);
+            return localNotes;
+        }
+    } catch (error) {
+        console.error('Erreur lors de la récupération des notes:', error);
+        
+        // En cas d'erreur, essayer de récupérer au moins les notes locales
+        try {
+            const notesStr = localStorage.getItem('notes');
+            return notesStr ? JSON.parse(notesStr) : [];
+        } catch (e) {
+            console.error('Erreur lors de la récupération des notes locales:', e);
+            return [];
+        }
+    }
+}
 
 /**
  * Initialise l'application
  */
-function init() {
+async function init() {
+    // Initialiser Supabase
+    supabaseClient = await initSupabase();
+    
     // Récupérer l'ID de la note depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const noteId = urlParams.get('id');
@@ -40,13 +160,16 @@ function init() {
         return;
     }
 
-    // Récupérer toutes les notes de manière asynchrone
-    fetchAllNotes().then(notes => {
+    try {
+        // Récupérer toutes les notes de manière asynchrone
+        const notes = await fetchAllNotes();
+        
         // Trouver la note avec l'ID spécifié
         currentNote = notes.find(note => note.id === noteId);
         
         if (!currentNote) {
             // Rediriger vers la page d'accueil si la note n'existe pas
+            console.error(`Note avec ID ${noteId} non trouvée.`);
             window.location.href = 'index.html';
             return;
         }
@@ -55,10 +178,10 @@ function init() {
         displayNote(currentNote);
         // Configuration des écouteurs d'événements
         setupEventListeners();
-    }).catch(error => {
+    } catch (error) {
         console.error('Erreur lors de la récupération des notes:', error);
         window.location.href = 'index.html';
-    });
+    }
 }
 
 /**
@@ -205,58 +328,49 @@ async function deleteNote(noteId) {
         console.log(`Suppression de la note ${noteId}...`);
         
         // Supprimer la note du stockage local
-        localStorage.deleteNote(noteId);
+        const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+        const updatedNotes = localNotes.filter(note => note.id !== noteId);
+        localStorage.setItem('notes', JSON.stringify(updatedNotes));
         console.log(`Note ${noteId} supprimée du stockage local`);
         
         // Supprimer la note de Supabase si configuré
-        const client = getClient();
-        if (client) {
+        if (supabaseClient) {
             try {
-                // Vérifier la session
-                const { data: { session } } = await client.auth.getSession();
-                if (!session) {
-                    console.log('Connexion anonyme pour la suppression...');
-                    await client.auth.signInAnonymously();
-                }
-                
                 // Supprimer dans Supabase
                 console.log(`Suppression de la note ${noteId} dans Supabase...`);
                 
-                try {
-                    // Vérifier d'abord si la note existe toujours
-                    const { data: existingNote, error: checkError } = await client
-                        .from('notes')
-                        .select('id')
-                        .eq('id', noteId)
-                        .single();
-                    
-                    if (checkError) {
-                        console.error(`Erreur lors de la vérification de l'existence de la note ${noteId}:`, checkError);
-                    }
-                    
-                    if (existingNote || checkError?.code !== 'PGRST116') {
-                        // Si la note existe ou si l'erreur n'est pas "note non trouvée", procéder à la suppression
-                        const { error } = await client
-                            .from('notes')
-                            .delete()
-                            .eq('id', noteId);
-                        
-                        if (error) {
-                            console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                            // Continuer quand même - la note est déjà supprimée localement
-                        } else {
-                            console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
-                        }
-                    } else {
-                        console.log(`Note ${noteId} n'existe pas dans Supabase, aucune suppression nécessaire.`);
-                    }
-                } catch (deleteError) {
-                    console.error(`Exception lors de la suppression dans Supabase:`, deleteError);
+                // Vérifier d'abord si la note existe toujours
+                const { data: existingNote, error: checkError } = await supabaseClient
+                    .from('notes')
+                    .select('id')
+                    .eq('id', noteId)
+                    .single();
+                
+                if (checkError && checkError.code !== 'PGRST116') {
+                    console.error(`Erreur lors de la vérification de l'existence de la note ${noteId}:`, checkError);
                 }
-            } catch (clientError) {
-                console.error('Erreur lors de la suppression dans Supabase:', clientError);
+                
+                if (existingNote || checkError?.code !== 'PGRST116') {
+                    // Si la note existe ou si l'erreur n'est pas "note non trouvée", procéder à la suppression
+                    const { error } = await supabaseClient
+                        .from('notes')
+                        .delete()
+                        .eq('id', noteId);
+                    
+                    if (error) {
+                        console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
+                    } else {
+                        console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
+                    }
+                } else {
+                    console.log(`Note ${noteId} n'existe pas dans Supabase, aucune suppression nécessaire.`);
+                }
+            } catch (supabaseError) {
+                console.error(`Exception lors de la suppression dans Supabase:`, supabaseError);
                 // Continuer quand même - la note est déjà supprimée localement
             }
+        } else {
+            console.warn('Client Supabase non disponible pour supprimer la note');
         }
         
         return true;
@@ -279,19 +393,13 @@ async function deleteCurrentNote() {
         try {
             console.log('Suppression de la note:', currentNote.id);
             
-            // Supprimer la note avec notre propre fonction
+            // Supprimer la note avec notre fonction directe
             const success = await deleteNote(currentNote.id);
             
             if (success) {
-                console.log('Note supprimée avec succès, synchronisation avec Supabase...');
+                console.log('Note supprimée avec succès');
                 
-                // Synchroniser avec Supabase pour s'assurer que toutes les notes sont à jour
-                try {
-                    await syncWithSupabase();
-                    console.log('Synchronisation terminée après suppression.');
-                } catch (syncError) {
-                    console.error('Erreur lors de la synchronisation après suppression:', syncError);
-                }
+                // La fonction deleteNote gère déjà la suppression dans Supabase et dans le stockage local
                 
                 window.location.href = 'index.html';
             } else {
