@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             window.location.href = 'categories.html';
         });
     }
-    
+
     // Gestionnaire pour le bouton de révision des notes anciennes
     const reviewOldestBtn = document.getElementById('review-oldest-btn');
     console.log('Bouton de révision trouvé:', reviewOldestBtn);
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         console.error('Bouton de révision non trouvé dans le DOM');
     }
-    
+
     // Récupération des éléments du DOM
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const categorySuggestions = document.getElementById('category-suggestions');
     const selectedCategories = document.getElementById('selected-categories');
     const detectedHashtags = document.getElementById('detected-hashtags');
-    
+
     // Récupération du conteneur de notes (invisible mais présent dans le DOM)
     const notesContainer = document.getElementById('notes-container');
     const supabaseConfigBtn = document.getElementById('supabase-config-btn');
@@ -99,10 +99,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Éléments DOM essentiels manquants - Initialisation impossible');
         return;
     }
-    
+
     // Message de log pour indiquer que l'initialisation continue
     console.log('Initialisation en cours...');
-    
+
     // Créer des objets fantômes pour les éléments manquants
     // Cela permet d'éviter des erreurs lorsque ces éléments sont utilisés dans le code
     if (!searchInput) {
@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentSearchTerms: [],
         currentNote: null
     };
-    
+
     // Exposer l'état de l'application pour les autres modules
     window.appState = appState;
 
@@ -158,21 +158,21 @@ document.addEventListener('DOMContentLoaded', async () => {
      */
     async function init() {
         console.log('Chargement des notes...');
-        
+
         // Charger les notes depuis Supabase
         try {
             // Vérifier si Supabase est configuré
             const client = loadSupabaseFromLocalStorage();
-            
+
             if (!client) {
                 // Si Supabase n'est pas configuré, afficher le formulaire de configuration
                 showSupabaseConfigForm(async () => {
                     // Une fois configuré, initialiser les tables dans Supabase
                     await initializeTables();
-                    
+
                     // Puis charger les notes
                     appState.notes = await fetchAllNotes();
-                    
+
                     // Mise à jour de l'affichage
                     initializeUI();
                 });
@@ -182,22 +182,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     try {
                         await initializeTables();
                         console.log('Tables Supabase initialisées');
-                        
+
                         // Vérifier si des notes existent dans Supabase
                         const supabaseStorage = await import('./scripts/utils/supabaseStorage.js');
                         const localStorage = await import('./scripts/utils/localStorage.js');
-                        
+
                         const supabaseNotes = await supabaseStorage.getAllNotes();
                         const localNotes = localStorage.getAllNotes();
-                        
+
                         console.log(`Vérification des données: ${supabaseNotes.length} notes dans Supabase, ${localNotes.length} notes en local`);
-                        
+
                         // Si Supabase est vide mais que le stockage local contient des notes, nettoyer le stockage local
                         if (supabaseNotes.length === 0 && localNotes.length > 0) {
                             console.log("Nettoyage du stockage local car Supabase est vide");
                             localStorage.saveAllNotes([]);
                             localStorage.saveAllNotes(supabaseNotes); // Assure que le stockage local est synchronisé avec Supabase
-                            
+
                             // Force un rechargement de la page pour refléter les changements
                             window.location.reload();
                             return; // Arrête l'exécution de cette fonction
@@ -206,10 +206,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         console.error('Erreur lors de l\'initialisation des tables:', initError);
                     }
                 }
-                
+
                 // Charger les notes
                 appState.notes = await fetchAllNotes();
-                
+
                 // Initialiser l'interface
                 initializeUI();
             }
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Erreur lors du chargement des notes:', error);
         }
     }
-    
+
     /**
      * Initialise l'interface utilisateur après le chargement des données
      */
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Initialisation des modules
         initCategoryManager(appState.allCategories);
-        
+
         // Initialiser les éléments du modal
         initNoteModal({
             noteModal,
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             editButton,
             saveNoteBtn
         });
-        
+
         // Injecter les fonctions nécessaires au noteModal
         initModalFunctions({
             extractHashtags: extractHashtags,
@@ -277,14 +277,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                             // Création d'une nouvelle note
                             notePromise = createNote(noteData);
                         }
-                        
+
                         // Gérer la mise à jour de l'interface après la sauvegarde
                         notePromise.then(savedNote => {
                             // Mettre à jour la liste des notes
                             if (savedNote) {
                                 // Trouver l'index de la note si elle existe déjà
                                 const noteIndex = appState.notes.findIndex(note => note.id === savedNote.id);
-                                
+
                                 if (noteIndex !== -1) {
                                     // Mettre à jour la note existante
                                     appState.notes[noteIndex] = savedNote;
@@ -292,12 +292,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     // Ajouter la nouvelle note
                                     appState.notes.push(savedNote);
                                 }
-                                
+
                                 // Mettre à jour les catégories
                                 if (savedNote.categories) {
                                     savedNote.categories.forEach(category => appState.allCategories.add(category));
                                 }
-                                
+
                                 // Actualiser l'affichage
                                 renderRevisitSections(appState.notes).then(() => {
                                     resolve(savedNote);
@@ -321,7 +321,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         });
-        
+    });
+
         // Initialiser les fonctions notesManager
         initNotesManager(
             // Fonction d'ouverture du modal
@@ -333,7 +334,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Fonction de rendu des sections de révision
             async () => await renderRevisitSections(appState.notes)
         );
-        
+
         // Initialiser les révisitations
         initRevisit({
             containers: {
@@ -347,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 section2: showMoreBtn2
             }
         }, revisitSettings);
-        
+
         // Injecter la fonction createNoteElement dans le module revisit
         initCreateNoteElement(createNoteElement);
 
@@ -362,7 +363,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Configurer les écouteurs d'événements
         setupEventListeners();
     }
-    
+
     /**
      * Configure tous les écouteurs d'événements
      */
@@ -381,10 +382,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     } catch (initError) {
                         console.error('Erreur lors de l\'initialisation des tables:', initError);
                     }
-                    
+
                     // Recharger les notes après la configuration
                     appState.notes = await fetchAllNotes();
-                    
+
                     // Actualiser l'affichage
                     await renderRevisitSections(appState.notes);
                 });
@@ -397,18 +398,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             const id = appState.currentNote ? appState.currentNote.id : null;
             const title = noteTitle.value.trim();
             const content = noteContent.value.trim();
-            
+
             // Récupérer les catégories sélectionnées
             const categoriesElements = selectedCategories.querySelectorAll('.category-tag');
             const categories = Array.from(categoriesElements).map(el => el.textContent.trim());
-            
+
             // Récupérer les hashtags détectés
             const hashtagsElements = detectedHashtags.querySelectorAll('.hashtag-tag');
             const hashtags = Array.from(hashtagsElements).map(el => el.textContent.trim().substring(1)); // Enlever le # au début
-            
+
             // Extraire les URLs YouTube
             const videoUrls = extractYoutubeUrls(content);
-            
+
             // Créer l'objet de note
             const noteData = {
                 id,
@@ -418,7 +419,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hashtags,
                 videoUrls
             };
-            
+
             // Utiliser des Promises au lieu de async/await
             let notePromise;
             if (id) {
@@ -428,26 +429,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Création d'une nouvelle note
                 notePromise = createNote(noteData);
             }
-            
+
             notePromise.then(savedNote => {
                 if (savedNote) {
                     // Mettre à jour la liste des notes
                     const noteIndex = appState.notes.findIndex(note => note.id === savedNote.id);
-                    
+
                     if (noteIndex !== -1) {
                         appState.notes[noteIndex] = savedNote;
                     } else {
                         appState.notes.push(savedNote);
                     }
-                    
+
                     // Mettre à jour les catégories
                     if (savedNote.categories) {
                         savedNote.categories.forEach(category => appState.allCategories.add(category));
                     }
-                    
+
                     // Fermer le modal
                     noteModal.style.display = 'none';
-                    
+
                     // Actualiser l'affichage
                     renderRevisitSections(appState.notes);
                 }
@@ -460,23 +461,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Bouton de suppression de note dans le modal
         deleteNoteBtn.addEventListener('click', async () => {
             if (!appState.currentNote) return;
-            
+
             if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
                 try {
                     const success = await deleteNote(appState.currentNote.id);
-                    
+
                     if (success) {
                         // Supprimer la note de la liste des notes
                         appState.notes = appState.notes.filter(note => note.id !== appState.currentNote.id);
-                        
+
                         // Fermer le modal
                         noteModal.style.display = 'none';
-                        
+
                         // Vérifier si des notes sont disponibles
                         if (appState.notes.length === 0) {
                             console.log('Aucune note disponible après suppression');
                         }
-                        
+
                         await renderRevisitSections(appState.notes);
                     }
                 } catch (error) {
@@ -490,7 +491,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         categoryInput.addEventListener('input', (event) => {
             handleCategoryInput(event, categoryInput, categorySuggestions);
         });
-        
+
         categoryInput.addEventListener('keydown', (event) => {
             handleCategoryKeydown(event, categoryInput, selectedCategories, categorySuggestions);
         });
@@ -504,56 +505,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         searchInput.addEventListener('input', async () => {
             try {
                 const query = searchInput.value;
-                
+
                 // Si la requête est vide, masquer les suggestions
                 if (!query.trim()) {
                     searchResults.innerHTML = '';
                     searchResults.style.display = 'none';
                     return;
                 }
-                
+
                 // Effectuer la recherche
                 let resultsData;
-                
+
                 // Essayer d'abord la recherche via Supabase
                 const supabaseResults = await searchNotes(query);
-                
+
                 if (supabaseResults && supabaseResults.length > 0) {
                     resultsData = supabaseResults;
                 } else {
                     // Recherche locale (fallback)
                     const cleanedQuery = cleanText(query);
-                    
+
                     resultsData = appState.notes.filter(note => {
                         const cleanTitle = cleanText(note.title || '');
                         const cleanContent = cleanText(note.content || '');
-                        
+
                         return cleanTitle.includes(cleanedQuery) || cleanContent.includes(cleanedQuery);
                     });
                 }
-                
+
                 // Mettre à jour les termes de recherche actuels
                 appState.currentSearchTerms = query.trim().toLowerCase().split(/\s+/);
-                
+
                 // Limiter à 5 suggestions
                 const topResults = resultsData.slice(0, 5);
-                
+
                 // Afficher les suggestions
                 if (topResults.length > 0) {
                     searchResults.innerHTML = '';
-                    
+
                     topResults.forEach(result => {
                         const suggestionItem = document.createElement('div');
                         suggestionItem.className = 'search-suggestion';
-                        
+
                         // Extraire le titre
                         const title = result.title || 'Sans titre';
-                        
+
                         // Ajouter uniquement le titre (sans contenu)
                         suggestionItem.innerHTML = `
                             <div class="suggestion-title">${title}</div>
                         `;
-                        
+
                         // Ajouter l'écouteur d'événement pour le clic
                         suggestionItem.addEventListener('click', () => {
                             openNoteModal(result, true, appState.currentSearchTerms);
@@ -561,10 +562,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                             searchResults.innerHTML = '';
                             searchResults.style.display = 'none';
                         });
-                        
+
                         searchResults.appendChild(suggestionItem);
                     });
-                    
+
                     searchResults.style.display = 'block';
                 } else {
                     searchResults.innerHTML = '<div class="no-results">Aucun résultat</div>';
@@ -602,19 +603,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         modalCloseButtons.forEach(button => {
             button.addEventListener('click', () => {
                 cleanupHighlightedElements();
-                
-                // Fermer tous les modals
-                const modals = document.querySelectorAll('.modal');
-                modals.forEach(modal => {
-                    modal.style.display = 'none';
-                });
+
+                // Si c'est le modal de note, nettoyer les conteneurs de catégories et hashtags
+                if (button.closest('.modal') === noteModal) {
+                    // Importer la fonction cleanupContainers depuis noteModal.js
+                    import('./scripts/notes/noteModal.js')
+                        .then(module => {
+                            if (typeof module.cleanupContainers === 'function') {
+                                module.cleanupContainers();
+                            }
+                        })
+                        .catch(error => console.error('Erreur lors de l\'importation du module noteModal:', error));
+                }
+
+                button.closest('.modal').style.display = 'none';
+                if (importExportModal) importExportModal.style.display = 'none';
             });
         });
 
         window.addEventListener('click', (event) => {
-            if (event.target.classList.contains('modal')) {
+            if (event.target === noteModal) {
                 cleanupHighlightedElements();
-                event.target.style.display = 'none';
+
+                // Nettoyer les conteneurs de catégories et hashtags
+                import('./scripts/notes/noteModal.js')
+                    .then(module => {
+                        if (typeof module.cleanupContainers === 'function') {
+                            module.cleanupContainers();
+                        }
+                    })
+                    .catch(error => console.error('Erreur lors de l\'importation du module noteModal:', error));
+
+                noteModal.style.display = 'none';
+            }
+            if (importExportModal && event.target === importExportModal) {
+                importExportModal.style.display = 'none';
             }
         });
 
@@ -641,15 +664,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         showMoreBtnToday.addEventListener('click', () => showMoreNotes('today'));
         showMoreBtn1.addEventListener('click', () => showMoreNotes('section1'));
         showMoreBtn2.addEventListener('click', () => showMoreNotes('section2'));
-        
+
         // Synchronisation périodique avec Supabase (toutes les 30 secondes)
         setInterval(async () => {
             try {
                 await syncWithSupabase();
-                
+
                 // Recharger les notes
                 appState.notes = await fetchAllNotes();
-                
+
                 // Actualiser l'affichage si nécessaire
                 await renderRevisitSections(appState.notes);
             } catch (error) {
