@@ -1135,3 +1135,33 @@ html {
 .general-view-button:hover {
     background-color: #3d63cc;
 }
+
+.review-button-container {
+    margin-top: 20px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+
+.review-button-link {
+    text-decoration: none;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+}
+
+.review-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.review-button:hover {
+    background-color: #3a59e0;
+}

@@ -23,6 +23,30 @@ export function initModalFunctions(functions) {
     saveNoteFn = functions.saveNote;
 }
 
+/**
+ * Nettoyage complet de la modale lors de sa fermeture
+ * Cette fonction est exportée pour être appelée par les gestionnaires de fermeture
+ */
+export function cleanupNoteModal() {
+    if (!noteModal) return;
+    
+    // Nettoyer tout élément surlignés
+    cleanupHighlightedElements();
+    
+    // Vider tous les conteneurs de données
+    if (selectedCategories) selectedCategories.innerHTML = '';
+    if (detectedHashtags) detectedHashtags.innerHTML = '';
+    
+    // Vider les champs de texte
+    if (noteTitle) noteTitle.value = '';
+    if (noteContent) noteContent.value = '';
+    if (viewTitle) viewTitle.innerHTML = '';
+    if (viewContent) viewContent.innerHTML = '';
+    
+    // Réinitialiser l'ID de note courante
+    currentNoteId = null;
+}
+
 // Variables pour les éléments du modal
 let noteModal;
 let noteTitle;
@@ -166,11 +190,36 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         return;
     }
 
+    // Recréer les éléments conteneurs pour éviter toute accumulation
+    if (selectedCategories) {
+        // Créer un nouveau conteneur vide
+        const newSelectedCategories = document.createElement('div');
+        newSelectedCategories.id = 'selected-categories';
+        newSelectedCategories.className = 'selected-categories';
+        
+        // Remplacer l'ancien par le nouveau
+        selectedCategories.parentNode.replaceChild(newSelectedCategories, selectedCategories);
+        
+        // Mettre à jour la référence
+        selectedCategories = newSelectedCategories;
+    }
+    
+    if (detectedHashtags) {
+        // Créer un nouveau conteneur vide
+        const newDetectedHashtags = document.createElement('div');
+        newDetectedHashtags.id = 'detected-hashtags';
+        newDetectedHashtags.className = 'detected-hashtags';
+        
+        // Remplacer l'ancien par le nouveau
+        detectedHashtags.parentNode.replaceChild(newDetectedHashtags, detectedHashtags);
+        
+        // Mettre à jour la référence
+        detectedHashtags = newDetectedHashtags;
+    }
+
     // Clear previous note data
     noteTitle.value = '';
     noteContent.value = '';
-    selectedCategories.innerHTML = '';
-    detectedHashtags.innerHTML = '';
     currentNoteId = null;
 
     // Configure edit button
@@ -237,6 +286,14 @@ export function openNoteModal(note = null, fromSearch = false, currentSearchTerm
         // Afficher le bouton de suppression pour les notes existantes
         deleteNoteBtn.classList.remove('hidden');
 
+        // Vider les conteneurs avant d'ajouter de nouvelles catégories et hashtags
+        if (selectedCategories) {
+            selectedCategories.innerHTML = '';
+        }
+        if (detectedHashtags) {
+            detectedHashtags.innerHTML = '';
+        }
+        
         // Add categories
         if (note.categories && note.categories.length > 0) {
             note.categories.forEach(category => {
@@ -351,7 +408,7 @@ export function saveCurrentNote(notes, callback) {
                         savedNoteId = savedNote.id;
                     }
                     // Cacher le modal après la sauvegarde
-                    cleanupHighlightedElements();
+                    cleanupNoteModal();
                     noteModal.style.display = 'none';
                     
                     // Callback si nécessaire
@@ -361,7 +418,7 @@ export function saveCurrentNote(notes, callback) {
                 }).catch(error => {
                     console.error("Erreur lors de la sauvegarde:", error);
                     // Même en cas d'erreur, fermer le modal car la sauvegarde peut avoir réussi malgré l'erreur
-                    cleanupHighlightedElements();
+                    cleanupNoteModal();
                     noteModal.style.display = 'none';
                 });
                 
@@ -379,7 +436,7 @@ export function saveCurrentNote(notes, callback) {
     }
     
     // Hide the modal (seulement si nous n'avons pas exécuté de promesse)
-    cleanupHighlightedElements();
+    cleanupNoteModal();
     noteModal.style.display = 'none';
     
     return savedNoteId;
