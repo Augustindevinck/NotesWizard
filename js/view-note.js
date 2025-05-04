@@ -52,75 +52,53 @@ async function initSupabase() {
 }
 
 /**
- * Récupère toutes les notes depuis Supabase et le stockage local
+ * Récupère toutes les notes depuis Supabase, avec fallback vers le stockage local uniquement si nécessaire
  * @returns {Promise<Array>} - Tableau de notes
  */
 async function fetchAllNotes() {
     try {
-        console.log('Récupération de toutes les notes...');
+        console.log('Récupération des notes depuis Supabase...');
         
-        // Récupérer les notes du stockage local
+        // Tenter d'abord de récupérer depuis Supabase
+        if (supabaseClient) {
+            try {
+                const { data: supabaseNotes, error } = await supabaseClient
+                    .from('notes')
+                    .select('*');
+                
+                if (error) {
+                    console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
+                    throw error; // Passer au fallback
+                }
+                
+                if (!supabaseNotes || !Array.isArray(supabaseNotes)) {
+                    console.error('Format de données invalide depuis Supabase:', supabaseNotes);
+                    throw new Error('Format de données invalide'); // Passer au fallback
+                }
+                
+                console.log(`${supabaseNotes.length} notes récupérées depuis Supabase.`);
+                
+                // Mettre à jour le localStorage comme cache seulement
+                localStorage.setItem('notes', JSON.stringify(supabaseNotes));
+                
+                return supabaseNotes;
+            } catch (supabaseError) {
+                console.error('Exception lors de la récupération depuis Supabase, fallback au localStorage:', supabaseError);
+                // Continuer vers le fallback
+            }
+        } else {
+            console.log('Client Supabase non disponible');
+        }
+        
+        // Fallback: Utiliser le localStorage uniquement en cas d'échec de Supabase
+        console.log('Utilisation du fallback localStorage');
         const localNotesStr = localStorage.getItem('notes');
         const localNotes = localNotesStr ? JSON.parse(localNotesStr) : [];
-        
-        console.log(`${localNotes.length} notes trouvées dans le stockage local.`);
-        
-        // Si Supabase n'est pas configuré, retourner uniquement les notes locales
-        if (!supabaseClient) {
-            console.log('Client Supabase non disponible, retour des notes locales uniquement.');
-            return localNotes;
-        }
-        
-        // Récupérer les notes depuis Supabase
-        try {
-            console.log('Récupération des notes depuis Supabase...');
-            const { data: supabaseNotes, error } = await supabaseClient
-                .from('notes')
-                .select('*');
-            
-            if (error) {
-                console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
-                return localNotes;
-            }
-            
-            if (!supabaseNotes || !Array.isArray(supabaseNotes)) {
-                console.error('Format de données invalide depuis Supabase:', supabaseNotes);
-                return localNotes;
-            }
-            
-            console.log(`${supabaseNotes.length} notes récupérées depuis Supabase.`);
-            
-            // Créer un ensemble pour éliminer les doublons (par ID)
-            const notesSet = new Map();
-            
-            // D'abord ajouter les notes Supabase (priorité)
-            supabaseNotes.forEach(note => {
-                notesSet.set(note.id, note);
-            });
-            
-            // Ensuite ajouter les notes locales (si elles n'existent pas déjà)
-            localNotes.forEach(note => {
-                if (!notesSet.has(note.id)) {
-                    notesSet.set(note.id, note);
-                }
-            });
-            
-            // Convertir la Map en tableau
-            const mergedNotes = Array.from(notesSet.values());
-            console.log(`Total: ${mergedNotes.length} notes uniques après fusion.`);
-            
-            // Mettre à jour les notes locales pour qu'elles soient synchronisées
-            localStorage.setItem('notes', JSON.stringify(mergedNotes));
-            
-            return mergedNotes;
-        } catch (supabaseError) {
-            console.error('Exception lors de la récupération des notes depuis Supabase:', supabaseError);
-            return localNotes;
-        }
+        return localNotes;
     } catch (error) {
-        console.error('Erreur lors de la récupération des notes:', error);
+        console.error('Erreur critique lors de la récupération des notes:', error);
         
-        // En cas d'erreur, essayer de récupérer au moins les notes locales
+        // Dernier recours en cas d'erreur critique
         try {
             const notesStr = localStorage.getItem('notes');
             return notesStr ? JSON.parse(notesStr) : [];

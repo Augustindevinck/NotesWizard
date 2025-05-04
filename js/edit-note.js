@@ -66,45 +66,53 @@ function generateUniqueId() {
 }
 
 /**
- * Récupère toutes les notes depuis Supabase et le stockage local
+ * Récupère toutes les notes depuis Supabase, avec fallback vers le stockage local uniquement si nécessaire
  * @returns {Promise<Array>} - Tableau de notes
  */
 async function fetchAllNotes() {
     try {
-        // Récupérer les notes du stockage local
-        const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+        console.log('Récupération des notes depuis Supabase...');
         
-        // Récupérer les notes de Supabase si disponible
+        // Tenter d'abord de récupérer depuis Supabase
         if (supabaseClient) {
-            console.log('Récupération des notes depuis Supabase...');
-            const { data, error } = await supabaseClient
-                .from('notes')
-                .select('*');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('notes')
+                    .select('*');
+                    
+                if (error) {
+                    console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
+                    throw error;  // Passer au fallback
+                }
                 
-            if (error) {
-                console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
-                return localNotes;
+                console.log(`${data.length} notes récupérées depuis Supabase.`);
+                
+                // Traiter les données pour s'assurer que les tableaux sont correctement formatés
+                const processedNotes = data.map(note => ({
+                    ...note,
+                    categories: ensureArray(note.categories),
+                    hashtags: ensureArray(note.hashtags),
+                    videoUrls: ensureArray(note.videoUrls)
+                }));
+                
+                // Mettre à jour le stockage local comme cache seulement
+                localStorage.setItem('notes', JSON.stringify(processedNotes));
+                
+                return processedNotes;
+            } catch (supabaseError) {
+                console.error('Exception Supabase, fallback au stockage local:', supabaseError);
+                // Continuer vers le fallback
             }
-            
-            console.log(`${data.length} notes récupérées depuis Supabase.`);
-            
-            // Traiter les données pour s'assurer que les tableaux sont correctement formatés
-            const processedNotes = data.map(note => ({
-                ...note,
-                categories: ensureArray(note.categories),
-                hashtags: ensureArray(note.hashtags),
-                videoUrls: ensureArray(note.videoUrls)
-            }));
-            
-            // Mettre à jour le stockage local avec les notes Supabase
-            localStorage.setItem('notes', JSON.stringify(processedNotes));
-            
-            return processedNotes;
+        } else {
+            console.log('Client Supabase non disponible');
         }
         
+        // Fallback: Récupérer les notes du stockage local uniquement en cas d'échec de Supabase
+        console.log('Utilisation du fallback localStorage');
+        const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
         return localNotes;
     } catch (error) {
-        console.error('Erreur lors de la récupération des notes:', error);
+        console.error('Erreur critique lors de la récupération des notes:', error);
         return [];
     }
 }
@@ -256,7 +264,7 @@ function continueInit() {
 }
 
 /**
- * Sauvegarde une note dans Supabase et dans le stockage local
+ * Sauvegarde une note dans Supabase (priorité) et met à jour le localStorage uniquement comme cache
  * @param {Object} note - La note à sauvegarder
  * @returns {Promise<string|null>} - ID de la note ou null en cas d'erreur
  */
@@ -278,33 +286,15 @@ async function saveNote(note) {
         if (processedNote.id) {
             console.log(`Mise à jour de la note existante avec ID: ${processedNote.id}`);
             
-            // Mettre à jour la note dans le stockage local
-            const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
-            const noteIndex = localNotes.findIndex(n => n.id === processedNote.id);
+            const now = new Date().toISOString();
+            const noteUpdate = {
+                ...processedNote,
+                updatedAt: now
+            };
             
-            if (noteIndex !== -1) {
-                localNotes[noteIndex] = {
-                    ...processedNote,
-                    updatedAt: new Date().toISOString()
-                };
-            } else {
-                localNotes.push({
-                    ...processedNote,
-                    updatedAt: new Date().toISOString()
-                });
-            }
-            
-            localStorage.setItem('notes', JSON.stringify(localNotes));
-            
-            // Mettre à jour la note dans Supabase (si configuré)
+            // Priorité à Supabase si disponible
             if (supabaseClient) {
                 try {
-                    const now = new Date().toISOString();
-                    const noteUpdate = {
-                        ...processedNote,
-                        updatedAt: now
-                    };
-                    
                     console.log('Mise à jour directe dans Supabase:', noteUpdate);
                     
                     // Utiliser upsert pour garantir la mise à jour
@@ -325,19 +315,32 @@ async function saveNote(note) {
                         
                         if (updateError) {
                             console.error('Échec de la mise à jour explicite:', updateError);
+                            throw updateError; // Permettre le fallback localStorage
                         } else {
                             console.log('Note mise à jour explicitement dans Supabase');
+                            
+                            // Mettre à jour le localStorage en tant que cache uniquement
+                            updateLocalStorageCache(noteUpdate);
+                            
+                            return processedNote.id;
                         }
                     } else {
                         console.log('Note mise à jour avec succès dans Supabase:', data);
+                        
+                        // Mettre à jour le localStorage en tant que cache uniquement
+                        updateLocalStorageCache(noteUpdate);
+                        
+                        return processedNote.id;
                     }
                 } catch (supabaseError) {
                     console.error('Exception lors de la mise à jour dans Supabase:', supabaseError);
+                    // Continuer vers le fallback localStorage
                 }
-            } else {
-                console.warn('Client Supabase non disponible pour mettre à jour la note');
             }
             
+            // Fallback: Mettre à jour le localStorage si Supabase échoue
+            console.log('Utilisation du fallback localStorage pour la mise à jour');
+            updateLocalStorageCache(noteUpdate);
             return processedNote.id;
         } else {
             // Création d'une nouvelle note
@@ -353,15 +356,7 @@ async function saveNote(note) {
             
             console.log(`Création d'une nouvelle note avec ID: ${newId}`);
             
-            // Créer la note dans le stockage local
-            const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
-            localNotes.push(newNote);
-            localStorage.setItem('notes', JSON.stringify(localNotes));
-            
-            // Ajouter à la liste en mémoire
-            notes.push(newNote);
-            
-            // Créer la note dans Supabase (si configuré)
+            // Priorité à Supabase si disponible
             if (supabaseClient) {
                 try {
                     console.log('Création directe dans Supabase:', newNote);
@@ -382,24 +377,71 @@ async function saveNote(note) {
                         
                         if (upsertError) {
                             console.error('Échec de l\'upsert alternatif:', upsertError);
+                            throw upsertError; // Permettre le fallback localStorage
                         } else {
                             console.log('Note créée via upsert dans Supabase');
+                            
+                            // Mettre à jour le localStorage en tant que cache uniquement
+                            updateLocalStorageCache(newNote);
+                            
+                            // Ajouter à la liste en mémoire
+                            notes.push(newNote);
+                            
+                            return newId;
                         }
                     } else {
                         console.log('Note créée avec succès dans Supabase');
+                        
+                        // Mettre à jour le localStorage en tant que cache uniquement
+                        updateLocalStorageCache(newNote);
+                        
+                        // Ajouter à la liste en mémoire
+                        notes.push(newNote);
+                        
+                        return newId;
                     }
                 } catch (supabaseError) {
                     console.error('Exception lors de la création dans Supabase:', supabaseError);
+                    // Continuer vers le fallback localStorage
                 }
-            } else {
-                console.warn('Client Supabase non disponible pour créer la note');
             }
+            
+            // Fallback: Créer dans le localStorage si Supabase échoue
+            console.log('Utilisation du fallback localStorage pour la création');
+            updateLocalStorageCache(newNote);
+            
+            // Ajouter à la liste en mémoire
+            notes.push(newNote);
             
             return newId;
         }
     } catch (error) {
         console.error('Erreur lors de la sauvegarde de la note:', error);
         return null;
+    }
+}
+
+/**
+ * Met à jour le cache dans localStorage comme mécanisme de secours
+ * @param {Object} note - La note à mettre en cache
+ */
+function updateLocalStorageCache(note) {
+    try {
+        if (!note || !note.id) return;
+        
+        const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
+        const noteIndex = localNotes.findIndex(n => n.id === note.id);
+        
+        if (noteIndex !== -1) {
+            localNotes[noteIndex] = note;
+        } else {
+            localNotes.push(note);
+        }
+        
+        localStorage.setItem('notes', JSON.stringify(localNotes));
+        console.log(`Cache localStorage mis à jour pour la note ${note.id}`);
+    } catch (error) {
+        console.error('Erreur lors de la mise à jour du cache localStorage:', error);
     }
 }
 
