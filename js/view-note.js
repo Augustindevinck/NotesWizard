@@ -492,34 +492,21 @@ async function deleteCurrentNote() {
             // Étape 2: Suppression via Supabase
             console.log(`Suppression de la note ${noteId} dans Supabase...`);
             
-            const { error } = await supabaseClient
+            const { error: deleteError } = await supabaseClient
                 .from('notes')
                 .delete()
                 .eq('id', noteId);
             
-            if (error) {
-                console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                throw new Error(`Échec de suppression dans Supabase: ${error.message}`);
+            if (deleteError) {
+                console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, deleteError);
+                throw new Error(`Échec de suppression dans Supabase: ${deleteError.message}`);
             } else {
                 console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
                 
                 // Redirection vers la page d'accueil après confirmation de suppression
                 window.location.href = 'index.html?deleted=true&t=' + new Date().getTime();
                 return true;
-            }calStorage.getItem('notes');
-            if (localNotesStr) {
-                const notes = JSON.parse(localNotesStr);
-                const updatedNotes = notes.filter(note => note.id !== noteId);
-                localStorage.setItem('notes', JSON.stringify(updatedNotes));
-                console.log(`Note ${noteId} supprimée du stockage local`);
             }
-            
-            // Étape 2: Suppression directe via Supabase
-            console.log(`Suppression directe de la note ${noteId} dans Supabase...`);
-            console.log("Client Supabase disponible:", !!supabaseClient);
-            
-            // Utilisation de la méthode simple et directe
-            const { error } = await supabaseClient
                 .from('notes')
                 .delete()
                 .eq('id', noteId);
@@ -567,7 +554,7 @@ function setupEventListeners() {
     // Bouton de suppression
     const deleteButton = document.getElementById('delete-note-btn');
     if (deleteButton) {
-        deleteButton.addEventListener('click', deleteCurrentNote);leteCurrentNote);
+        deleteButton.addEventListener('click', deleteCurrentNote);
     }
 }
 
