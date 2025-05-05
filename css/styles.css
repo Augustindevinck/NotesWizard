@@ -431,7 +431,8 @@ header {
 .fab {
     position: fixed;
     bottom: 30px;
-    right: 30px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 60px;
     height: 60px;
     background-color: var(--primary-color);
@@ -444,7 +445,6 @@ header {
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    transition: var(--transition);
     z-index: 20;
     line-height: 0; /* Pour assurer un meilleur centrage du + */
 }
@@ -457,10 +457,7 @@ header {
     width: 100%;
 }
 
-.fab:hover {
-    transform: translate(-50%, 50%) scale(1.1);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
-}
+/* Suppression de l'effet hover */
 
 /* Modal styles */
 .modal {
