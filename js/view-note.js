@@ -448,7 +448,6 @@ async function deleteNote(noteId) {
 
 /**
  * Supprime la note actuelle et redirection vers l'accueil
- * Utilise supabaseService.js pour garantir une suppression cohérente
  */
 async function deleteCurrentNote() {
     if (!currentNote || !currentNote.id) {
@@ -484,112 +483,108 @@ async function deleteCurrentNote() {
                 noteContainer.appendChild(loadingOverlay);
             }
             
-            console.log(`Suppression de la note: ${currentNote.id}`);
+            console.log(`Suppression de la note ID: ${currentNote.id}`);
             
-            // Utiliser directement le service de suppression de Supabase
-            try {
-                // Importation dynamique du module supabaseService pour l'utiliser
-                const supabaseServiceModule = await import('./scripts/utils/supabaseService.js');
-                if (supabaseServiceModule && typeof supabaseServiceModule.deleteNote === 'function') {
-                    console.log(`Utilisation du service supabaseService pour supprimer la note ${currentNote.id}...`);
-                    const success = await supabaseServiceModule.deleteNote(currentNote.id);
-                    
-                    if (success) {
-                        console.log(`Note ${currentNote.id} supprimée avec succès via supabaseService`);
-                    } else {
-                        console.error(`Échec de la suppression via supabaseService, tentative alternative...`);
-                        // Plan B: suppression directe dans localStorage et Supabase
-                        await fallbackDeleteNote(currentNote.id);
-                    }
-                } else {
-                    console.warn(`Module supabaseService non disponible, tentative alternative...`);
-                    // Plan B: suppression directe dans localStorage et Supabase
-                    await fallbackDeleteNote(currentNote.id);
+            // Étape 1: Supprimer du stockage local d'abord
+            const localNotesStr = localStorage.getItem('notes');
+            if (localNotesStr) {
+                try {
+                    const notes = JSON.parse(localNotesStr);
+                    const updatedNotes = notes.filter(note => note.id !== currentNote.id);
+                    localStorage.setItem('notes', JSON.stringify(updatedNotes));
+                    console.log(`Note ${currentNote.id} supprimée du stockage local`);
+                } catch (localError) {
+                    console.error('Erreur lors de la suppression locale:', localError);
                 }
-            } catch (serviceError) {
-                console.error(`Erreur lors de l'utilisation du service de suppression:`, serviceError);
-                // Plan B: suppression directe dans localStorage et Supabase
-                await fallbackDeleteNote(currentNote.id);
             }
             
-            // Attendre un peu pour s'assurer que la suppression est complète
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Étape 2: Supprimer via Supabase
+            let supabaseDeleteSuccess = false;
             
-            console.log('Redirection vers la page d\'accueil après suppression...');
-            window.location.href = 'index.html?t=' + new Date().getTime();
+            try {
+                // Méthode 1: Via le module notesManager
+                const notesManagerModule = await import('./scripts/notes/notesManager.js');
+                if (notesManagerModule && typeof notesManagerModule.deleteNote === 'function') {
+                    console.log('Suppression via notesManager...');
+                    await notesManagerModule.deleteNote(currentNote.id);
+                    supabaseDeleteSuccess = true;
+                }
+            } catch (managerError) {
+                console.error('Erreur lors de la suppression via notesManager:', managerError);
+            }
+            
+            // Si la première méthode échoue, essayer la deuxième
+            if (!supabaseDeleteSuccess) {
+                try {
+                    // Méthode 2: Via le service supabase direct
+                    const supabaseServiceModule = await import('./scripts/utils/supabaseService.js');
+                    if (supabaseServiceModule && typeof supabaseServiceModule.deleteNote === 'function') {
+                        console.log('Suppression via supabaseService...');
+                        await supabaseServiceModule.deleteNote(currentNote.id);
+                        supabaseDeleteSuccess = true;
+                    }
+                } catch (serviceError) {
+                    console.error('Erreur lors de la suppression via supabaseService:', serviceError);
+                }
+            }
+            
+            // Méthode 3: Suppression directe via supabaseStorage si les autres échouent
+            if (!supabaseDeleteSuccess) {
+                try {
+                    const supabaseStorageModule = await import('./scripts/utils/supabaseStorage.js');
+                    if (supabaseStorageModule && typeof supabaseStorageModule.deleteNote === 'function') {
+                        console.log('Suppression via supabaseStorage...');
+                        await supabaseStorageModule.deleteNote(currentNote.id);
+                    }
+                } catch (storageError) {
+                    console.error('Erreur lors de la suppression via supabaseStorage:', storageError);
+                }
+            }
+            
+            // Étape 3: Suppression directe via l'API Supabase si client disponible
+            if (supabaseClient) {
+                try {
+                    console.log('Suppression directe via client Supabase...');
+                    const { error } = await supabaseClient
+                        .from('notes')
+                        .delete()
+                        .eq('id', currentNote.id);
+                    
+                    if (error) {
+                        console.error('Erreur lors de la suppression directe:', error);
+                    } else {
+                        console.log('Suppression directe réussie');
+                    }
+                } catch (directError) {
+                    console.error('Erreur lors de la suppression directe:', directError);
+                }
+            }
+            
+            // Attendre un peu pour s'assurer que la suppression est traitée
+            console.log('Attente avant redirection...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Forcer la redirection avec un paramètre timestamp pour éviter le cache
+            const timestamp = new Date().getTime();
+            console.log('Redirection vers la page d\'accueil...');
+            window.location.href = `index.html?deleted=true&t=${timestamp}`;
+            
+            // Forcer le rechargement si la redirection ne fonctionne pas immédiatement
+            setTimeout(() => {
+                window.location.replace(`index.html?deleted=true&t=${timestamp}`);
+            }, 500);
+            
         } catch (error) {
             console.error('Erreur lors de la suppression de la note:', error);
-            alert('Erreur lors de la suppression de la note: ' + error.message);
-            // Réactiver les boutons en cas d'erreur
-            const deleteBtn = document.getElementById('delete-note-btn');
-            const editBtn = document.getElementById('edit-note-btn');
-            if (deleteBtn) deleteBtn.disabled = false;
-            if (editBtn) editBtn.disabled = false;
+            alert('Erreur lors de la suppression. Veuillez rafraîchir la page et réessayer.');
+            
+            // En cas d'erreur, forcer quand même la redirection
+            window.location.href = 'index.html?error=delete&t=' + new Date().getTime();
         }
     }
 }
 
-/**
- * Fonction de secours pour supprimer une note si le service principal échoue
- * @param {string} noteId - ID de la note à supprimer
- */
-async function fallbackDeleteNote(noteId) {
-    console.log(`Suppression de secours pour la note ${noteId}...`);
-    
-    // Étape 1: Supprimer du localStorage
-    const notesStr = localStorage.getItem('notes');
-    if (notesStr) {
-        const notes = JSON.parse(notesStr);
-        const updatedNotes = notes.filter(note => note.id !== noteId);
-        localStorage.setItem('notes', JSON.stringify(updatedNotes));
-        console.log(`Note ${noteId} supprimée du stockage local (fallback)`);
-    }
-    
-    // Étape 2: Supprimer via Supabase si disponible
-    if (supabaseClient) {
-        try {
-            // S'assurer que nous avons une session
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) {
-                await supabaseClient.auth.signInAnonymously();
-            }
-            
-            // Supprimer la note
-            const { error } = await supabaseClient
-                .from('notes')
-                .delete()
-                .eq('id', noteId);
-            
-            if (error) {
-                console.error(`Erreur lors de la suppression fallback dans Supabase:`, error);
-            } else {
-                console.log(`Note ${noteId} supprimée avec succès dans Supabase (fallback)`);
-            }
-        } catch (supabaseError) {
-            console.error(`Exception lors de la suppression fallback dans Supabase:`, supabaseError);
-        }
-    } else {
-        console.warn('Client Supabase non disponible pour la suppression fallback');
-        // Tenter d'initialiser Supabase
-        try {
-            supabaseClient = await initSupabase();
-            if (supabaseClient) {
-                const { error } = await supabaseClient
-                    .from('notes')
-                    .delete()
-                    .eq('id', noteId);
-                
-                if (error) {
-                    console.error(`Erreur lors de la suppression fallback après init:`, error);
-                } else {
-                    console.log(`Note ${noteId} supprimée avec succès après init (fallback)`);
-                }
-            }
-        } catch (initError) {
-            console.error(`Erreur lors de l'initialisation fallback:`, initError);
-        }
-    }
-}
+// Cette fonction a été intégrée directement dans deleteCurrentNote pour simplifier le code
 
 /**
  * Configure tous les écouteurs d'événements
