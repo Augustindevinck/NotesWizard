@@ -23,21 +23,21 @@ async function initSupabase() {
         // Chercher les clés avec les deux formats possibles pour assurer la compatibilité
         const supabaseUrl = localStorage.getItem('supabase_url') || localStorage.getItem('supabaseUrl');
         const supabaseKey = localStorage.getItem('supabase_key') || localStorage.getItem('supabaseKey');
-        
+
         if (!supabaseUrl || !supabaseKey) {
             console.log('Configuration Supabase non trouvée dans localStorage');
             return null;
         }
-        
+
         console.log('Initialisation du client Supabase avec URL:', supabaseUrl);
         const client = createClient(supabaseUrl, supabaseKey);
-        
+
         // Vérifier que le client est bien créé
         if (!client) {
             console.error('Erreur: Client Supabase non créé');
             return null;
         }
-        
+
         try {
             // Vérifier la session
             const { data: { session } } = await client.auth.getSession();
@@ -45,15 +45,15 @@ async function initSupabase() {
                 console.log('Connexion anonyme...');
                 await client.auth.signInAnonymously();
             }
-            
+
             // Test rapide de connexion pour vérifier que le client fonctionne
             const { data, error } = await client.from('notes').select('id').limit(1);
-            
+
             if (error) {
                 console.error('Erreur lors du test de connexion Supabase:', error);
                 return null;
             }
-            
+
             console.log('Client Supabase initialisé et testé avec succès');
             return client;
         } catch (testError) {
@@ -73,60 +73,60 @@ async function initSupabase() {
 async function fetchAllNotes() {
     try {
         console.log('Récupération de toutes les notes...');
-        
+
         // Récupérer les notes du stockage local
         const localNotesStr = localStorage.getItem('notes');
         const localNotes = localNotesStr ? JSON.parse(localNotesStr) : [];
-        
+
         console.log(`${localNotes.length} notes trouvées dans le stockage local.`);
-        
+
         // Si Supabase n'est pas configuré, retourner uniquement les notes locales
         if (!supabaseClient) {
             console.log('Client Supabase non disponible, retour des notes locales uniquement.');
             return localNotes;
         }
-        
+
         // Récupérer les notes depuis Supabase
         try {
             console.log('Récupération des notes depuis Supabase...');
             const { data: supabaseNotes, error } = await supabaseClient
                 .from('notes')
                 .select('*');
-            
+
             if (error) {
                 console.error('Erreur lors de la récupération des notes depuis Supabase:', error);
                 return localNotes;
             }
-            
+
             if (!supabaseNotes || !Array.isArray(supabaseNotes)) {
                 console.error('Format de données invalide depuis Supabase:', supabaseNotes);
                 return localNotes;
             }
-            
+
             console.log(`${supabaseNotes.length} notes récupérées depuis Supabase.`);
-            
+
             // Créer un ensemble pour éliminer les doublons (par ID)
             const notesSet = new Map();
-            
+
             // D'abord ajouter les notes Supabase (priorité)
             supabaseNotes.forEach(note => {
                 notesSet.set(note.id, note);
             });
-            
+
             // Ensuite ajouter les notes locales (si elles n'existent pas déjà)
             localNotes.forEach(note => {
                 if (!notesSet.has(note.id)) {
                     notesSet.set(note.id, note);
                 }
             });
-            
+
             // Convertir la Map en tableau
             const mergedNotes = Array.from(notesSet.values());
             console.log(`Total: ${mergedNotes.length} notes uniques après fusion.`);
-            
+
             // Mettre à jour les notes locales pour qu'elles soient synchronisées
             localStorage.setItem('notes', JSON.stringify(mergedNotes));
-            
+
             return mergedNotes;
         } catch (supabaseError) {
             console.error('Exception lors de la récupération des notes depuis Supabase:', supabaseError);
@@ -134,7 +134,7 @@ async function fetchAllNotes() {
         }
     } catch (error) {
         console.error('Erreur lors de la récupération des notes:', error);
-        
+
         // En cas d'erreur, essayer de récupérer au moins les notes locales
         try {
             const notesStr = localStorage.getItem('notes');
@@ -152,16 +152,16 @@ async function fetchAllNotes() {
 async function init() {
     // Initialiser la barre de navigation commune
     initNavHeader();
-    
+
     // Initialiser Supabase
     supabaseClient = await initSupabase();
-    
+
     // Récupérer l'ID de la note depuis l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const noteId = urlParams.get('id');
-    
+
     fromSearch = urlParams.get('fromSearch') === 'true';
-    
+
     // Récupérer les termes de recherche s'ils existent
     if (urlParams.has('searchTerms')) {
         try {
@@ -181,17 +181,17 @@ async function init() {
     try {
         // Récupérer toutes les notes de manière asynchrone
         const notes = await fetchAllNotes();
-        
+
         // Trouver la note avec l'ID spécifié
         currentNote = notes.find(note => note.id === noteId);
-        
+
         if (!currentNote) {
             // Rediriger vers la page d'accueil si la note n'existe pas
             console.error(`Note avec ID ${noteId} non trouvée.`);
             window.location.href = 'index.html';
             return;
         }
-        
+
         // Extraire les URLs YouTube et Imgur du contenu de la note
         if (currentNote.content) {
             currentNote.videoUrls = extractYoutubeUrls(currentNote.content);
@@ -310,12 +310,12 @@ function displayNote(note) {
         });
         viewContent.appendChild(videoContainer);
     }
-    
+
     // Afficher les images et albums Imgur si présents
     if (note.imgurUrls && note.imgurUrls.length > 0) {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'note-images';
-        
+
         note.imgurUrls.forEach(imgurItem => {
             if (imgurItem.type === 'image') {
                 // Afficher une image simple
@@ -324,20 +324,20 @@ function displayNote(note) {
                 img.className = 'imgur-image';
                 img.alt = 'Image Imgur';
                 img.loading = 'lazy';
-                
+
                 // Rendre l'image cliquable pour l'ouvrir dans Imgur
                 const linkElement = document.createElement('a');
                 linkElement.href = imgurItem.originalUrl;
                 linkElement.target = '_blank';
                 linkElement.rel = 'noopener noreferrer';
                 linkElement.appendChild(img);
-                
+
                 imgContainer.appendChild(linkElement);
             } else if (imgurItem.type === 'album') {
                 // Créer un conteneur pour l'album avec iframe
                 const albumContainer = document.createElement('div');
                 albumContainer.className = 'imgur-album-container';
-                
+
                 // Créer un iframe pour l'album
                 const iframe = document.createElement('iframe');
                 iframe.className = 'imgur-album-iframe';
@@ -348,19 +348,19 @@ function displayNote(note) {
                 iframe.allowFullscreen = true;
                 iframe.loading = 'lazy';
                 iframe.style.backgroundColor = '#2e2e2e';
-                
+
                 // Ajouter un texte informatif
                 const albumInfo = document.createElement('div');
                 albumInfo.className = 'imgur-album-info';
                 albumInfo.textContent = 'Album Imgur';
-                
+
                 // Assembler les éléments
                 albumContainer.appendChild(iframe);
                 albumContainer.appendChild(albumInfo);
                 imgContainer.appendChild(albumContainer);
             }
         });
-        
+
         viewContent.appendChild(imgContainer);
     }
 }
@@ -377,15 +377,15 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
     }
 
     const tags = container.querySelectorAll(selector);
-    
+
     tags.forEach(tag => {
         const originalText = tag.textContent;
-        
+
         // Store original content for later restoration
         tag.dataset.originalContent = originalText;
-        
+
         let highlightedText = originalText;
-        
+
         // Apply highlighting for each search term
         searchTerms.forEach(term => {
             if (term.length > 1) {
@@ -393,7 +393,7 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
                 highlightedText = highlightedText.replace(regex, '<span class="highlighted-term">$1</span>');
             }
         });
-        
+
         // Set the highlighted content
         if (highlightedText !== originalText) {
             tag.innerHTML = highlightedText;
@@ -409,24 +409,24 @@ function highlightSearchTermsInTags(container, selector, searchTerms) {
 async function deleteNote(noteId) {
     try {
         console.log(`Suppression de la note ${noteId}...`);
-        
+
         // Supprimer la note du stockage local
         const localNotes = JSON.parse(localStorage.getItem('notes') || '[]');
         const updatedNotes = localNotes.filter(note => note.id !== noteId);
         localStorage.setItem('notes', JSON.stringify(updatedNotes));
         console.log(`Note ${noteId} supprimée du stockage local`);
-        
+
         // Supprimer la note de Supabase si configuré
         if (supabaseClient) {
             try {
                 // Supprimer dans Supabase
                 console.log(`Suppression de la note ${noteId} dans Supabase...`);
-                
+
                 const { error } = await supabaseClient
                     .from('notes')
                     .delete()
                     .eq('id', noteId);
-                
+
                 if (error) {
                     console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
                 } else {
@@ -439,7 +439,7 @@ async function deleteNote(noteId) {
         } else {
             console.warn('Client Supabase non disponible pour supprimer la note');
         }
-        
+
         return true;
     } catch (error) {
         console.error(`Erreur lors de la suppression de la note ${noteId}:`, error);
@@ -456,30 +456,30 @@ async function deleteCurrentNote() {
         alert("Aucune note à supprimer.");
         return;
     }
-    
+
     if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
         try {
             // Désactiver les boutons pour éviter les actions multiples
             const deleteBtn = document.getElementById('delete-note-btn');
             const editBtn = document.getElementById('edit-note-btn');
-            
+
             if (deleteBtn) deleteBtn.disabled = true;
             if (editBtn) editBtn.disabled = true;
-            
+
             // Log de l'ID pour vérification
             const noteId = currentNote.id;
             console.log(`Suppression de la note ID: ${noteId}`);
-            
+
             // Vérifier si Supabase est disponible, sinon réinitialiser
             if (!supabaseClient) {
                 console.log("Tentative de réinitialisation du client Supabase...");
                 supabaseClient = await initSupabase();
-                
+
                 if (!supabaseClient) {
                     throw new Error("Impossible d'initialiser le client Supabase");
                 }
             }
-            
+
             // Étape 1: Suppression locale
             const localNotesStr = localStorage.getItem('notes');
             if (localNotesStr) {
@@ -488,47 +488,33 @@ async function deleteCurrentNote() {
                 localStorage.setItem('notes', JSON.stringify(localNotes));
                 console.log(`Note ${noteId} supprimée du stockage local`);
             }
-            
+
             // Étape 2: Suppression via Supabase
             console.log(`Suppression de la note ${noteId} dans Supabase...`);
-            
+
             const { error: deleteError } = await supabaseClient
                 .from('notes')
                 .delete()
                 .eq('id', noteId);
-            
+
             if (deleteError) {
                 console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, deleteError);
                 throw new Error(`Échec de suppression dans Supabase: ${deleteError.message}`);
             } else {
                 console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
-                
+
                 // Redirection vers la page d'accueil après confirmation de suppression
                 window.location.href = 'index.html?deleted=true&t=' + new Date().getTime();
                 return true;
             }
-                .from('notes')
-                .delete()
-                .eq('id', noteId);
-            
-            if (error) {
-                console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                throw new Error(`Échec de suppression dans Supabase: ${error.message}`);
-            } else {
-                console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
-                
-                // Redirection vers la page d'accueil seulement après confirmation de suppression
-                const timestamp = new Date().getTime();
-                window.location.href = `index.html?deleted=true&t=${timestamp}`;
-            }
         } catch (error) {
             console.error('Erreur lors de la suppression de la note:', error);
             alert('Erreur lors de la suppression: ' + error.message);
-            
+
             // Réactiver les boutons en cas d'erreur
             const deleteBtn = document.getElementById('delete-note-btn');
             const editBtn = document.getElementById('edit-note-btn');
-            
+
             if (deleteBtn) deleteBtn.disabled = false;
             if (editBtn) editBtn.disabled = false;
         }
