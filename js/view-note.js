@@ -20,15 +20,16 @@ let supabaseClient = null;
  */
 async function initSupabase() {
     try {
-        const supabaseUrl = localStorage.getItem('supabaseUrl');
-        const supabaseKey = localStorage.getItem('supabaseKey');
+        // Chercher les clés avec les deux formats possibles pour assurer la compatibilité
+        const supabaseUrl = localStorage.getItem('supabase_url') || localStorage.getItem('supabaseUrl');
+        const supabaseKey = localStorage.getItem('supabase_key') || localStorage.getItem('supabaseKey');
         
         if (!supabaseUrl || !supabaseKey) {
             console.log('Configuration Supabase non trouvée dans localStorage');
             return null;
         }
         
-        console.log('Initialisation du client Supabase...');
+        console.log('Initialisation du client Supabase avec URL:', supabaseUrl);
         const client = createClient(supabaseUrl, supabaseKey);
         
         // Vérifier que le client est bien créé
@@ -469,6 +470,16 @@ async function deleteCurrentNote() {
             const noteId = currentNote.id;
             console.log(`Suppression de la note ID: ${noteId}`);
             
+            // Vérifier si Supabase est disponible, sinon réinitialiser
+            if (!supabaseClient) {
+                console.log("Tentative de réinitialisation du client Supabase...");
+                supabaseClient = await initSupabase();
+                
+                if (!supabaseClient) {
+                    throw new Error("Impossible d'initialiser le client Supabase");
+                }
+            }
+            
             // Étape 1: Suppression locale
             const localNotesStr = localStorage.getItem('notes');
             if (localNotesStr) {
@@ -478,29 +489,25 @@ async function deleteCurrentNote() {
                 console.log(`Note ${noteId} supprimée du stockage local`);
             }
             
-            // Étape 2: Suppression directe via Supabase (méthode qui fonctionne sur la page d'accueil)
-            if (supabaseClient) {
-                console.log(`Suppression directe de la note ${noteId} dans Supabase...`);
-                
-                // Utilisation de la méthode simple et directe
-                const { error } = await supabaseClient
-                    .from('notes')
-                    .delete()
-                    .eq('id', noteId);
-                
-                if (error) {
-                    console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
-                    throw new Error(`Échec de suppression dans Supabase: ${error.message}`);
-                } else {
-                    console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
-                    
-                    // Redirection vers la page d'accueil seulement après confirmation de suppression
-                    const timestamp = new Date().getTime();
-                    window.location.href = `index.html?deleted=true&t=${timestamp}`;
-                }
+            // Étape 2: Suppression directe via Supabase
+            console.log(`Suppression directe de la note ${noteId} dans Supabase...`);
+            console.log("Client Supabase disponible:", !!supabaseClient);
+            
+            // Utilisation de la méthode simple et directe
+            const { error } = await supabaseClient
+                .from('notes')
+                .delete()
+                .eq('id', noteId);
+            
+            if (error) {
+                console.error(`Erreur lors de la suppression de la note ${noteId} dans Supabase:`, error);
+                throw new Error(`Échec de suppression dans Supabase: ${error.message}`);
             } else {
-                console.error('Client Supabase non disponible pour la suppression');
-                throw new Error('Client Supabase non disponible');
+                console.log(`Note ${noteId} supprimée avec succès dans Supabase.`);
+                
+                // Redirection vers la page d'accueil seulement après confirmation de suppression
+                const timestamp = new Date().getTime();
+                window.location.href = `index.html?deleted=true&t=${timestamp}`;
             }
         } catch (error) {
             console.error('Erreur lors de la suppression de la note:', error);
