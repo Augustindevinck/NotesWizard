@@ -188,6 +188,22 @@
     transform: translateY(-2px);
 }
 
+.delete-button {
+    padding: 12px 20px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.delete-button:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+}
+
 .edit-button {
     padding: 12px 20px;
     background-color: var(--primary-color);

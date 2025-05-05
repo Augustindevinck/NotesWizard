@@ -499,6 +499,88 @@ async function saveCurrentNote() {
 }
 
 /**
+ * Supprime la note actuelle
+ * @returns {Promise<boolean>} - Indique si la suppression a réussi
+ */
+async function deleteCurrentNote() {
+    // Vérifier si on a une note existante
+    if (!currentNoteId) {
+        alert("Aucune note à supprimer.");
+        return false;
+    }
+    
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette note ?')) {
+        try {
+            // Désactiver les boutons pour éviter les actions multiples
+            const deleteBtn = document.getElementById('delete-note-btn');
+            const saveBtn = document.getElementById('save-note-btn');
+            const cancelBtn = document.getElementById('cancel-edit-btn');
+            
+            if (deleteBtn) deleteBtn.disabled = true;
+            if (saveBtn) saveBtn.disabled = true;
+            if (cancelBtn) cancelBtn.disabled = true;
+            
+            console.log(`Suppression de la note ID: ${currentNoteId}`);
+            
+            // Vérifier si Supabase est disponible, sinon réinitialiser
+            if (!supabaseClient) {
+                console.log("Tentative de réinitialisation du client Supabase...");
+                supabaseClient = await initSupabase();
+                
+                if (!supabaseClient) {
+                    throw new Error("Impossible d'initialiser le client Supabase");
+                }
+            }
+            
+            // Étape 1: Suppression locale
+            const localNotesStr = localStorage.getItem('notes');
+            if (localNotesStr) {
+                let localNotes = JSON.parse(localNotesStr);
+                localNotes = localNotes.filter(note => note.id !== currentNoteId);
+                localStorage.setItem('notes', JSON.stringify(localNotes));
+                console.log(`Note ${currentNoteId} supprimée du stockage local`);
+            }
+            
+            // Étape 2: Suppression via Supabase
+            console.log(`Suppression directe de la note ${currentNoteId} dans Supabase...`);
+            console.log("Client Supabase disponible:", !!supabaseClient);
+            
+            const { error } = await supabaseClient
+                .from('notes')
+                .delete()
+                .eq('id', currentNoteId);
+            
+            if (error) {
+                console.error(`Erreur lors de la suppression de la note ${currentNoteId} dans Supabase:`, error);
+                throw new Error(`Échec de suppression dans Supabase: ${error.message}`);
+            } else {
+                console.log(`Note ${currentNoteId} supprimée avec succès dans Supabase.`);
+                
+                // Redirection vers la page d'accueil après confirmation de suppression
+                const timestamp = new Date().getTime();
+                window.location.href = `index.html?deleted=true&t=${timestamp}`;
+                return true;
+            }
+        } catch (error) {
+            console.error('Erreur lors de la suppression de la note:', error);
+            alert('Erreur lors de la suppression: ' + error.message);
+            
+            // Réactiver les boutons en cas d'erreur
+            const deleteBtn = document.getElementById('delete-note-btn');
+            const saveBtn = document.getElementById('save-note-btn');
+            const cancelBtn = document.getElementById('cancel-edit-btn');
+            
+            if (deleteBtn) deleteBtn.disabled = false;
+            if (saveBtn) saveBtn.disabled = false;
+            if (cancelBtn) cancelBtn.disabled = false;
+            
+            return false;
+        }
+    }
+    return false;
+}
+
+/**
  * Configure tous les écouteurs d'événements
  */
 function setupEventListeners() {
@@ -524,6 +606,17 @@ function setupEventListeners() {
                 }
             }
         });
+    }
+    
+    // Bouton de suppression
+    const deleteButton = document.getElementById('delete-note-btn');
+    if (deleteButton) {
+        // Cacher le bouton si c'est une nouvelle note
+        if (!currentNoteId) {
+            deleteButton.style.display = 'none';
+        }
+        
+        deleteButton.addEventListener('click', deleteCurrentNote);
     }
 }
 
