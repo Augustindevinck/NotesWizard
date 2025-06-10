@@ -216,8 +216,8 @@ async function init() {
 function processHiddenText(content) {
     if (!content) return '';
     
-    // Remplacer //texte// par des éléments masqués cliquables
-    return content.replace(/\/\/(.*?)\/\//g, (match, hiddenText) => {
+    // Remplacer //texte// par des éléments masqués cliquables (incluant les retours à la ligne)
+    return content.replace(/\/\/(.*?)\/\//gs, (match, hiddenText) => {
         const id = `hidden-${Math.random().toString(36).substr(2, 9)}`;
         return `<span class="hidden-text-container"><span class="hidden-text-placeholder" onclick="revealHiddenText('${id}')" title="Cliquer pour révéler le texte masqué">[●●●]</span><span class="hidden-text-content" id="${id}" style="display: none;" onclick="hideText('${id}')">${hiddenText}</span></span>`;
     });
