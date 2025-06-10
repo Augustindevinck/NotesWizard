@@ -499,6 +499,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
+            // S'assurer que le score est disponible pour l'affichage
+            const finalScore = note.searchScore || note.relevanceScore || 0;
+            if (finalScore > 0) {
+                note.searchScore = finalScore;
+                
+                // Recalculer les détails du score pour s'assurer de leur exactitude
+                import('./scripts/search/searchManager.js').then(module => {
+                    const newScore = module.computeRelevanceScore(note, query);
+                    if (newScore > 0) {
+                        note.searchScore = newScore;
+                    }
+                });
+            }
+            
             // Créer l'élément de note (qui inclut maintenant le score grâce à notre modification)
             const noteElement = createNoteElement(note, searchTerms);
             

@@ -100,65 +100,64 @@ export function computeRelevanceScore(note, query) {
         recency: 0
     };
     
-    // Vérifier le titre (2 points par correspondance)
+    // Vérifier le titre (2 points par occurrence)
     if (note.title) {
         const cleanedTitle = cleanText(note.title);
         
-        // Correspondance exacte du titre (bonus de pertinence)
-        if (cleanedTitle === cleanedQuery) {
-            scoreDetails.title += 5;
-        } 
-        
         // Vérifier chaque terme individuellement dans le titre
         for (const term of searchTerms) {
-            // Ne considérer que les termes ayant au moins 2 caractères
-            if (term.length >= 2) {
-                const matches = cleanedTitle.split(term).length - 1;
+            if (term.length >= 1) {
+                // Compter le nombre d'occurrences du terme dans le titre
+                const regex = new RegExp(term, 'gi');
+                const matches = (cleanedTitle.match(regex) || []).length;
                 scoreDetails.title += matches * 2; // 2 points par occurrence
             }
         }
     }
     
-    // Vérifier le contenu (1 point par correspondance)
+    // Vérifier le contenu (1 point par occurrence)
     if (note.content) {
         const cleanedContent = cleanText(note.content);
         
         // Vérifier chaque terme individuellement dans le contenu
         for (const term of searchTerms) {
-            // Ne considérer que les termes ayant au moins 2 caractères
-            if (term.length >= 2) {
-                const matches = cleanedContent.split(term).length - 1;
+            if (term.length >= 1) {
+                // Compter le nombre d'occurrences du terme dans le contenu
+                const regex = new RegExp(term, 'gi');
+                const matches = (cleanedContent.match(regex) || []).length;
                 scoreDetails.content += matches * 1; // 1 point par occurrence
             }
         }
     }
     
-    // Vérifier les catégories (3 points par correspondance)
+    // Vérifier les catégories (3 points par occurrence)
     if (note.categories && Array.isArray(note.categories)) {
         for (const category of note.categories) {
             const cleanedCategory = cleanText(category);
             
             // Vérifier chaque terme individuellement dans les catégories
             for (const term of searchTerms) {
-                // Ne considérer que les termes ayant au moins 2 caractères
-                if (term.length >= 2) {
-                    const matches = cleanedCategory.split(term).length - 1;
+                if (term.length >= 1) {
+                    // Compter le nombre d'occurrences du terme dans la catégorie
+                    const regex = new RegExp(term, 'gi');
+                    const matches = (cleanedCategory.match(regex) || []).length;
                     scoreDetails.categories += matches * 3; // 3 points par occurrence
                 }
             }
         }
     }
     
-    // Vérifier les hashtags (3 points par correspondance)
+    // Vérifier les hashtags (3 points par occurrence)
     if (note.hashtags && Array.isArray(note.hashtags)) {
         for (const hashtag of note.hashtags) {
             const cleanedHashtag = cleanText(hashtag);
             
             // Vérifier chaque terme individuellement dans les hashtags
             for (const term of searchTerms) {
-                // Ne considérer que les termes ayant au moins 2 caractères
-                if (term.length >= 2) {
-                    const matches = cleanedHashtag.split(term).length - 1;
+                if (term.length >= 1) {
+                    // Compter le nombre d'occurrences du terme dans le hashtag
+                    const regex = new RegExp(term, 'gi');
+                    const matches = (cleanedHashtag.match(regex) || []).length;
                     scoreDetails.hashtags += matches * 3; // 3 points par occurrence
                 }
             }
