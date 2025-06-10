@@ -100,20 +100,21 @@ export function computeRelevanceScore(note, query) {
         recency: 0
     };
     
-    // Vérifier le titre (3 points par correspondance)
+    // Vérifier le titre (2 points par correspondance)
     if (note.title) {
         const cleanedTitle = cleanText(note.title);
         
         // Correspondance exacte du titre (bonus de pertinence)
         if (cleanedTitle === cleanedQuery) {
-            scoreDetails.title += 10;
+            scoreDetails.title += 5;
         } 
         
         // Vérifier chaque terme individuellement dans le titre
         for (const term of searchTerms) {
             // Ne considérer que les termes ayant au moins 2 caractères
-            if (term.length >= 2 && cleanedTitle.includes(term)) {
-                scoreDetails.title += 3;
+            if (term.length >= 2) {
+                const matches = cleanedTitle.split(term).length - 1;
+                scoreDetails.title += matches * 2; // 2 points par occurrence
             }
         }
     }
@@ -132,7 +133,7 @@ export function computeRelevanceScore(note, query) {
         }
     }
     
-    // Vérifier les catégories (10 points par correspondance)
+    // Vérifier les catégories (3 points par correspondance)
     if (note.categories && Array.isArray(note.categories)) {
         for (const category of note.categories) {
             const cleanedCategory = cleanText(category);
@@ -140,14 +141,15 @@ export function computeRelevanceScore(note, query) {
             // Vérifier chaque terme individuellement dans les catégories
             for (const term of searchTerms) {
                 // Ne considérer que les termes ayant au moins 2 caractères
-                if (term.length >= 2 && cleanedCategory.includes(term)) {
-                    scoreDetails.categories += 10;
+                if (term.length >= 2) {
+                    const matches = cleanedCategory.split(term).length - 1;
+                    scoreDetails.categories += matches * 3; // 3 points par occurrence
                 }
             }
         }
     }
     
-    // Vérifier les hashtags (10 points par correspondance)
+    // Vérifier les hashtags (3 points par correspondance)
     if (note.hashtags && Array.isArray(note.hashtags)) {
         for (const hashtag of note.hashtags) {
             const cleanedHashtag = cleanText(hashtag);
@@ -155,8 +157,9 @@ export function computeRelevanceScore(note, query) {
             // Vérifier chaque terme individuellement dans les hashtags
             for (const term of searchTerms) {
                 // Ne considérer que les termes ayant au moins 2 caractères
-                if (term.length >= 2 && cleanedHashtag.includes(term)) {
-                    scoreDetails.hashtags += 10;
+                if (term.length >= 2) {
+                    const matches = cleanedHashtag.split(term).length - 1;
+                    scoreDetails.hashtags += matches * 3; // 3 points par occurrence
                 }
             }
         }

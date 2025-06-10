@@ -479,6 +479,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Marquer explicitement comme résultat de recherche
             note.isSearchResult = true;
             
+            // Calculer le score si pas déjà fait
+            if (!note.searchScore && !note.relevanceScore) {
+                const scoreResults = performSearch(query, [note]);
+                if (scoreResults.length > 0) {
+                    note.searchScore = scoreResults[0].score;
+                    note._scoreDetails = scoreResults[0].note._scoreDetails;
+                }
+            }
+            
             // Créer l'élément de note (qui inclut maintenant le score grâce à notre modification)
             const noteElement = createNoteElement(note, searchTerms);
             

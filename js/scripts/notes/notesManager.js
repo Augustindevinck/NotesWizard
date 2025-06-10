@@ -121,14 +121,14 @@ export function createNoteElement(note, currentSearchTerms) {
         // Créer l'URL avec les paramètres nécessaires
         const params = new URLSearchParams();
         params.append('id', note.id);
-        
+
         // Ajouter les paramètres de recherche si nécessaire
         const fromSearch = currentSearchTerms && currentSearchTerms.length > 0;
         if (fromSearch) {
             params.append('fromSearch', 'true');
             params.append('searchTerms', encodeURIComponent(JSON.stringify(currentSearchTerms)));
         }
-        
+
         // Rediriger vers la page d'affichage de note
         window.location.href = `view-note.html?${params.toString()}`;
     });

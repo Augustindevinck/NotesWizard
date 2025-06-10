@@ -1135,3 +1135,27 @@ html {
     background-color: #3a51d1;
     transform: translateY(-2px);
 }
+
+/* Styles pour la recherche */
+.search-result {
+    border-left: 4px solid var(--primary-color);
+}
+
+.search-score {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background-color: rgba(109, 141, 255, 0.1);
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    border: 1px solid rgba(109, 141, 255, 0.2);
+}
+
+.search-score strong {
+    color: var(--primary-color);
+}
+
+.search-score small {
+    color: var(--light-text);
+    font-style: italic;
+}
