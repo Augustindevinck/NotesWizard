@@ -1105,6 +1105,42 @@ html {
     scroll-behavior: smooth;
 }
 
+/* Styles pour le texte masqué */
+.hidden-text-container {
+    display: inline;
+}
+
+.hidden-text-placeholder {
+    background-color: rgba(109, 141, 255, 0.2);
+    color: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px dashed var(--primary-color);
+    font-style: italic;
+    font-size: 0.9em;
+    transition: all 0.2s ease;
+}
+
+.hidden-text-placeholder:hover {
+    background-color: rgba(109, 141, 255, 0.3);
+    transform: scale(1.02);
+}
+
+.hidden-text-content {
+    background-color: rgba(109, 141, 255, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    cursor: pointer;
+    border-left: 3px solid var(--primary-color);
+    margin: 0 2px;
+    transition: all 0.2s ease;
+}
+
+.hidden-text-content:hover {
+    background-color: rgba(109, 141, 255, 0.2);
+}
+
 .note-video {
     margin: 10px 0;
     border-radius: var(--border-radius);

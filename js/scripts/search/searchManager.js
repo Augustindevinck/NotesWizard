@@ -25,10 +25,10 @@ export function cleanText(text) {
  */
 export function containsSearchTerm(text, searchTerm) {
     if (!text || !searchTerm) return false;
-    
+
     const cleanedText = cleanText(text);
     const cleanedTerm = cleanText(searchTerm);
-    
+
     return cleanedText.includes(cleanedTerm);
 }
 
@@ -48,16 +48,16 @@ export function containsSearchTerm(text, searchTerm) {
  */
 export function computeRelevanceScore(note, query) {
     if (!note || !query) return 0;
-    
+
     const cleanedQuery = cleanText(query);
-    
+
     // Si la requête est vide, le score est 0
     if (!cleanedQuery) return 0;
-    
+
     // Diviser la requête en termes individuels pour la recherche
     const searchTerms = cleanedQuery.split(/\s+/).filter(term => term.length > 0);
     if (searchTerms.length === 0) return 0;
-    
+
     // Vérification préliminaire: si aucun terme de la requête n'est trouvé, 
     // renvoyer immédiatement un score de 0
     let hasAnyMatch = false;
@@ -65,16 +65,16 @@ export function computeRelevanceScore(note, query) {
         cleanText(note.title || ''), 
         cleanText(note.content || '')
     ];
-    
+
     // Ajouter les champs de catégories et hashtags
     if (note.categories && Array.isArray(note.categories)) {
         note.categories.forEach(cat => noteTextFields.push(cleanText(cat)));
     }
-    
+
     if (note.hashtags && Array.isArray(note.hashtags)) {
         note.hashtags.forEach(tag => noteTextFields.push(cleanText(tag)));
     }
-    
+
     // Vérifier si au moins un des termes recherchés est présent dans la note
     for (const term of searchTerms) {
         for (const field of noteTextFields) {
@@ -85,12 +85,12 @@ export function computeRelevanceScore(note, query) {
         }
         if (hasAnyMatch) break;
     }
-    
+
     // Si aucune correspondance n'est trouvée, retourner 0
     if (!hasAnyMatch) {
         return 0;
     }
-    
+
     let score = 0;
     let scoreDetails = {
         title: 0,
@@ -99,11 +99,11 @@ export function computeRelevanceScore(note, query) {
         hashtags: 0,
         recency: 0
     };
-    
+
     // Vérifier le titre (2 points par occurrence)
     if (note.title) {
         const cleanedTitle = cleanText(note.title);
-        
+
         // Vérifier chaque terme individuellement dans le titre
         for (const term of searchTerms) {
             if (term.length >= 1) {
@@ -114,11 +114,11 @@ export function computeRelevanceScore(note, query) {
             }
         }
     }
-    
+
     // Vérifier le contenu (1 point par occurrence)
     if (note.content) {
         const cleanedContent = cleanText(note.content);
-        
+
         // Vérifier chaque terme individuellement dans le contenu
         for (const term of searchTerms) {
             if (term.length >= 1) {
@@ -129,12 +129,12 @@ export function computeRelevanceScore(note, query) {
             }
         }
     }
-    
+
     // Vérifier les catégories (3 points par occurrence)
     if (note.categories && Array.isArray(note.categories)) {
         for (const category of note.categories) {
             const cleanedCategory = cleanText(category);
-            
+
             // Vérifier chaque terme individuellement dans les catégories
             for (const term of searchTerms) {
                 if (term.length >= 1) {
@@ -146,12 +146,12 @@ export function computeRelevanceScore(note, query) {
             }
         }
     }
-    
+
     // Vérifier les hashtags (3 points par occurrence)
     if (note.hashtags && Array.isArray(note.hashtags)) {
         for (const hashtag of note.hashtags) {
             const cleanedHashtag = cleanText(hashtag);
-            
+
             // Vérifier chaque terme individuellement dans les hashtags
             for (const term of searchTerms) {
                 if (term.length >= 1) {
@@ -163,30 +163,30 @@ export function computeRelevanceScore(note, query) {
             }
         }
     }
-    
+
     // Facteur de récence (légère influence)
     if (note.updatedAt) {
         const updatedDate = new Date(note.updatedAt);
         const now = new Date();
         const daysDifference = Math.floor((now - updatedDate) / (1000 * 60 * 60 * 24));
-        
+
         // Les notes plus récentes ont un petit bonus (max 2 points pour les notes de moins d'une semaine)
         if (daysDifference < 7) {
             scoreDetails.recency = 2 - Math.floor(daysDifference / 4);
         }
     }
-    
+
     // Calculer le score total
     score = scoreDetails.title + scoreDetails.content + scoreDetails.categories + scoreDetails.hashtags + scoreDetails.recency;
-    
+
     // Si le score est nul, pas la peine d'enregistrer les détails
     if (score === 0) {
         return 0;
     }
-    
+
     // Ajouter les détails du score à la note pour le débogage si nécessaire
     note._scoreDetails = scoreDetails;
-    
+
     return score;
 }
 
@@ -201,13 +201,13 @@ export function advancedSearch(notes, query, options = {}) {
     if (!notes || !Array.isArray(notes) || !query) {
         return [];
     }
-    
+
     const cleanedQuery = cleanText(query);
-    
+
     if (!cleanedQuery) {
         return [];
     }
-    
+
     // Options par défaut
     const defaultOptions = {
         searchInTitle: true,
@@ -218,40 +218,40 @@ export function advancedSearch(notes, query, options = {}) {
         onlyRecentNotes: false,
         limit: null,
     };
-    
+
     // Fusionner les options par défaut avec les options fournies
     const searchOptions = { ...defaultOptions, ...options };
-    
+
     // Termes de recherche individuels
     const searchTerms = cleanedQuery.split(/\s+/).filter(term => term.length > 0);
-    
+
     // Filtrer les notes selon les critères
     const filteredNotes = notes.filter(note => {
         // Vérifier si la note est définie
         if (!note) return false;
-        
+
         // Filtrer par catégorie si spécifié
         if (searchOptions.filterByCategory && note.categories) {
             if (!note.categories.includes(searchOptions.filterByCategory)) {
                 return false;
             }
         }
-        
+
         // Filtrer par date si l'option est activée (notes des 30 derniers jours)
         if (searchOptions.onlyRecentNotes && note.createdAt) {
             const createdDate = new Date(note.createdAt);
             const now = new Date();
             const daysDifference = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
-            
+
             if (daysDifference > 30) {
                 return false;
             }
         }
-        
+
         // Créer des versions nettoyées des champs de note
         const cleanedTitle = note.title ? cleanText(note.title) : '';
-        const cleanedContent = note.content ? cleanText(note.content) : '';
-        
+        const cleanContent = note.content ? cleanText(note.content) : '';
+
         // Vérifier si l'un des termes de recherche est présent dans le titre
         if (searchOptions.searchInTitle && cleanedTitle) {
             for (const term of searchTerms) {
@@ -260,7 +260,7 @@ export function advancedSearch(notes, query, options = {}) {
                 }
             }
         }
-        
+
         // Vérifier si l'un des termes de recherche est présent dans le contenu
         if (searchOptions.searchInContent && cleanedContent) {
             for (const term of searchTerms) {
@@ -269,12 +269,12 @@ export function advancedSearch(notes, query, options = {}) {
                 }
             }
         }
-        
+
         // Vérifier les catégories
         if (searchOptions.searchInCategories && note.categories && Array.isArray(note.categories)) {
             for (const category of note.categories) {
                 const cleanedCategory = cleanText(category);
-                
+
                 for (const term of searchTerms) {
                     if (cleanedCategory.includes(term)) {
                         return true;
@@ -282,12 +282,12 @@ export function advancedSearch(notes, query, options = {}) {
                 }
             }
         }
-        
+
         // Vérifier les hashtags
         if (searchOptions.searchInHashtags && note.hashtags && Array.isArray(note.hashtags)) {
             for (const hashtag of note.hashtags) {
                 const cleanedHashtag = cleanText(hashtag);
-                
+
                 for (const term of searchTerms) {
                     if (cleanedHashtag.includes(term)) {
                         return true;
@@ -295,28 +295,28 @@ export function advancedSearch(notes, query, options = {}) {
                 }
             }
         }
-        
+
         return false;
     });
-    
+
     // Calculer le score de pertinence pour chaque note
     const scoredNotes = filteredNotes.map(note => ({
         ...note,
         relevanceScore: computeRelevanceScore(note, cleanedQuery)
     }));
-    
+
     // Trier par score de pertinence (du plus élevé au plus bas) - ordre décroissant
     scoredNotes.sort((a, b) => {
         const scoreA = a.relevanceScore || 0;
         const scoreB = b.relevanceScore || 0;
         return scoreB - scoreA; // Ordre décroissant: plus grand score en premier
     });
-    
+
     // Limiter le nombre de résultats si demandé
     if (searchOptions.limit && typeof searchOptions.limit === 'number') {
         return scoredNotes.slice(0, searchOptions.limit);
     }
-    
+
     return scoredNotes;
 }
 
@@ -330,28 +330,28 @@ export function highlightSearchTerms(text, searchTerms) {
     if (!text || !searchTerms || !Array.isArray(searchTerms) || searchTerms.length === 0) {
         return text;
     }
-    
+
     let highlightedText = text;
-    
+
     // Échapper le texte pour une utilisation sans danger dans une regex
     function escapeRegExp(string) {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
-    
+
     // Pour chaque terme de recherche, le surligner dans le texte
     for (const term of searchTerms) {
         if (!term) continue;
-        
+
         const cleanedTerm = cleanText(term);
         if (!cleanedTerm) continue;
-        
+
         // Créer une expression régulière qui correspond au terme, insensible à la casse
         const regex = new RegExp(`(${escapeRegExp(cleanedTerm)})`, 'gi');
-        
+
         // Remplacer toutes les occurrences du terme par une version surlignée
         highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
     }
-    
+
     return highlightedText;
 }
 
@@ -362,10 +362,10 @@ export function highlightSearchTerms(text, searchTerms) {
  */
 export function getCurrentSearchTerms(query) {
     if (!query) return [];
-    
+
     const cleanedQuery = cleanText(query);
     if (!cleanedQuery) return [];
-    
+
     // Diviser la requête en termes individuels
     return cleanedQuery.split(/\s+/).filter(term => term.length > 0);
 }
@@ -399,27 +399,31 @@ export function performSearch(query, notes) {
     if (!query || !notes || !Array.isArray(notes)) {
         return [];
     }
-    
+
     const searchTerms = getCurrentSearchTerms(query);
     if (searchTerms.length === 0) {
         return [];
     }
-    
+
     // Mettre à jour les termes de recherche actuels
     searchState.currentSearchTerms = searchTerms;
-    
-    // Calculer les scores et filtrer les résultats
+
+    // Nettoyer le contenu de la note (enlever les liens et le texte masqué pour la recherche)
     const scoredNotes = notes.map(note => {
+        // Nettoyer le contenu de la note (enlever les liens mais garder le texte masqué pour la recherche)
+        const cleanContent = cleanText(note.content || '')
+            .replace(/\[\[.*?\]\]/g, '') // Enlever les liens
+            .replace(/\/\/(.*?)\/\//g, '$1'); // Révéler le texte masqué pour la recherche
         const score = computeRelevanceScore(note, query);
         return { note, score };
     }).filter(result => result.score > 0);
-    
+
     // Trier par score décroissant (du plus élevé au plus bas)
     scoredNotes.sort((a, b) => {
         const scoreA = a.score || 0;
         const scoreB = b.score || 0;
         return scoreB - scoreA; // Ordre décroissant: plus grand score en premier
     });
-    
+
     return scoredNotes;
 }

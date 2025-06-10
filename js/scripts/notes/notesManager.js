@@ -25,12 +25,25 @@ export function initNotesManager(openModal, renderRevisit) {
  * @param {Array} currentSearchTerms - Termes de recherche actifs
  * @returns {HTMLElement} - L'élément DOM de la note
  */
+/**
+ * Traite le texte masqué pour l'affichage dans les cartes de notes
+ * @param {string} content - Le contenu à traiter
+ * @returns {string} - Le contenu traité
+ */
+function processHiddenTextForCard(content) {
+    if (!content) return '';
+    
+    // Pour les cartes de notes, on remplace le texte masqué par un indicateur simple
+    return content.replace(/\/\/(.*?)\/\//g, '[Texte masqué]');
+}
+
 export function createNoteElement(note, currentSearchTerms) {
     const noteDiv = document.createElement('div');
     noteDiv.className = 'note-card';
 
-    // Masquer les liens [[...]] pour l'affichage
-    const displayContent = note.content.replace(/\[\[.*?\]\]/g, '');
+    // Masquer les liens [[...]] et traiter le texte masqué pour l'affichage
+    let displayContent = note.content.replace(/\[\[.*?\]\]/g, '');
+    displayContent = processHiddenTextForCard(displayContent);
 
     // Ajouter une classe spéciale pour les résultats de recherche
     if (note.isSearchResult) {
