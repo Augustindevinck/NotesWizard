@@ -423,8 +423,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Trier par score (le scoring est déjà fait dans performSearch) et préserver les scores
-        searchResults.sort((a, b) => b.score - a.score);
+        // Trier par score décroissant (du plus élevé au plus bas)
+        searchResults.sort((a, b) => {
+            const scoreA = a.score || 0;
+            const scoreB = b.score || 0;
+            return scoreB - scoreA; // Ordre décroissant: plus grand score en premier
+        });
         
         // Transformer les résultats pour correspondre au format attendu tout en gardant le score
         const formattedResults = searchResults.map(result => {
@@ -443,13 +447,20 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} query - La requête de recherche
      */
     function displaySearchResults(results, query) {
+        // Tri de sécurité pour s'assurer de l'ordre décroissant
+        const sortedResults = [...results].sort((a, b) => {
+            const scoreA = a.searchScore || a.relevanceScore || 0;
+            const scoreB = b.searchScore || b.relevanceScore || 0;
+            return scoreB - scoreA; // Ordre décroissant: plus grand score en premier
+        });
+        
         // Mettre à jour le titre
-        searchResultsTitle.textContent = `Résultats pour "${query}" (${results.length})`;
+        searchResultsTitle.textContent = `Résultats pour "${query}" (${sortedResults.length})`;
         
         // Vider le conteneur
         searchResultsList.innerHTML = '';
         
-        if (results.length === 0) {
+        if (sortedResults.length === 0) {
             // Aucun résultat
             searchResultsList.innerHTML = `
                 <div class="empty-search-results">
@@ -474,8 +485,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Continuer sans l'initialisation du gestionnaire de recherche
         }
         
-        // Ajouter chaque résultat à la grille
-        results.forEach(note => {
+        // Ajouter chaque résultat à la grille (dans l'ordre décroissant des scores)
+        sortedResults.forEach(note => {
             // Marquer explicitement comme résultat de recherche
             note.isSearchResult = true;
             

@@ -306,8 +306,12 @@ export function advancedSearch(notes, query, options = {}) {
         relevanceScore: computeRelevanceScore(note, cleanedQuery)
     }));
     
-    // Trier par score de pertinence (du plus élevé au plus bas)
-    scoredNotes.sort((a, b) => b.relevanceScore - a.relevanceScore);
+    // Trier par score de pertinence (du plus élevé au plus bas) - ordre décroissant
+    scoredNotes.sort((a, b) => {
+        const scoreA = a.relevanceScore || 0;
+        const scoreB = b.relevanceScore || 0;
+        return scoreB - scoreA; // Ordre décroissant: plus grand score en premier
+    });
     
     // Limiter le nombre de résultats si demandé
     if (searchOptions.limit && typeof searchOptions.limit === 'number') {
@@ -411,8 +415,12 @@ export function performSearch(query, notes) {
         return { note, score };
     }).filter(result => result.score > 0);
     
-    // Trier par score décroissant
-    scoredNotes.sort((a, b) => b.score - a.score);
+    // Trier par score décroissant (du plus élevé au plus bas)
+    scoredNotes.sort((a, b) => {
+        const scoreA = a.score || 0;
+        const scoreB = b.score || 0;
+        return scoreB - scoreA; // Ordre décroissant: plus grand score en premier
+    });
     
     return scoredNotes;
 }
