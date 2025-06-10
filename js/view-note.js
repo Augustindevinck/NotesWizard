@@ -220,8 +220,8 @@ function processHiddenText(content) {
     return content.replace(/\/\/(.*?)\/\//g, (match, hiddenText) => {
         const id = `hidden-${Math.random().toString(36).substr(2, 9)}`;
         return `<span class="hidden-text-container">
-            <span class="hidden-text-placeholder" onclick="revealHiddenText('${id}')" title="Cliquer pour révéler">
-                [Texte masqué - cliquer pour révéler]
+            <span class="hidden-text-placeholder" onclick="revealHiddenText('${id}')" title="Cliquer pour révéler le texte masqué">
+                [●●●]
             </span>
             <span class="hidden-text-content" id="${id}" style="display: none;" onclick="hideText('${id}')">
                 ${hiddenText}

@@ -1113,13 +1113,15 @@ html {
 .hidden-text-placeholder {
     background-color: rgba(109, 141, 255, 0.2);
     color: var(--primary-color);
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 1px 4px;
+    border-radius: 3px;
     cursor: pointer;
     border: 1px dashed var(--primary-color);
     font-style: italic;
-    font-size: 0.9em;
+    font-size: 0.8em;
     transition: all 0.2s ease;
+    display: inline;
+    white-space: nowrap;
 }
 
 .hidden-text-placeholder:hover {
