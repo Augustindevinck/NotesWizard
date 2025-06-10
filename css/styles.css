@@ -446,7 +446,9 @@ header {
     cursor: pointer;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     z-index: 20;
-    line-height: 0; /* Pour assurer un meilleur centrage du + */
+    line-height: 0;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 .fab span {
@@ -1019,16 +1021,15 @@ header {
 
     .fab {
         bottom: 20px;
-        right: 20px;
-        left: auto;
-        transform: none;
+        left: 50%;
+        transform: translateX(-50%);
         width: 50px;
         height: 50px;
         z-index: 2;
     }
 
     .fab:hover {
-        transform: scale(1.1);
+        transform: translateX(-50%) scale(1.1);
     }
 
     .modal-buttons {
