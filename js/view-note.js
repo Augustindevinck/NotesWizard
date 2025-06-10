@@ -269,7 +269,7 @@ function displayNote(note) {
     } else {
         // Affichage normal sans mise en évidence
         viewTitle.textContent = note.title || 'Sans titre';
-        viewContent.textContent = displayContent;
+        viewContent.innerHTML = displayContent;
     }
 
     // Ajouter les catégories
