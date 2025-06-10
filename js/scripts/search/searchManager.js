@@ -113,8 +113,10 @@ export function computeRelevanceScore(note, query) {
         for (const term of searchTerms) {
             // Ne considérer que les termes ayant au moins 2 caractères
             if (term.length >= 2) {
-                const matches = cleanedTitle.split(term).length - 1;
-                scoreDetails.title += matches * 2; // 2 points par occurrence
+                // Compter seulement les mots entiers, pas les sous-chaînes
+                const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                const matches = (cleanedTitle.match(regex) || []).length;
+                scoreDetails.title += matches * 2; // 2 points par occurrence de mot entier
             }
         }
     }
@@ -127,8 +129,10 @@ export function computeRelevanceScore(note, query) {
         for (const term of searchTerms) {
             // Ne considérer que les termes ayant au moins 2 caractères
             if (term.length >= 2) {
-                const matches = cleanedContent.split(term).length - 1;
-                scoreDetails.content += matches * 1; // 1 point par occurrence
+                // Compter seulement les mots entiers, pas les sous-chaînes
+                const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                const matches = (cleanedContent.match(regex) || []).length;
+                scoreDetails.content += matches * 1; // 1 point par occurrence de mot entier
             }
         }
     }
@@ -142,8 +146,10 @@ export function computeRelevanceScore(note, query) {
             for (const term of searchTerms) {
                 // Ne considérer que les termes ayant au moins 2 caractères
                 if (term.length >= 2) {
-                    const matches = cleanedCategory.split(term).length - 1;
-                    scoreDetails.categories += matches * 3; // 3 points par occurrence
+                    // Compter seulement les mots entiers, pas les sous-chaînes
+                    const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                    const matches = (cleanedCategory.match(regex) || []).length;
+                    scoreDetails.categories += matches * 3; // 3 points par occurrence de mot entier
                 }
             }
         }
@@ -158,8 +164,10 @@ export function computeRelevanceScore(note, query) {
             for (const term of searchTerms) {
                 // Ne considérer que les termes ayant au moins 2 caractères
                 if (term.length >= 2) {
-                    const matches = cleanedHashtag.split(term).length - 1;
-                    scoreDetails.hashtags += matches * 3; // 3 points par occurrence
+                    // Compter seulement les mots entiers, pas les sous-chaînes
+                    const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                    const matches = (cleanedHashtag.match(regex) || []).length;
+                    scoreDetails.hashtags += matches * 3; // 3 points par occurrence de mot entier
                 }
             }
         }
@@ -187,6 +195,11 @@ export function computeRelevanceScore(note, query) {
     
     // Ajouter les détails du score à la note pour le débogage si nécessaire
     note._scoreDetails = scoreDetails;
+    
+    // Log pour déboguer les scores si c'est une recherche "cta"
+    if (cleanedQuery.includes('cta')) {
+        console.log(`Score calculé pour "${note.title}": ${score}`, scoreDetails);
+    }
     
     return score;
 }

@@ -447,10 +447,16 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {string} query - La requête de recherche
      */
     function displaySearchResults(results, query) {
-        // Tri de sécurité pour s'assurer de l'ordre décroissant
+        // Tri de sécurité pour s'assurer de l'ordre décroissant avec débogage
         const sortedResults = [...results].sort((a, b) => {
             const scoreA = a.searchScore || a.relevanceScore || 0;
             const scoreB = b.searchScore || b.relevanceScore || 0;
+            
+            // Débogage des scores
+            if (query.toLowerCase().includes('cta')) {
+                console.log(`Comparaison: "${a.title}" (score: ${scoreA}) vs "${b.title}" (score: ${scoreB})`);
+            }
+            
             return scoreB - scoreA; // Ordre décroissant: plus grand score en premier
         });
         
