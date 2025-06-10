@@ -283,7 +283,7 @@ function displayNote(note) {
                 e.preventDefault();
                 e.stopPropagation();
                 // Rediriger vers la page de recherche avec ce hashtag comme terme de recherche
-                window.location.href = `search.html?q=${encodeURIComponent(tag)}`;
+                window.location.href = `search.html?query=${encodeURIComponent(tag)}`;
             });
             hashtagsContainer.appendChild(tagElement);
         });

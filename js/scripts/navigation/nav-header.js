@@ -56,6 +56,6 @@ function setupSearchFunctionality() {
  */
 function redirectToSearchPage(searchTerm) {
     const searchUrl = new URL('search.html', window.location.origin);
-    searchUrl.searchParams.append('q', searchTerm);
+    searchUrl.searchParams.append('query', searchTerm);
     window.location.href = searchUrl.toString();
 }
