@@ -258,19 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
         levelList.className = 'category-tree-list';
         container.appendChild(levelList);
         
-        // Parcourir chaque catégorie de ce niveau, triées par nombre de notes décroissant
-        Object.keys(levelData).sort((a, b) => {
-            const pathA = parentPath ? `${parentPath}/${a}` : a;
-            const pathB = parentPath ? `${parentPath}/${b}` : b;
-            const countA = countNotesInCategory(pathA, Object.keys(levelData[a]).length > 0);
-            const countB = countNotesInCategory(pathB, Object.keys(levelData[b]).length > 0);
-            
-            // Tri par nombre de notes décroissant, puis par nom alphabétique en cas d'égalité
-            if (countA !== countB) {
-                return countB - countA; // Ordre décroissant
-            }
-            return a.localeCompare(b); // Ordre alphabétique en cas d'égalité
-        }).forEach(category => {
+        // Parcourir chaque catégorie de ce niveau
+        Object.keys(levelData).sort().forEach(category => {
             const fullPath = parentPath ? `${parentPath}/${category}` : category;
             
             // Créer l'élément de liste pour cette catégorie
