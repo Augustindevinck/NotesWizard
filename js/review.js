@@ -200,6 +200,24 @@ async function updateCurrentNoteReviewTimestamp() {
 }
 
 /**
+ * Traite le texte masqué avec la syntaxe //texte//
+ * @param {string} content - Le contenu à traiter
+ * @returns {string} - Le contenu avec les éléments masqués
+ */
+function processHiddenText(content) {
+    if (!content) return '';
+    
+    // Remplacer //texte// par des éléments masqués cliquables (incluant les retours à la ligne)
+    // Utiliser une regex plus précise qui capture tout le contenu entre // //
+    return content.replace(/\/\/([\s\S]*?)\/\//g, (match, hiddenText) => {
+        const id = `hidden-${Math.random().toString(36).substr(2, 9)}`;
+        // Nettoyer le texte masqué en préservant la structure mais en supprimant les espaces superflus
+        const cleanHiddenText = hiddenText.trim();
+        return `<span class="hidden-text-container"><span class="hidden-text-placeholder" onclick="revealHiddenText('${id}')" title="Cliquer pour révéler le texte masqué">[●●●]</span><span class="hidden-text-content" id="${id}" style="display: none;" onclick="hideText('${id}')">${cleanHiddenText}</span></span>`;
+    });
+}
+
+/**
  * Affiche la note courante dans l'interface
  * @param {Object} note - La note à afficher
  */
@@ -239,12 +257,14 @@ function displayNote(note) {
         noteElement.appendChild(categoriesContainer);
     }
 
-    // Ajouter le contenu (en masquant les liens [[...]])
+    // Ajouter le contenu (en masquant les liens [[...]] et en traitant le texte masqué)
     const contentElement = document.createElement('div');
     contentElement.className = 'review-note-content';
     // Masquer les liens [[...]] comme dans view-note.js
-    const displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
-    contentElement.textContent = displayContent;
+    let displayContent = (note.content || '').replace(/\[\[.*?\]\]/g, '');
+    // Traiter le texte masqué
+    displayContent = processHiddenText(displayContent);
+    contentElement.innerHTML = displayContent;
     noteElement.appendChild(contentElement);
 
     // Ajouter les vidéos YouTube si présentes
@@ -432,6 +452,34 @@ function displayNoNotesMessage() {
 }
 
 /**
+ * Révèle un texte masqué
+ * @param {string} id - L'identifiant de l'élément à révéler
+ */
+function revealHiddenText(id) {
+    const placeholder = document.querySelector(`[onclick="revealHiddenText('${id}')"]`);
+    const content = document.getElementById(id);
+    
+    if (placeholder && content) {
+        placeholder.style.display = 'none';
+        content.style.display = 'inline';
+    }
+}
+
+/**
+ * Masque un texte révélé
+ * @param {string} id - L'identifiant de l'élément à masquer
+ */
+function hideText(id) {
+    const placeholder = document.querySelector(`[onclick="revealHiddenText('${id}')"]`);
+    const content = document.getElementById(id);
+    
+    if (placeholder && content) {
+        content.style.display = 'none';
+        placeholder.style.display = 'inline';
+    }
+}
+
+/**
  * Obtient le client Supabase à partir des paramètres stockés dans localStorage
  * @returns {Object|null} - Client Supabase ou null
  */
@@ -454,3 +502,7 @@ async function getSupabaseClient() {
         return null;
     }
 }
+
+// Rendre les fonctions globales pour les onclick
+window.revealHiddenText = revealHiddenText;
+window.hideText = hideText;
